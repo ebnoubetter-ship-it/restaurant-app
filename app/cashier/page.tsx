@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import LogoutButton from "@/components/LogoutButton";
 
 type TableStatus = "available" | "reserved" | "occupied";
@@ -11,26 +12,25 @@ type RestaurantTable = {
   status: TableStatus;
 };
 
-const tables: RestaurantTable[] = [
-  { id: "vip-a", name: "VIP A", zone: "VIP", status: "available" },
-  { id: "vip-b", name: "VIP B", zone: "VIP", status: "available" },
-
-  ...["A", "B", "C", "D", "E", "F"].map((letter) => ({
-    id: `terrasse-${letter.toLowerCase()}`,
-    name: `Box Terrasse ${letter}`,
-    zone: "Terrasse" as const,
-    status: "available" as const,
-  })),
-
-  ...Array.from({ length: 50 }, (_, index) => ({
-    id: `table-${index + 1}`,
-    name: `Table ${index + 1}`,
-    zone: "Salle" as const,
-    status: "available" as const,
-  })),
-];
-
 export default function CashierPage() {
+  const [tables, setTables] = useState<RestaurantTable[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTables = async () => {
+      const response = await fetch("/api/tables");
+      const data = await response.json();
+
+      if (response.ok) {
+        setTables(data);
+      }
+
+      setLoading(false);
+    };
+
+    loadTables();
+  }, []);
+
   const getStatusStyle = (status: TableStatus) => {
     if (status === "occupied") {
       return "border-red-300 bg-red-100 text-red-700";
@@ -69,7 +69,9 @@ export default function CashierPage() {
             <button
               key={table.id}
               onClick={() => {
-                alert(`${table.name} - ${getStatusLabel(table.status)}`);
+                alert(
+                  `${table.name} - ${getStatusLabel(table.status)}`
+                );
               }}
               className={`min-h-24 rounded-2xl border p-4 text-left transition hover:scale-[1.02] ${getStatusStyle(
                 table.status
@@ -100,6 +102,14 @@ export default function CashierPage() {
   const occupied = tables.filter(
     (table) => table.status === "occupied"
   ).length;
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        Chargement des tables...
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-6">
@@ -151,16 +161,8 @@ export default function CashierPage() {
         </div>
 
         {renderZone("VIP", "VIP")}
-
-        {renderZone(
-          "Box Terrasse",
-          "Terrasse"
-        )}
-
-        {renderZone(
-          "Salle",
-          "Salle"
-        )}
+        {renderZone("Box Terrasse", "Terrasse")}
+        {renderZone("Salle", "Salle")}
       </div>
     </main>
   );
