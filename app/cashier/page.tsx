@@ -107,6 +107,20 @@ export default function CashierPage() {
       </section>
     );
   };
+  const viewOpenOrder = async (tableId: string) => {
+    const response = await fetch(
+        `/api/orders/open?tableId=${tableId}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || "Commande introuvable.");
+        return;
+    }
+
+    window.location.href = `/cashier/orders/${data.orderId}`;
+    };
 
   const available = tables.filter(
     (table) => table.status === "available"
@@ -278,6 +292,7 @@ export default function CashierPage() {
       {selectedTable.status === "occupied" && (
         <div className="mt-6">
           <button
+            onClick={() => viewOpenOrder(selectedTable.id)}
             className="w-full rounded-xl bg-sky-500 py-3 font-medium text-white"
           >
             Voir la commande
