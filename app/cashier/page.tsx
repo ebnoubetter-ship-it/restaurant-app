@@ -32,7 +32,26 @@ export default function CashierPage() {
 
     loadTables();
   }, []);
+    const openOrder = async (tableId: string) => {
+    const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+        tableId,
+        }),
+    });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || "Impossible d'ouvrir la commande.");
+        return;
+    }
+
+    window.location.href = `/cashier/orders/${data.orderId}`;
+    };
   const getStatusStyle = (status: TableStatus) => {
     if (status === "occupied") {
       return "border-red-300 bg-red-100 text-red-700";
@@ -220,12 +239,7 @@ export default function CashierPage() {
           </button>
 
           <button
-            onClick={() =>
-              updateTableStatus(
-                selectedTable.id,
-                "occupied"
-              )
-            }
+            onClick={() => openOrder(selectedTable.id)}
             className="w-full rounded-xl bg-red-500 py-3 font-medium text-white"
           >
             Ouvrir une commande
