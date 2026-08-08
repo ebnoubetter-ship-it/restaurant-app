@@ -38,7 +38,36 @@ export default function LoginPage() {
     setStep("login-pin");
     setMessage("");
   };
+  const handleLoginWithPin = async () => {
+    if (pin.length !== 4) {
+        setMessage("Le PIN doit contenir 4 chiffres.");
+        return;
+    }
 
+    const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+    if (error || !data) {
+        setMessage("Utilisateur introuvable.");
+        return;
+    }
+
+    if (data.pin_hash !== pin) {
+        setMessage("PIN incorrect.");
+        return;
+    }
+
+    if (data.role === "admin") {
+        window.location.href = "/admin";
+    } else if (data.role === "cashier") {
+        window.location.href = "/cashier";
+    } else if (data.role === "stock_manager") {
+        window.location.href = "/stock";
+    }
+    };
   const handleCreatePin = async () => {
     if (pin.length !== 4) {
       setMessage("Le PIN doit contenir 4 chiffres.");
@@ -127,24 +156,35 @@ export default function LoginPage() {
         )}
 
         {step === "login-pin" && (
-          <>
-            <h1 className="text-2xl font-bold mb-2">Bienvenue {name}</h1>
-            <p className="text-sm text-slate-500 mb-6">
-              Entrez votre code PIN.
-            </p>
+            <>
+                <h1 className="text-2xl font-bold mb-2">
+                Bienvenue {name}
+                </h1>
 
-            <input
-              type="password"
-              inputMode="numeric"
-              maxLength={4}
-              placeholder="PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-              className="w-full border rounded-xl px-4 py-3"
-            />
-          </>
-        )}
+                <p className="text-sm text-slate-500 mb-6">
+                Entrez votre code PIN.
+                </p>
 
+                <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="PIN"
+                value={pin}
+                onChange={(e) =>
+                    setPin(e.target.value.replace(/\D/g, ""))
+                }
+                className="w-full border rounded-xl px-4 py-3 mb-4"
+                />
+
+                <button
+                onClick={handleLoginWithPin}
+                className="w-full bg-sky-500 text-white rounded-xl py-3 font-medium"
+                >
+                Se connecter
+                </button>
+            </>
+            )}
         {message && (
           <p className="mt-4 text-sm text-slate-600">
             {message}
