@@ -1,0 +1,77 @@
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getSession } from "@/lib/session";
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+
+  if (!session || session.role !== "cashier") {
+    return NextResponse.json(
+      { error: "Accès non autorisé." },
+      { status: 403 }
+    );
+  }
+
+  const { id: orderId } = await context.params;
+  const { menuItemId } = await request.json();
+
+  const { data: menuItem, error: menuError } = await supabaseAdmin
+    .from("menu_items")
+    .select("id, price")
+    .eq("id", menuItemId)
+    .eq("active", true)
+    .single();
+
+  if (menuError || !menuItem) {
+    return NextResponse.json(
+      { error: "Produit introuvable." },
+      { status: 404 }
+    );
+  }
+
+  const { data: existingItem } = await supabaseAdmin
+    .from("order_items")
+    .select("id, quantity")
+    .eq("order_id", orderId)
+    .eq("menu_item_id", menuItemId)
+    .maybeSingle();
+
+  if (existingItem) {
+    const { error } = await supabaseAdmin
+      .from("order_items")
+      .update({
+        quantity: existingItem.quantity + 1,
+      })
+      .eq("id", existingItem.id);
+
+    if (error) {
+      return NextResponse.json(
+        { error: "Impossible de modifier la quantité." },
+        { status: 500 }
+      );
+    }
+  } else {
+    const { error } = await supabaseAdmin
+      .from("order_items")
+      .insert({
+        order_id: orderId,
+        menu_item_id: menuItemId,
+        quantity: 1,
+        unit_price: menuItem.price,
+      });
+
+    if (error) {
+      return NextResponse.json(
+        { error: "Impossible d'ajouter le produit." },
+        { status: 500 }
+      );
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+  });
+}
