@@ -15,6 +15,8 @@ type RestaurantTable = {
 export default function CashierPage() {
   const [tables, setTables] = useState<RestaurantTable[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTable, setSelectedTable] =
+  useState<RestaurantTable | null>(null);
 
   useEffect(() => {
     const loadTables = async () => {
@@ -68,11 +70,7 @@ export default function CashierPage() {
           {zoneTables.map((table) => (
             <button
               key={table.id}
-              onClick={() => {
-                alert(
-                  `${table.name} - ${getStatusLabel(table.status)}`
-                );
-              }}
+              onClick={() => setSelectedTable(table)}
               className={`min-h-24 rounded-2xl border p-4 text-left transition hover:scale-[1.02] ${getStatusStyle(
                 table.status
               )}`}
@@ -110,6 +108,38 @@ export default function CashierPage() {
       </main>
     );
   }
+  const updateTableStatus = async (
+  tableId: string,
+  status: TableStatus
+) => {
+  const response = await fetch(
+    `/api/tables/${tableId}/status`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    alert(data.error || "Une erreur est survenue.");
+    return;
+  }
+
+  setTables((currentTables) =>
+    currentTables.map((table) =>
+      table.id === tableId
+        ? { ...table, status: data.status }
+        : table
+    )
+  );
+
+  setSelectedTable(null);
+};
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-6">
@@ -164,6 +194,92 @@ export default function CashierPage() {
         {renderZone("Box Terrasse", "Terrasse")}
         {renderZone("Salle", "Salle")}
       </div>
+      {selectedTable && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
+    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <h2 className="text-xl font-bold">
+        {selectedTable.name}
+      </h2>
+
+      <p className="mt-1 text-sm text-slate-500">
+        {getStatusLabel(selectedTable.status)}
+      </p>
+
+      {selectedTable.status === "available" && (
+        <div className="mt-6 space-y-3">
+          <button
+            onClick={() =>
+              updateTableStatus(
+                selectedTable.id,
+                "reserved"
+              )
+            }
+            className="w-full rounded-xl bg-orange-500 py-3 font-medium text-white"
+          >
+            Réserver la table
+          </button>
+
+          <button
+            onClick={() =>
+              updateTableStatus(
+                selectedTable.id,
+                "occupied"
+              )
+            }
+            className="w-full rounded-xl bg-red-500 py-3 font-medium text-white"
+          >
+            Ouvrir une commande
+          </button>
+        </div>
+      )}
+
+      {selectedTable.status === "reserved" && (
+        <div className="mt-6 space-y-3">
+          <button
+            onClick={() =>
+              updateTableStatus(
+                selectedTable.id,
+                "occupied"
+              )
+            }
+            className="w-full rounded-xl bg-red-500 py-3 font-medium text-white"
+          >
+            Client arrivé
+          </button>
+
+          <button
+            onClick={() =>
+              updateTableStatus(
+                selectedTable.id,
+                "available"
+              )
+            }
+            className="w-full rounded-xl border py-3 font-medium"
+          >
+            Annuler la réservation
+          </button>
+        </div>
+      )}
+
+      {selectedTable.status === "occupied" && (
+        <div className="mt-6">
+          <button
+            className="w-full rounded-xl bg-sky-500 py-3 font-medium text-white"
+          >
+            Voir la commande
+          </button>
+        </div>
+      )}
+
+      <button
+        onClick={() => setSelectedTable(null)}
+        className="mt-4 w-full py-2 text-sm text-slate-500"
+      >
+        Fermer
+      </button>
+    </div>
+  </div>
+)}
     </main>
   );
 }
