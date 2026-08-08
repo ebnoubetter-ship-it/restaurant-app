@@ -264,12 +264,7 @@ export default function CashierPage() {
       {selectedTable.status === "reserved" && (
         <div className="mt-6 space-y-3">
           <button
-            onClick={() =>
-              updateTableStatus(
-                selectedTable.id,
-                "occupied"
-              )
-            }
+            onClick={() => openOrder(selectedTable.id)}
             className="w-full rounded-xl bg-red-500 py-3 font-medium text-white"
           >
             Client arrivé
