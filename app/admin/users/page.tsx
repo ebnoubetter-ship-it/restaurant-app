@@ -25,6 +25,33 @@ export default function UsersPage() {
     }
   };
 
+  const resetPin = async (userId: string, userName: string) => {
+    const confirmed = window.confirm(
+        `Réinitialiser le PIN de ${userName} ?`
+    );
+
+    if (!confirmed) return;
+
+    const response = await fetch(
+        `/api/users/${userId}/reset-pin`,
+        {
+        method: "POST",
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        setMessage(
+        data.error || "Impossible de réinitialiser le PIN."
+        );
+        return;
+    }
+
+    setMessage(`PIN de ${userName} réinitialisé.`);
+    await loadUsers();
+    };
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -140,17 +167,28 @@ export default function UsersPage() {
                   </p>
                 </div>
 
-                <div
-                  className={
-                    user.pin_defined
-                      ? "rounded-full bg-green-100 px-3 py-1 text-sm text-green-700"
-                      : "rounded-full bg-amber-100 px-3 py-1 text-sm text-amber-700"
-                  }
-                >
-                  {user.pin_defined
-                    ? "PIN défini"
-                    : "PIN à créer"}
-                </div>
+                <div className="flex items-center gap-3">
+                    <div
+                        className={
+                        user.pin_defined
+                            ? "rounded-full bg-green-100 px-3 py-1 text-sm text-green-700"
+                            : "rounded-full bg-amber-100 px-3 py-1 text-sm text-amber-700"
+                        }
+                    >
+                        {user.pin_defined
+                        ? "PIN défini"
+                        : "PIN à créer"}
+                    </div>
+
+                    {user.pin_defined && (
+                        <button
+                        onClick={() => resetPin(user.id, user.name)}
+                        className="rounded-lg border px-3 py-2 text-sm"
+                        >
+                        Réinitialiser le PIN
+                        </button>
+                    )}
+                    </div>
               </div>
             ))}
 
