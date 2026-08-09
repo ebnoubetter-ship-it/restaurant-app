@@ -22,6 +22,12 @@ type Shift = {
   status: "open" | "closed";
 };
 
+type ShiftSummary = {
+  orderCount: number;
+  total: number;
+  payments: Record<string, number>;
+};
+
 export default function CashierPage() {
   const [tables, setTables] = useState<
     RestaurantTable[]
@@ -35,6 +41,9 @@ export default function CashierPage() {
   const [currentShift, setCurrentShift] =
     useState<Shift | null>(null);
 
+  const [shiftSummary, setShiftSummary] =
+    useState<ShiftSummary | null>(null);
+
   const [shiftLoading, setShiftLoading] =
     useState(true);
 
@@ -42,6 +51,9 @@ export default function CashierPage() {
     shiftActionLoading,
     setShiftActionLoading,
   ] = useState(false);
+
+  const [showCloseShift, setShowCloseShift] =
+    useState(false);
 
   const loadCurrentShift = async () => {
     const response = await fetch(
@@ -56,6 +68,7 @@ export default function CashierPage() {
     const data = await response.json();
 
     setCurrentShift(data.shift);
+    setShiftSummary(data.summary);
     setShiftLoading(false);
   };
 
@@ -104,14 +117,6 @@ export default function CashierPage() {
   };
 
   const closeShift = async () => {
-    const confirmed = window.confirm(
-      "Voulez-vous vraiment fermer votre shift ?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
     setShiftActionLoading(true);
 
     const response = await fetch(
@@ -132,6 +137,8 @@ export default function CashierPage() {
       setShiftActionLoading(false);
       return;
     }
+
+    setShowCloseShift(false);
 
     await loadCurrentShift();
 
@@ -162,6 +169,7 @@ export default function CashierPage() {
         data.error ||
           "Impossible d'ouvrir la commande."
       );
+
       return;
     }
 
@@ -183,6 +191,7 @@ export default function CashierPage() {
         data.error ||
           "Commande introuvable."
       );
+
       return;
     }
 
@@ -215,6 +224,7 @@ export default function CashierPage() {
         data.error ||
           "Une erreur est survenue."
       );
+
       return;
     }
 
@@ -391,15 +401,12 @@ export default function CashierPage() {
               </div>
 
               <button
-                onClick={closeShift}
-                disabled={
-                  shiftActionLoading
+                onClick={() =>
+                  setShowCloseShift(true)
                 }
-                className="rounded-xl bg-white px-4 py-2 font-medium text-red-600 shadow-sm disabled:opacity-50"
+                className="rounded-xl bg-white px-4 py-2 font-medium text-red-600 shadow-sm"
               >
-                {shiftActionLoading
-                  ? "Fermeture..."
-                  : "Fermer mon shift"}
+                Fermer mon shift
               </button>
             </div>
           ) : (
@@ -569,6 +576,124 @@ export default function CashierPage() {
           </div>
         </div>
       )}
+
+      {showCloseShift &&
+        currentShift && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+              <h2 className="text-2xl font-bold">
+                Clôture du shift
+              </h2>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Vérifiez le récapitulatif
+                avant de clôturer votre
+                caisse.
+              </p>
+
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">
+                    Commandes
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold">
+                    {shiftSummary?.orderCount ||
+                      0}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">
+                    Total
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold">
+                    {shiftSummary?.total ||
+                      0}{" "}
+                    MRU
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                {[
+                  "Cash",
+                  "Bankily",
+                  "Masrivi",
+                  "Sedad",
+                  "BCI PAY",
+                ].map((method) => (
+                  <div
+                    key={method}
+                    className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                  >
+                    <span>
+                      {method}
+                    </span>
+
+                    <span className="font-semibold">
+                      {shiftSummary
+                        ?.payments?.[
+                        method
+                      ] || 0}{" "}
+                      MRU
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-xl border p-4">
+                <p className="text-sm text-slate-500">
+                  Début du shift
+                </p>
+
+                <p className="mt-1 font-medium">
+                  {new Date(
+                    currentShift.started_at
+                  ).toLocaleString(
+                    "fr-FR",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
+                </p>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() =>
+                    setShowCloseShift(
+                      false
+                    )
+                  }
+                  disabled={
+                    shiftActionLoading
+                  }
+                  className="flex-1 rounded-xl border py-3 font-medium disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+
+                <button
+                  onClick={closeShift}
+                  disabled={
+                    shiftActionLoading
+                  }
+                  className="flex-1 rounded-xl bg-red-500 py-3 font-semibold text-white disabled:opacity-50"
+                >
+                  {shiftActionLoading
+                    ? "Fermeture..."
+                    : "Confirmer la clôture"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </main>
   );
 }
