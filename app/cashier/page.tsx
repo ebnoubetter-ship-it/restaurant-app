@@ -183,10 +183,6 @@ export default function CashierPage() {
             <p className="text-sm text-slate-500">
               Espace caissier
             </p>
-
-            <h1 className="text-3xl font-bold">
-              Tables
-            </h1>
           </div>
 
           <LogoutButton />
