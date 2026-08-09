@@ -2,6 +2,46 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getSession } from "@/lib/session";
 
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+
+  if (!session || session.role !== "cashier") {
+    return NextResponse.json(
+      { error: "Accès non autorisé." },
+      { status: 403 }
+    );
+  }
+
+  const { id: orderId } = await context.params;
+
+  const { data, error } = await supabaseAdmin
+    .from("order_items")
+    .select(`
+      id,
+      quantity,
+      unit_price,
+      menu_items (
+        id,
+        name,
+        category
+      )
+    `)
+    .eq("order_id", orderId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return NextResponse.json(
+      { error: "Impossible de récupérer la commande." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(data);
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -18,12 +58,13 @@ export async function POST(
   const { id: orderId } = await context.params;
   const { menuItemId } = await request.json();
 
-  const { data: menuItem, error: menuError } = await supabaseAdmin
-    .from("menu_items")
-    .select("id, price")
-    .eq("id", menuItemId)
-    .eq("active", true)
-    .single();
+  const { data: menuItem, error: menuError } =
+    await supabaseAdmin
+      .from("menu_items")
+      .select("id, price")
+      .eq("id", menuItemId)
+      .eq("active", true)
+      .single();
 
   if (menuError || !menuItem) {
     return NextResponse.json(
