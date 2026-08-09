@@ -2,21 +2,25 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export default async function CashierOrdersPage() {
-  const { data: orders, error } = await supabaseAdmin
-    .from("orders")
-    .select(`
-      id,
-      created_at,
-      restaurant_tables (
-        name
-      ),
-      order_items (
-        quantity,
-        unit_price
-      )
-    `)
-    .eq("status", "open")
-    .order("created_at", { ascending: false });
+  const { data: orders, error } =
+    await supabaseAdmin
+      .from("orders")
+      .select(`
+        id,
+        created_at,
+        order_type,
+        restaurant_tables (
+          name
+        ),
+        order_items (
+          quantity,
+          unit_price
+        )
+      `)
+      .eq("status", "open")
+      .order("created_at", {
+        ascending: false,
+      });
 
   if (error) {
     return (
@@ -26,26 +30,38 @@ export default async function CashierOrdersPage() {
     );
   }
 
-  const formattedOrders = (orders || []).map((order) => {
-    const table = Array.isArray(order.restaurant_tables)
-      ? order.restaurant_tables[0]
-      : order.restaurant_tables;
+  const formattedOrders = (orders || []).map(
+    (order) => {
+      const table = Array.isArray(
+        order.restaurant_tables
+      )
+        ? order.restaurant_tables[0]
+        : order.restaurant_tables;
 
-    const total = (order.order_items || []).reduce(
-      (sum, item) =>
-        sum +
-        Number(item.quantity) *
-          Number(item.unit_price),
-      0
-    );
+      const total = (
+        order.order_items || []
+      ).reduce(
+        (sum, item) =>
+          sum +
+          Number(item.quantity) *
+            Number(item.unit_price),
+        0
+      );
 
-    return {
-      id: order.id,
-      tableName: table?.name || "Table",
-      total,
-      createdAt: order.created_at,
-    };
-  });
+      const orderLabel =
+        order.order_type === "takeaway"
+          ? "À emporter"
+          : table?.name || "Table";
+
+      return {
+        id: order.id,
+        orderLabel,
+        total,
+        createdAt: order.created_at,
+        orderType: order.order_type,
+      };
+    }
+  );
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-6">
@@ -79,18 +95,30 @@ export default async function CashierOrdersPage() {
               className="flex items-center justify-between rounded-2xl bg-white p-5 shadow-sm transition hover:shadow-md"
             >
               <div>
-                <p className="text-lg font-semibold">
-                  {order.tableName}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-lg font-semibold">
+                    {order.orderLabel}
+                  </p>
+
+                  {order.orderType ===
+                    "takeaway" && (
+                    <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
+                      À emporter
+                    </span>
+                  )}
+                </div>
 
                 <p className="mt-1 text-sm text-slate-500">
                   Ouverte à{" "}
                   {new Date(
                     order.createdAt
-                  ).toLocaleTimeString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  ).toLocaleTimeString(
+                    "fr-FR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
                 </p>
               </div>
 

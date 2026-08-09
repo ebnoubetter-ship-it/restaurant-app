@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type User = {
   id: string;
@@ -25,32 +26,42 @@ export default function UsersPage() {
     }
   };
 
-  const resetPin = async (userId: string, userName: string) => {
+  const resetPin = async (
+    userId: string,
+    userName: string
+  ) => {
     const confirmed = window.confirm(
-        `Réinitialiser le PIN de ${userName} ?`
+      `Réinitialiser le PIN de ${userName} ?`
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     const response = await fetch(
-        `/api/users/${userId}/reset-pin`,
-        {
+      `/api/users/${userId}/reset-pin`,
+      {
         method: "POST",
-        }
+      }
     );
 
     const data = await response.json();
 
     if (!response.ok) {
-        setMessage(
-        data.error || "Impossible de réinitialiser le PIN."
-        );
-        return;
+      setMessage(
+        data.error ||
+          "Impossible de réinitialiser le PIN."
+      );
+
+      return;
     }
 
-    setMessage(`PIN de ${userName} réinitialisé.`);
+    setMessage(
+      `PIN de ${userName} réinitialisé.`
+    );
+
     await loadUsers();
-    };
+  };
 
   useEffect(() => {
     loadUsers();
@@ -58,51 +69,86 @@ export default function UsersPage() {
 
   const createUser = async () => {
     if (!name.trim()) {
-      setMessage("Veuillez saisir un nom.");
+      setMessage(
+        "Veuillez saisir un nom."
+      );
+
       return;
     }
 
     setLoading(true);
     setMessage("");
 
-    const response = await fetch("/api/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        role,
-      }),
-    });
+    const response = await fetch(
+      "/api/users",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          role,
+        }),
+      }
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      setMessage(data.error || "Une erreur est survenue.");
+      setMessage(
+        data.error ||
+          "Une erreur est survenue."
+      );
+
       setLoading(false);
+
       return;
     }
 
     setName("");
     setRole("cashier");
-    setMessage("Utilisateur créé avec succès.");
+
+    setMessage(
+      "Utilisateur créé avec succès."
+    );
+
     await loadUsers();
+
     setLoading(false);
   };
 
-  const roleLabel = (role: User["role"]) => {
-    if (role === "admin") return "Admin";
-    if (role === "cashier") return "Caissier";
+  const roleLabel = (
+    role: User["role"]
+  ) => {
+    if (role === "admin") {
+      return "Admin";
+    }
+
+    if (role === "cashier") {
+      return "Caissier";
+    }
+
     return "Gérant de stock";
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Utilisateurs</h1>
-          <p className="mt-2 text-slate-500">
+    <main className="min-h-screen bg-slate-50 p-4 md:p-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6">
+          <Link
+            href="/admin"
+            className="text-sm font-medium text-sky-600"
+          >
+            ← Retour à l&apos;administration
+          </Link>
+
+          <h1 className="mt-3 text-3xl font-bold">
+            Utilisateurs
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-500">
             Créez les accès des employés du restaurant.
           </p>
         </div>
@@ -117,20 +163,30 @@ export default function UsersPage() {
               type="text"
               placeholder="Nom de l'employé"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
               className="rounded-xl border px-4 py-3"
             />
 
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) =>
+                setRole(e.target.value)
+              }
               className="rounded-xl border px-4 py-3"
             >
-              <option value="cashier">Caissier</option>
+              <option value="cashier">
+                Caissier
+              </option>
+
               <option value="stock_manager">
                 Gérant de stock
               </option>
-              <option value="admin">Admin</option>
+
+              <option value="admin">
+                Admin
+              </option>
             </select>
           </div>
 
@@ -139,7 +195,9 @@ export default function UsersPage() {
             disabled={loading}
             className="mt-4 rounded-xl bg-sky-500 px-6 py-3 font-medium text-white disabled:opacity-50"
           >
-            {loading ? "Création..." : "Créer l'utilisateur"}
+            {loading
+              ? "Création..."
+              : "Créer l'utilisateur"}
           </button>
 
           {message && (
@@ -158,37 +216,47 @@ export default function UsersPage() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between rounded-xl border p-4"
+                className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="font-semibold">{user.name}</p>
+                  <p className="font-semibold">
+                    {user.name}
+                  </p>
+
                   <p className="text-sm text-slate-500">
-                    {roleLabel(user.role)}
+                    {roleLabel(
+                      user.role
+                    )}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div
-                        className={
-                        user.pin_defined
-                            ? "rounded-full bg-green-100 px-3 py-1 text-sm text-green-700"
-                            : "rounded-full bg-amber-100 px-3 py-1 text-sm text-amber-700"
-                        }
-                    >
-                        {user.pin_defined
-                        ? "PIN défini"
-                        : "PIN à créer"}
-                    </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div
+                    className={
+                      user.pin_defined
+                        ? "rounded-full bg-green-100 px-3 py-1 text-sm text-green-700"
+                        : "rounded-full bg-amber-100 px-3 py-1 text-sm text-amber-700"
+                    }
+                  >
+                    {user.pin_defined
+                      ? "PIN défini"
+                      : "PIN à créer"}
+                  </div>
 
-                    {user.pin_defined && (
-                        <button
-                        onClick={() => resetPin(user.id, user.name)}
-                        className="rounded-lg border px-3 py-2 text-sm"
-                        >
-                        Réinitialiser le PIN
-                        </button>
-                    )}
-                    </div>
+                  {user.pin_defined && (
+                    <button
+                      onClick={() =>
+                        resetPin(
+                          user.id,
+                          user.name
+                        )
+                      }
+                      className="rounded-lg border px-3 py-2 text-sm"
+                    >
+                      Réinitialiser le PIN
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
 

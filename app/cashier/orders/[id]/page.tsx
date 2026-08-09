@@ -9,17 +9,19 @@ export default async function OrderPage({
 }) {
   const { id } = await params;
 
-  const { data: order, error } = await supabaseAdmin
-    .from("orders")
-    .select(`
-      id,
-      status,
-      restaurant_tables (
-        name
-      )
-    `)
-    .eq("id", id)
-    .single();
+  const { data: order, error } =
+    await supabaseAdmin
+      .from("orders")
+      .select(`
+        id,
+        status,
+        order_type,
+        restaurant_tables (
+          name
+        )
+      `)
+      .eq("id", id)
+      .single();
 
   if (error || !order) {
     notFound();
@@ -31,10 +33,15 @@ export default async function OrderPage({
     ? order.restaurant_tables[0]
     : order.restaurant_tables;
 
+  const orderLabel =
+    order.order_type === "takeaway"
+      ? "À emporter"
+      : table?.name || "Table";
+
   return (
     <OrderClient
       orderId={order.id}
-      tableName={table?.name || "Table"}
+      tableName={orderLabel}
     />
   );
 }

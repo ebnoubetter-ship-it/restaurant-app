@@ -33,12 +33,14 @@ export async function POST(
     );
   }
 
-  const { data: order, error: orderError } =
-    await supabaseAdmin
-      .from("orders")
-      .select("id, table_id, status")
-      .eq("id", orderId)
-      .single();
+  const {
+    data: order,
+    error: orderError,
+  } = await supabaseAdmin
+    .from("orders")
+    .select("id, table_id, status, order_type")
+    .eq("id", orderId)
+    .single();
 
   if (orderError || !order) {
     return NextResponse.json(
@@ -49,47 +51,66 @@ export async function POST(
 
   if (order.status !== "open") {
     return NextResponse.json(
-      { error: "Cette commande est déjà clôturée." },
+      {
+        error:
+          "Cette commande est déjà clôturée.",
+      },
       { status: 400 }
     );
   }
-  const { data: currentShift, error: shiftError } =
-    await supabaseAdmin
-        .from("shifts")
-        .select("id")
-        .eq("cashier_id", session.id)
-        .eq("status", "open")
-        .order("started_at", { ascending: false })
-        .maybeSingle();
 
-    if (shiftError) {
+  const {
+    data: currentShift,
+    error: shiftError,
+  } = await supabaseAdmin
+    .from("shifts")
+    .select("id")
+    .eq("cashier_id", session.id)
+    .eq("status", "open")
+    .order("started_at", {
+      ascending: false,
+    })
+    .maybeSingle();
+
+  if (shiftError) {
     return NextResponse.json(
-        { error: "Impossible de récupérer le shift." },
-        { status: 500 }
-    );
-    }
-
-    if (!currentShift) {
-    return NextResponse.json(
-        { error: "Vous devez ouvrir votre shift avant d'encaisser." },
-        { status: 400 }
-    );
-    }
-
-  const { data: items, error: itemsError } =
-    await supabaseAdmin
-      .from("order_items")
-      .select("quantity, unit_price")
-      .eq("order_id", orderId);
-
-  if (itemsError) {
-    return NextResponse.json(
-      { error: "Impossible de calculer le total." },
+      {
+        error:
+          "Impossible de récupérer le shift.",
+      },
       { status: 500 }
     );
   }
 
-  const total = items.reduce(
+  if (!currentShift) {
+    return NextResponse.json(
+      {
+        error:
+          "Vous devez ouvrir votre shift avant d'encaisser.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const {
+    data: items,
+    error: itemsError,
+  } = await supabaseAdmin
+    .from("order_items")
+    .select("quantity, unit_price")
+    .eq("order_id", orderId);
+
+  if (itemsError) {
+    return NextResponse.json(
+      {
+        error:
+          "Impossible de calculer le total.",
+      },
+      { status: 500 }
+    );
+  }
+
+  const total = (items || []).reduce(
     (sum, item) =>
       sum +
       Number(item.quantity) *
@@ -104,31 +125,40 @@ export async function POST(
     );
   }
 
-  const { error: paymentError } =
-    await supabaseAdmin
-      .from("orders")
-      .update({
-        status: "paid",
-        total,
-        payment_method: paymentMethod,
-        paid_at: new Date().toISOString(),
-        shift_id: currentShift.id,
-       })
-      .eq("id", orderId);
+  const {
+    error: paymentError,
+  } = await supabaseAdmin
+    .from("orders")
+    .update({
+      status: "paid",
+      total,
+      payment_method: paymentMethod,
+      paid_at: new Date().toISOString(),
+      shift_id: currentShift.id,
+    })
+    .eq("id", orderId);
 
   if (paymentError) {
     return NextResponse.json(
-      { error: "Impossible d'enregistrer le paiement." },
+      {
+        error:
+          "Impossible d'enregistrer le paiement.",
+      },
       { status: 500 }
     );
   }
 
-  await supabaseAdmin
-    .from("restaurant_tables")
-    .update({
-      status: "available",
-    })
-    .eq("id", order.table_id);
+  if (
+    order.order_type === "dine_in" &&
+    order.table_id
+  ) {
+    await supabaseAdmin
+      .from("restaurant_tables")
+      .update({
+        status: "available",
+      })
+      .eq("id", order.table_id);
+  }
 
   return NextResponse.json({
     success: true,

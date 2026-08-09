@@ -12,54 +12,97 @@ export async function POST(request: Request) {
     );
   }
 
-  const { tableId } = await request.json();
+  const body = await request.json();
 
-  if (!tableId) {
-    return NextResponse.json(
-      { error: "Table requise." },
-      { status: 400 }
-    );
-  }
+  const tableId = body.tableId || null;
+  const orderType =
+    body.orderType === "takeaway"
+      ? "takeaway"
+      : "dine_in";
 
-  const { data: existingOrder } = await supabaseAdmin
-    .from("orders")
-    .select("id")
-    .eq("table_id", tableId)
-    .eq("status", "open")
-    .maybeSingle();
+  // COMMANDE SUR PLACE
+  if (orderType === "dine_in") {
+    if (!tableId) {
+      return NextResponse.json(
+        { error: "Table requise." },
+        { status: 400 }
+      );
+    }
 
-  if (existingOrder) {
+    const { data: existingOrder } =
+      await supabaseAdmin
+        .from("orders")
+        .select("id")
+        .eq("table_id", tableId)
+        .eq("status", "open")
+        .maybeSingle();
+
+    if (existingOrder) {
+      return NextResponse.json({
+        orderId: existingOrder.id,
+      });
+    }
+
+    const { data: order, error } =
+      await supabaseAdmin
+        .from("orders")
+        .insert({
+          table_id: tableId,
+          cashier_id: session.id,
+          status: "open",
+          total: 0,
+          order_type: "dine_in",
+        })
+        .select("id")
+        .single();
+
+    if (error) {
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de créer la commande.",
+        },
+        { status: 500 }
+      );
+    }
+
+    await supabaseAdmin
+      .from("restaurant_tables")
+      .update({
+        status: "occupied",
+      })
+      .eq("id", tableId);
+
     return NextResponse.json({
-      orderId: existingOrder.id,
+      orderId: order.id,
     });
   }
 
-  const { data: order, error } = await supabaseAdmin
-    .from("orders")
-    .insert({
-      table_id: tableId,
-      cashier_id: session.id,
-      status: "open",
-      total: 0,
-    })
-    .select("id")
-    .single();
+  // COMMANDE À EMPORTER
+  const { data: takeawayOrder, error } =
+    await supabaseAdmin
+      .from("orders")
+      .insert({
+        table_id: null,
+        cashier_id: session.id,
+        status: "open",
+        total: 0,
+        order_type: "takeaway",
+      })
+      .select("id")
+      .single();
 
   if (error) {
     return NextResponse.json(
-      { error: "Impossible de créer la commande." },
+      {
+        error:
+          "Impossible de créer la commande à emporter.",
+      },
       { status: 500 }
     );
   }
 
-  await supabaseAdmin
-    .from("restaurant_tables")
-    .update({
-      status: "occupied",
-    })
-    .eq("id", tableId);
-
   return NextResponse.json({
-    orderId: order.id,
+    orderId: takeawayOrder.id,
   });
 }

@@ -21,14 +21,18 @@ function getBusinessDayRange() {
   const start = new Date(now);
 
   if (now.getUTCHours() < 7) {
-    start.setUTCDate(start.getUTCDate() - 1);
+    start.setUTCDate(
+      start.getUTCDate() - 1
+    );
   }
 
   start.setUTCHours(7, 0, 0, 0);
 
   const end = new Date(start);
 
-  end.setUTCDate(end.getUTCDate() + 1);
+  end.setUTCDate(
+    end.getUTCDate() + 1
+  );
 
   return {
     start,
@@ -47,22 +51,33 @@ function getWeekRange() {
     );
   }
 
-  const day = businessNow.getUTCDay();
+  const day =
+    businessNow.getUTCDay();
 
   const daysSinceMonday =
     day === 0 ? 6 : day - 1;
 
-  const start = new Date(businessNow);
+  const start =
+    new Date(businessNow);
 
   start.setUTCDate(
-    start.getUTCDate() - daysSinceMonday
+    start.getUTCDate() -
+      daysSinceMonday
   );
 
-  start.setUTCHours(7, 0, 0, 0);
+  start.setUTCHours(
+    7,
+    0,
+    0,
+    0
+  );
 
-  const end = new Date(start);
+  const end =
+    new Date(start);
 
-  end.setUTCDate(end.getUTCDate() + 7);
+  end.setUTCDate(
+    end.getUTCDate() + 7
+  );
 
   return {
     start,
@@ -73,9 +88,12 @@ function getWeekRange() {
 function getMonthRange() {
   const now = new Date();
 
-  const businessNow = new Date(now);
+  const businessNow =
+    new Date(now);
 
-  if (businessNow.getUTCHours() < 7) {
+  if (
+    businessNow.getUTCHours() < 7
+  ) {
     businessNow.setUTCDate(
       businessNow.getUTCDate() - 1
     );
@@ -116,7 +134,8 @@ export default async function AdminSalesPage({
     period?: string;
   }>;
 }) {
-  const params = await searchParams;
+  const params =
+    await searchParams;
 
   const selectedPeriod: Period =
     params.period === "week"
@@ -135,6 +154,7 @@ export default async function AdminSalesPage({
       payment_method,
       paid_at,
       cashier_id,
+      order_type,
       restaurant_tables (
         name
       ),
@@ -147,7 +167,9 @@ export default async function AdminSalesPage({
       ascending: false,
     });
 
-  if (selectedPeriod === "today") {
+  if (
+    selectedPeriod === "today"
+  ) {
     const { start, end } =
       getBusinessDayRange();
 
@@ -162,7 +184,9 @@ export default async function AdminSalesPage({
       );
   }
 
-  if (selectedPeriod === "week") {
+  if (
+    selectedPeriod === "week"
+  ) {
     const { start, end } =
       getWeekRange();
 
@@ -177,7 +201,9 @@ export default async function AdminSalesPage({
       );
   }
 
-  if (selectedPeriod === "month") {
+  if (
+    selectedPeriod === "month"
+  ) {
     const { start, end } =
       getMonthRange();
 
@@ -205,24 +231,31 @@ export default async function AdminSalesPage({
             href="/admin"
             className="text-sm text-sky-600"
           >
-            ← Retour à l&apos;administration
+            ← Retour à
+            l&apos;administration
           </Link>
 
           <p className="mt-6">
-            Impossible de charger les ventes.
+            Impossible de charger
+            les ventes.
           </p>
         </div>
       </main>
     );
   }
 
-  const orders = sales || [];
+  const orders =
+    sales || [];
 
-  const totalSales = orders.reduce(
-    (sum, order) =>
-      sum + Number(order.total || 0),
-    0
-  );
+  const totalSales =
+    orders.reduce(
+      (sum, order) =>
+        sum +
+        Number(
+          order.total || 0
+        ),
+      0
+    );
 
   const orderCount =
     orders.length;
@@ -230,7 +263,8 @@ export default async function AdminSalesPage({
   const averageOrder =
     orderCount > 0
       ? Math.round(
-          totalSales / orderCount
+          totalSales /
+            orderCount
         )
       : 0;
 
@@ -246,7 +280,9 @@ export default async function AdminSalesPage({
   };
 
   for (const order of orders) {
-    if (!order.payment_method) {
+    if (
+      !order.payment_method
+    ) {
       continue;
     }
 
@@ -256,7 +292,9 @@ export default async function AdminSalesPage({
       (paymentTotals[
         order.payment_method
       ] || 0) +
-      Number(order.total || 0);
+      Number(
+        order.total || 0
+      );
   }
 
   return (
@@ -267,7 +305,8 @@ export default async function AdminSalesPage({
             href="/admin"
             className="text-sm text-sky-600"
           >
-            ← Retour à l&apos;administration
+            ← Retour à
+            l&apos;administration
           </Link>
 
           <h1 className="mt-2 text-3xl font-bold">
@@ -284,7 +323,8 @@ export default async function AdminSalesPage({
           <Link
             href="/admin/sales?period=today"
             className={
-              selectedPeriod === "today"
+              selectedPeriod ===
+              "today"
                 ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
                 : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
             }
@@ -295,7 +335,8 @@ export default async function AdminSalesPage({
           <Link
             href="/admin/sales?period=week"
             className={
-              selectedPeriod === "week"
+              selectedPeriod ===
+              "week"
                 ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
                 : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
             }
@@ -306,7 +347,8 @@ export default async function AdminSalesPage({
           <Link
             href="/admin/sales?period=month"
             className={
-              selectedPeriod === "month"
+              selectedPeriod ===
+              "month"
                 ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
                 : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
             }
@@ -317,7 +359,8 @@ export default async function AdminSalesPage({
           <Link
             href="/admin/sales?period=all"
             className={
-              selectedPeriod === "all"
+              selectedPeriod ===
+              "all"
                 ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
                 : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
             }
@@ -329,7 +372,8 @@ export default async function AdminSalesPage({
         <div className="mb-6 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-white p-5 shadow-sm">
             <p className="text-sm text-slate-500">
-              Chiffre d&apos;affaires
+              Chiffre
+              d&apos;affaires
             </p>
 
             <p className="mt-2 text-2xl font-bold">
@@ -401,10 +445,12 @@ export default async function AdminSalesPage({
               </p>
             </div>
 
-            {orders.length === 0 ? (
+            {orders.length ===
+            0 ? (
               <div className="p-6">
                 <p className="text-slate-500">
-                  Aucune vente sur cette période.
+                  Aucune vente sur cette
+                  période.
                 </p>
               </div>
             ) : (
@@ -426,6 +472,13 @@ export default async function AdminSalesPage({
                         ? order.users[0]
                         : order.users;
 
+                    const orderLabel =
+                      order.order_type ===
+                      "takeaway"
+                        ? "À emporter"
+                        : table?.name ||
+                          "Table";
+
                     return (
                       <Link
                         key={order.id}
@@ -433,10 +486,18 @@ export default async function AdminSalesPage({
                         className="flex flex-col gap-3 p-5 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div>
-                          <p className="font-semibold">
-                            {table?.name ||
-                              "Table"}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">
+                              {orderLabel}
+                            </p>
+
+                            {order.order_type ===
+                              "takeaway" && (
+                              <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
+                                À emporter
+                              </span>
+                            )}
+                          </div>
 
                           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-500">
                             <span>
@@ -458,7 +519,8 @@ export default async function AdminSalesPage({
                                 ).toLocaleString(
                                   "fr-FR",
                                   {
-                                    day: "2-digit",
+                                    day:
+                                      "2-digit",
                                     month:
                                       "2-digit",
                                     year:
@@ -475,7 +537,8 @@ export default async function AdminSalesPage({
 
                         <div className="flex items-center gap-4">
                           <p className="text-xl font-bold">
-                            {order.total} MRU
+                            {order.total}{" "}
+                            MRU
                           </p>
 
                           <span className="text-sm font-medium text-sky-600">

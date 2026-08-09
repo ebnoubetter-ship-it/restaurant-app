@@ -31,7 +31,8 @@ export default async function CashierHistoryPage({
         })
         .maybeSingle();
 
-    currentShiftId = currentShift?.id || null;
+    currentShiftId =
+      currentShift?.id || null;
   }
 
   let query = supabaseAdmin
@@ -43,6 +44,7 @@ export default async function CashierHistoryPage({
       paid_at,
       cashier_id,
       shift_id,
+      order_type,
       restaurant_tables (
         name
       )
@@ -120,7 +122,8 @@ export default async function CashierHistoryPage({
     orders || []
   ).reduce(
     (sum, order) =>
-      sum + Number(order.total || 0),
+      sum +
+      Number(order.total || 0),
     0
   );
 
@@ -221,16 +224,31 @@ export default async function CashierHistoryPage({
                       .restaurant_tables[0]
                   : order.restaurant_tables;
 
+              const orderLabel =
+                order.order_type ===
+                "takeaway"
+                  ? "À emporter"
+                  : table?.name ||
+                    "Table";
+
               return (
                 <div
                   key={order.id}
                   className="flex items-center justify-between rounded-2xl bg-white p-5 shadow-sm"
                 >
                   <div>
-                    <p className="text-lg font-semibold">
-                      {table?.name ||
-                        "Table"}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-semibold">
+                        {orderLabel}
+                      </p>
+
+                      {order.order_type ===
+                        "takeaway" && (
+                        <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
+                          À emporter
+                        </span>
+                      )}
+                    </div>
 
                     <p className="mt-1 text-sm text-slate-500">
                       {order.payment_method ||
@@ -248,10 +266,12 @@ export default async function CashierHistoryPage({
                                 "2-digit",
                               minute:
                                 "2-digit",
-                              day: "2-digit",
+                              day:
+                                "2-digit",
                               month:
                                 "2-digit",
-                              year: "numeric",
+                              year:
+                                "numeric",
                             }
                           )
                         : ""}

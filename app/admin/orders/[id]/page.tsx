@@ -22,6 +22,7 @@ export default async function AdminOrderDetailPage({
       created_at,
       paid_at,
       cashier_id,
+      order_type,
       restaurant_tables (
         name,
         zone
@@ -49,6 +50,11 @@ export default async function AdminOrderDetailPage({
     )
       ? order.restaurant_tables[0]
       : order.restaurant_tables;
+
+  const orderLabel =
+    order.order_type === "takeaway"
+      ? "À emporter"
+      : table?.name || "Table";
 
   let cashierName = "—";
 
@@ -127,7 +133,7 @@ export default async function AdminOrderDetailPage({
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-6">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-6">
           <Link
             href="/admin/tables"
@@ -142,17 +148,27 @@ export default async function AdminOrderDetailPage({
                 Détail de la commande
               </p>
 
-              <h1 className="mt-1 text-3xl font-bold">
-                {table?.name ||
-                  "Table"}
-              </h1>
+              <div className="mt-1 flex items-center gap-2">
+                <h1 className="text-3xl font-bold">
+                  {orderLabel}
+                </h1>
 
-              {table?.zone && (
-                <p className="mt-1 text-sm text-slate-500">
-                  Zone :{" "}
-                  {table.zone}
-                </p>
-              )}
+                {order.order_type ===
+                  "takeaway" && (
+                  <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700">
+                    À emporter
+                  </span>
+                )}
+              </div>
+
+              {order.order_type !==
+                "takeaway" &&
+                table?.zone && (
+                  <p className="mt-1 text-sm text-slate-500">
+                    Zone :{" "}
+                    {table.zone}
+                  </p>
+                )}
             </div>
 
             <span
@@ -338,19 +354,12 @@ export default async function AdminOrderDetailPage({
           </div>
         </section>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6">
           <Link
             href="/admin/tables"
             className="rounded-xl border bg-white px-4 py-2 font-medium"
           >
             Retour aux tables
-          </Link>
-
-          <Link
-            href="/admin/sales"
-            className="rounded-xl bg-sky-500 px-4 py-2 font-medium text-white"
-          >
-            Voir les ventes
           </Link>
         </div>
       </div>

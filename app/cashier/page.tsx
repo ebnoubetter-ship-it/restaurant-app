@@ -55,6 +55,9 @@ export default function CashierPage() {
   const [showCloseShift, setShowCloseShift] =
     useState(false);
 
+  const [takeawayLoading, setTakeawayLoading] =
+    useState(false);
+
   const loadCurrentShift = async () => {
     const response = await fetch(
       "/api/shifts/current"
@@ -158,6 +161,7 @@ export default function CashierPage() {
         },
         body: JSON.stringify({
           tableId,
+          orderType: "dine_in",
         }),
       }
     );
@@ -170,6 +174,39 @@ export default function CashierPage() {
           "Impossible d'ouvrir la commande."
       );
 
+      return;
+    }
+
+    window.location.href =
+      `/cashier/orders/${data.orderId}`;
+  };
+
+  const openTakeawayOrder = async () => {
+    setTakeawayLoading(true);
+
+    const response = await fetch(
+      "/api/orders",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          orderType: "takeaway",
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(
+        data.error ||
+          "Impossible de créer la commande à emporter."
+      );
+
+      setTakeawayLoading(false);
       return;
     }
 
@@ -351,7 +388,7 @@ export default function CashierPage() {
           <LogoutButton />
         </header>
 
-        <div className="mb-6 flex gap-2 overflow-x-auto">
+        <div className="mb-4 flex gap-2 overflow-x-auto">
           <Link
             href="/cashier"
             className="whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
@@ -372,6 +409,22 @@ export default function CashierPage() {
           >
             Historique
           </Link>
+        </div>
+
+        <div className="mb-6">
+          <button
+            onClick={openTakeawayOrder}
+            disabled={takeawayLoading}
+            className="w-full rounded-2xl bg-slate-900 px-5 py-4 text-left text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50 sm:w-auto"
+          >
+            <p className="font-semibold">
+              + Commande à emporter
+            </p>
+
+            <p className="mt-1 text-sm text-slate-300">
+              Créer une commande sans table
+            </p>
+          </button>
         </div>
 
         <div className="mb-6">
