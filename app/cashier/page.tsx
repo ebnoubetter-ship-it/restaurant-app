@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import LogoutButton from "@/components/LogoutButton";
+import Link from "next/link";
 
 type TableStatus = "available" | "reserved" | "occupied";
 
@@ -190,6 +191,28 @@ export default function CashierPage() {
 
           <LogoutButton />
         </header>
+        <div className="mb-6 flex gap-2">
+        <Link
+            href="/cashier"
+            className="rounded-xl bg-sky-500 px-4 py-2 text-white"
+        >
+            Tables
+        </Link>
+
+        <Link
+            href="/cashier/orders"
+            className="rounded-xl bg-white px-4 py-2 shadow-sm"
+        >
+            Commandes
+        </Link>
+
+        <Link
+            href="/cashier/history"
+            className="rounded-xl bg-white px-4 py-2 shadow-sm"
+        >
+            Historique
+        </Link>
+        </div>
 
         <div className="mb-8 grid grid-cols-3 gap-3">
           <div className="rounded-2xl bg-white p-4 shadow-sm">
