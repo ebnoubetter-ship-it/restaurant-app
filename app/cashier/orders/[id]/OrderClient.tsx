@@ -48,6 +48,35 @@ export default function OrderClient({
   const [category, setCategory] = useState("Snacks");
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  const payOrder = async (paymentMethod: string) => {
+  setPaying(true);
+
+  const response = await fetch(
+        `/api/orders/${orderId}/pay`,
+        {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            paymentMethod,
+        }),
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || "Paiement impossible.");
+        setPaying(false);
+        return;
+    }
+
+    window.location.href = "/cashier";
+    };
 
   const loadMenu = async () => {
     const response = await fetch("/api/menu");
@@ -304,12 +333,58 @@ export default function OrderClient({
             </div>
 
             <button
-              className="mt-5 w-full rounded-xl bg-emerald-500 py-3 font-semibold text-white"
-            >
-              Payer
+                onClick={() => setShowPayment(true)}
+                disabled={orderItems.length === 0}
+                className="mt-5 w-full rounded-xl bg-emerald-500 py-3 font-semibold text-white disabled:opacity-40"
+                >
+                Payer
             </button>
           </aside>
         </div>
+        {showPayment && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+                <h2 className="text-xl font-bold">
+                    Paiement
+                </h2>
+
+                <p className="mt-2 text-slate-500">
+                    Total à payer
+                </p>
+
+                <p className="mt-1 text-3xl font-bold">
+                    {total} MRU
+                </p>
+
+                <div className="mt-6 space-y-3">
+                    {[
+                    "Bankily",
+                    "Masrivi",
+                    "Sedad",
+                    "BCI PAY",
+                    "Cash",
+                    ].map((method) => (
+                    <button
+                        key={method}
+                        disabled={paying}
+                        onClick={() => payOrder(method)}
+                        className="w-full rounded-xl border px-4 py-3 text-left font-medium hover:bg-slate-50 disabled:opacity-50"
+                    >
+                        {method}
+                    </button>
+                    ))}
+                </div>
+
+                <button
+                    onClick={() => setShowPayment(false)}
+                    disabled={paying}
+                    className="mt-4 w-full py-2 text-sm text-slate-500"
+                >
+                    Annuler
+                </button>
+                </div>
+            </div>
+            )}
       </div>
     </main>
   );
