@@ -105,6 +105,28 @@ export default function OrderClient({
 
     setAddingId(null);
   };
+  const updateItem = async (
+    itemId: string,
+    action: "increase" | "decrease" | "delete"
+    ) => {
+    const response = await fetch(
+        `/api/orders/${orderId}/items`,
+        {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            itemId,
+            action,
+        }),
+        }
+    );
+
+    if (response.ok) {
+        await loadOrder();
+    }
+    };
 
   const filteredMenu = menu.filter(
     (item) => item.category === category
@@ -219,15 +241,47 @@ export default function OrderClient({
                     className="flex items-center justify-between border-b pb-3"
                   >
                     <div>
-                      <p className="font-medium">
-                        {product?.name}
-                      </p>
+                        <p className="font-medium">
+                            {product?.name}
+                        </p>
 
-                      <p className="text-sm text-slate-500">
-                        {item.quantity} ×{" "}
-                        {item.unit_price} MRU
-                      </p>
-                    </div>
+                        <p className="text-sm text-slate-500">
+                            {item.unit_price} MRU / unité
+                        </p>
+
+                        <div className="mt-2 flex items-center gap-2">
+                            <button
+                            onClick={() =>
+                                updateItem(item.id, "decrease")
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border"
+                            >
+                            −
+                            </button>
+
+                            <span className="min-w-6 text-center font-medium">
+                            {item.quantity}
+                            </span>
+
+                            <button
+                            onClick={() =>
+                                updateItem(item.id, "increase")
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border"
+                            >
+                            +
+                            </button>
+
+                            <button
+                            onClick={() =>
+                                updateItem(item.id, "delete")
+                            }
+                            className="ml-2 text-sm text-red-500"
+                            >
+                            Supprimer
+                            </button>
+                        </div>
+                        </div>
 
                     <p className="font-semibold">
                       {Number(item.quantity) *
