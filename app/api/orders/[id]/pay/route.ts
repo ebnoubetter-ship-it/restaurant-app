@@ -53,6 +53,28 @@ export async function POST(
       { status: 400 }
     );
   }
+  const { data: currentShift, error: shiftError } =
+    await supabaseAdmin
+        .from("shifts")
+        .select("id")
+        .eq("cashier_id", session.id)
+        .eq("status", "open")
+        .order("started_at", { ascending: false })
+        .maybeSingle();
+
+    if (shiftError) {
+    return NextResponse.json(
+        { error: "Impossible de récupérer le shift." },
+        { status: 500 }
+    );
+    }
+
+    if (!currentShift) {
+    return NextResponse.json(
+        { error: "Vous devez ouvrir votre shift avant d'encaisser." },
+        { status: 400 }
+    );
+    }
 
   const { data: items, error: itemsError } =
     await supabaseAdmin
@@ -90,7 +112,8 @@ export async function POST(
         total,
         payment_method: paymentMethod,
         paid_at: new Date().toISOString(),
-      })
+        shift_id: currentShift.id,
+       })
       .eq("id", orderId);
 
   if (paymentError) {
