@@ -22,10 +22,20 @@ type Shift = {
   status: "open" | "closed";
 };
 
+type OpenShiftOrder = {
+  id: string;
+  orderNumber: number | null;
+  label: string;
+};
+
 type ShiftSummary = {
   orderCount: number;
+  paidOrderCount: number;
+  cancelledOrderCount: number;
+  openOrderCount: number;
   total: number;
   payments: Record<string, number>;
+  openOrders: OpenShiftOrder[];
 };
 
 export default function CashierPage() {
@@ -33,260 +43,387 @@ export default function CashierPage() {
     RestaurantTable[]
   >([]);
 
-  const [loading, setLoading] = useState(true);
-
-  const [selectedTable, setSelectedTable] =
-    useState<RestaurantTable | null>(null);
-
-  const [currentShift, setCurrentShift] =
-    useState<Shift | null>(null);
-
-  const [shiftSummary, setShiftSummary] =
-    useState<ShiftSummary | null>(null);
-
-  const [shiftLoading, setShiftLoading] =
+  const [loading, setLoading] =
     useState(true);
+
+  const [
+    selectedTable,
+    setSelectedTable,
+  ] =
+    useState<RestaurantTable | null>(
+      null
+    );
+
+  const [
+    currentShift,
+    setCurrentShift,
+  ] =
+    useState<Shift | null>(
+      null
+    );
+
+  const [
+    shiftSummary,
+    setShiftSummary,
+  ] =
+    useState<ShiftSummary | null>(
+      null
+    );
+
+  const [
+    shiftLoading,
+    setShiftLoading,
+  ] = useState(true);
 
   const [
     shiftActionLoading,
     setShiftActionLoading,
   ] = useState(false);
 
-  const [showCloseShift, setShowCloseShift] =
-    useState(false);
+  const [
+    showCloseShift,
+    setShowCloseShift,
+  ] = useState(false);
 
-  const [takeawayLoading, setTakeawayLoading] =
-    useState(false);
+  const [
+    takeawayLoading,
+    setTakeawayLoading,
+  ] = useState(false);
 
-  const loadCurrentShift = async () => {
-    const response = await fetch(
-      "/api/shifts/current"
-    );
+  const [
+    shiftCloseError,
+    setShiftCloseError,
+  ] = useState("");
 
-    if (!response.ok) {
-      setShiftLoading(false);
-      return;
-    }
+  const loadCurrentShift =
+    async () => {
+      const response =
+        await fetch(
+          "/api/shifts/current"
+        );
 
-    const data = await response.json();
-
-    setCurrentShift(data.shift);
-    setShiftSummary(data.summary);
-    setShiftLoading(false);
-  };
-
-  useEffect(() => {
-    const loadTables = async () => {
-      const response = await fetch("/api/tables");
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setTables(data);
+      if (!response.ok) {
+        setShiftLoading(
+          false
+        );
+        return;
       }
 
-      setLoading(false);
+      const data =
+        await response.json();
+
+      setCurrentShift(
+        data.shift
+      );
+
+      setShiftSummary(
+        data.summary
+      );
+
+      setShiftLoading(
+        false
+      );
     };
+
+  useEffect(() => {
+    const loadTables =
+      async () => {
+        const response =
+          await fetch(
+            "/api/tables"
+          );
+
+        const data =
+          await response.json();
+
+        if (response.ok) {
+          setTables(data);
+        }
+
+        setLoading(false);
+      };
 
     loadTables();
     loadCurrentShift();
   }, []);
 
-  const openShift = async () => {
-    setShiftActionLoading(true);
+  const openShift =
+    async () => {
+      setShiftActionLoading(
+        true
+      );
 
-    const response = await fetch(
-      "/api/shifts/open",
-      {
-        method: "POST",
+      const response =
+        await fetch(
+          "/api/shifts/open",
+          {
+            method: "POST",
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        alert(
+          data.error ||
+            "Impossible d'ouvrir le shift."
+        );
+
+        setShiftActionLoading(
+          false
+        );
+
+        return;
       }
-    );
 
-    const data = await response.json();
+      await loadCurrentShift();
 
-    if (!response.ok) {
-      alert(
-        data.error ||
-          "Impossible d'ouvrir le shift."
+      setShiftActionLoading(
+        false
+      );
+    };
+
+  const openCloseShiftModal =
+    async () => {
+      setShiftCloseError(
+        ""
       );
 
-      setShiftActionLoading(false);
-      return;
-    }
+      setShiftLoading(true);
 
-    await loadCurrentShift();
+      await loadCurrentShift();
 
-    setShiftActionLoading(false);
-  };
+      setShowCloseShift(
+        true
+      );
+    };
 
-  const closeShift = async () => {
-    setShiftActionLoading(true);
+  const closeShift =
+    async () => {
+      setShiftActionLoading(
+        true
+      );
 
-    const response = await fetch(
-      "/api/shifts/close",
-      {
-        method: "POST",
+      setShiftCloseError(
+        ""
+      );
+
+      const response =
+        await fetch(
+          "/api/shifts/close",
+          {
+            method: "POST",
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        setShiftCloseError(
+          data.error ||
+            "Impossible de fermer le shift."
+        );
+
+        await loadCurrentShift();
+
+        setShiftActionLoading(
+          false
+        );
+
+        return;
       }
-    );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      alert(
-        data.error ||
-          "Impossible de fermer le shift."
+      setShowCloseShift(
+        false
       );
 
-      setShiftActionLoading(false);
-      return;
-    }
+      setShiftCloseError(
+        ""
+      );
 
-    setShowCloseShift(false);
+      await loadCurrentShift();
 
-    await loadCurrentShift();
+      setShiftActionLoading(
+        false
+      );
 
-    setShiftActionLoading(false);
-  };
-
-  const openOrder = async (
-    tableId: string
-  ) => {
-    const response = await fetch(
-      "/api/orders",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          tableId,
-          orderType: "dine_in",
-        }),
+      if (data.warning) {
+        alert(data.warning);
       }
-    );
+    };
 
-    const data = await response.json();
+  const openOrder =
+    async (
+      tableId: string
+    ) => {
+      const response =
+        await fetch(
+          "/api/orders",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              tableId,
+              orderType:
+                "dine_in",
+            }),
+          }
+        );
 
-    if (!response.ok) {
-      alert(
-        data.error ||
-          "Impossible d'ouvrir la commande."
-      );
+      const data =
+        await response.json();
 
-      return;
-    }
+      if (!response.ok) {
+        alert(
+          data.error ||
+            "Impossible d'ouvrir la commande."
+        );
 
-    window.location.href =
-      `/cashier/orders/${data.orderId}`;
-  };
-
-  const openTakeawayOrder = async () => {
-    setTakeawayLoading(true);
-
-    const response = await fetch(
-      "/api/orders",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          orderType: "takeaway",
-        }),
+        return;
       }
-    );
 
-    const data = await response.json();
+      window.location.href =
+        `/cashier/orders/${data.orderId}`;
+    };
 
-    if (!response.ok) {
-      alert(
-        data.error ||
-          "Impossible de créer la commande à emporter."
+  const openTakeawayOrder =
+    async () => {
+      setTakeawayLoading(
+        true
       );
 
-      setTakeawayLoading(false);
-      return;
-    }
+      const response =
+        await fetch(
+          "/api/orders",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              orderType:
+                "takeaway",
+            }),
+          }
+        );
 
-    window.location.href =
-      `/cashier/orders/${data.orderId}`;
-  };
+      const data =
+        await response.json();
 
-  const viewOpenOrder = async (
-    tableId: string
-  ) => {
-    const response = await fetch(
-      `/api/orders/open?tableId=${tableId}`
-    );
+      if (!response.ok) {
+        alert(
+          data.error ||
+            "Impossible de créer la commande à emporter."
+        );
 
-    const data = await response.json();
+        setTakeawayLoading(
+          false
+        );
 
-    if (!response.ok) {
-      alert(
-        data.error ||
-          "Commande introuvable."
-      );
-
-      return;
-    }
-
-    window.location.href =
-      `/cashier/orders/${data.orderId}`;
-  };
-
-  const updateTableStatus = async (
-    tableId: string,
-    status: TableStatus
-  ) => {
-    const response = await fetch(
-      `/api/tables/${tableId}/status`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          status,
-        }),
+        return;
       }
-    );
 
-    const data = await response.json();
+      window.location.href =
+        `/cashier/orders/${data.orderId}`;
+    };
 
-    if (!response.ok) {
-      alert(
-        data.error ||
-          "Une erreur est survenue."
+  const viewOpenOrder =
+    async (
+      tableId: string
+    ) => {
+      const response =
+        await fetch(
+          `/api/orders/open?tableId=${tableId}`
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        alert(
+          data.error ||
+            "Commande introuvable."
+        );
+
+        return;
+      }
+
+      window.location.href =
+        `/cashier/orders/${data.orderId}`;
+    };
+
+  const updateTableStatus =
+    async (
+      tableId: string,
+      status: TableStatus
+    ) => {
+      const response =
+        await fetch(
+          `/api/tables/${tableId}/status`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              status,
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        alert(
+          data.error ||
+            "Une erreur est survenue."
+        );
+
+        return;
+      }
+
+      setTables(
+        (
+          currentTables
+        ) =>
+          currentTables.map(
+            (table) =>
+              table.id ===
+              tableId
+                ? {
+                    ...table,
+                    status:
+                      data.status,
+                  }
+                : table
+          )
       );
 
-      return;
-    }
-
-    setTables((currentTables) =>
-      currentTables.map((table) =>
-        table.id === tableId
-          ? {
-              ...table,
-              status: data.status,
-            }
-          : table
-      )
-    );
-
-    setSelectedTable(null);
-  };
+      setSelectedTable(
+        null
+      );
+    };
 
   const getStatusStyle = (
     status: TableStatus
   ) => {
-    if (status === "occupied") {
+    if (
+      status === "occupied"
+    ) {
       return "border-red-300 bg-red-100 text-red-700";
     }
 
-    if (status === "reserved") {
+    if (
+      status === "reserved"
+    ) {
       return "border-orange-300 bg-orange-100 text-orange-700";
     }
 
@@ -296,24 +433,66 @@ export default function CashierPage() {
   const getStatusLabel = (
     status: TableStatus
   ) => {
-    if (status === "occupied") {
+    if (
+      status === "occupied"
+    ) {
       return "Occupée";
     }
 
-    if (status === "reserved") {
+    if (
+      status === "reserved"
+    ) {
       return "Réservée";
     }
 
     return "Disponible";
   };
 
+  const getTableNumber = (
+    name: string
+  ) => {
+    const match =
+      name.match(/\d+/);
+
+    return match
+      ? Number(match[0])
+      : 999999;
+  };
+
   const renderZone = (
     title: string,
     zone: RestaurantTable["zone"]
   ) => {
-    const zoneTables = tables.filter(
-      (table) => table.zone === zone
-    );
+    let zoneTables =
+      tables.filter(
+        (table) =>
+          table.zone === zone
+      );
+
+    /*
+     * On trie uniquement les tables
+     * de la Salle :
+     *
+     * Table 1
+     * Table 2
+     * ...
+     * Table 50
+     */
+    if (
+      zone === "Salle"
+    ) {
+      zoneTables = [
+        ...zoneTables,
+      ].sort(
+        (a, b) =>
+          getTableNumber(
+            a.name
+          ) -
+          getTableNumber(
+            b.name
+          )
+      );
+    }
 
     return (
       <section className="mb-10">
@@ -322,51 +501,62 @@ export default function CashierPage() {
         </h2>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {zoneTables.map((table) => (
-            <button
-              key={table.id}
-              onClick={() =>
-                setSelectedTable(table)
-              }
-              className={`min-h-24 rounded-2xl border p-4 text-left transition hover:scale-[1.02] ${getStatusStyle(
-                table.status
-              )}`}
-            >
-              <p className="font-semibold">
-                {table.name}
-              </p>
-
-              <p className="mt-2 text-sm">
-                {getStatusLabel(
+          {zoneTables.map(
+            (table) => (
+              <button
+                key={table.id}
+                onClick={() =>
+                  setSelectedTable(
+                    table
+                  )
+                }
+                className={`min-h-24 rounded-2xl border p-4 text-left transition hover:scale-[1.02] ${getStatusStyle(
                   table.status
-                )}
-              </p>
-            </button>
-          ))}
+                )}`}
+              >
+                <p className="font-semibold">
+                  {table.name}
+                </p>
+
+                <p className="mt-2 text-sm">
+                  {getStatusLabel(
+                    table.status
+                  )}
+                </p>
+              </button>
+            )
+          )}
         </div>
       </section>
     );
   };
 
-  const available = tables.filter(
-    (table) =>
-      table.status === "available"
-  ).length;
+  const available =
+    tables.filter(
+      (table) =>
+        table.status ===
+        "available"
+    ).length;
 
-  const reserved = tables.filter(
-    (table) =>
-      table.status === "reserved"
-  ).length;
+  const reserved =
+    tables.filter(
+      (table) =>
+        table.status ===
+        "reserved"
+    ).length;
 
-  const occupied = tables.filter(
-    (table) =>
-      table.status === "occupied"
-  ).length;
+  const occupied =
+    tables.filter(
+      (table) =>
+        table.status ===
+        "occupied"
+    ).length;
 
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        Chargement des tables...
+        Chargement des
+        tables...
       </main>
     );
   }
@@ -413,16 +603,22 @@ export default function CashierPage() {
 
         <div className="mb-6">
           <button
-            onClick={openTakeawayOrder}
-            disabled={takeawayLoading}
+            onClick={
+              openTakeawayOrder
+            }
+            disabled={
+              takeawayLoading
+            }
             className="w-full rounded-2xl bg-slate-900 px-5 py-4 text-left text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50 sm:w-auto"
           >
             <p className="font-semibold">
-              + Commande à emporter
+              + Commande à
+              emporter
             </p>
 
             <p className="mt-1 text-sm text-slate-300">
-              Créer une commande sans table
+              Créer une commande
+              sans table
             </p>
           </button>
         </div>
@@ -430,7 +626,8 @@ export default function CashierPage() {
         <div className="mb-6">
           {shiftLoading ? (
             <div className="rounded-2xl bg-white p-4 shadow-sm">
-              Chargement du shift...
+              Chargement du
+              shift...
             </div>
           ) : currentShift ? (
             <div className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -446,16 +643,18 @@ export default function CashierPage() {
                   ).toLocaleTimeString(
                     "fr-FR",
                     {
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      hour:
+                        "2-digit",
+                      minute:
+                        "2-digit",
                     }
                   )}
                 </p>
               </div>
 
               <button
-                onClick={() =>
-                  setShowCloseShift(true)
+                onClick={
+                  openCloseShiftModal
                 }
                 className="rounded-xl bg-white px-4 py-2 font-medium text-red-600 shadow-sm"
               >
@@ -466,18 +665,22 @@ export default function CashierPage() {
             <div className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-semibold text-amber-800">
-                  Aucun shift ouvert
+                  Aucun shift
+                  ouvert
                 </p>
 
                 <p className="mt-1 text-sm text-amber-700">
-                  Ouvrez votre shift avant
-                  de commencer les
+                  Ouvrez votre
+                  shift avant de
+                  commencer les
                   encaissements.
                 </p>
               </div>
 
               <button
-                onClick={openShift}
+                onClick={
+                  openShift
+                }
                 disabled={
                   shiftActionLoading
                 }
@@ -523,21 +726,29 @@ export default function CashierPage() {
           </div>
         </div>
 
-        {renderZone("VIP", "VIP")}
+        {renderZone(
+          "VIP",
+          "VIP"
+        )}
 
         {renderZone(
           "Box Terrasse",
           "Terrasse"
         )}
 
-        {renderZone("Salle", "Salle")}
+        {renderZone(
+          "Salle",
+          "Salle"
+        )}
       </div>
 
       {selectedTable && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="text-xl font-bold">
-              {selectedTable.name}
+              {
+                selectedTable.name
+              }
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
@@ -558,7 +769,8 @@ export default function CashierPage() {
                   }
                   className="w-full rounded-xl bg-orange-500 py-3 font-medium text-white"
                 >
-                  Réserver la table
+                  Réserver la
+                  table
                 </button>
 
                 <button
@@ -569,7 +781,8 @@ export default function CashierPage() {
                   }
                   className="w-full rounded-xl bg-red-500 py-3 font-medium text-white"
                 >
-                  Ouvrir une commande
+                  Ouvrir une
+                  commande
                 </button>
               </div>
             )}
@@ -597,7 +810,8 @@ export default function CashierPage() {
                   }
                   className="w-full rounded-xl border py-3 font-medium"
                 >
-                  Annuler la réservation
+                  Annuler la
+                  réservation
                 </button>
               </div>
             )}
@@ -620,7 +834,9 @@ export default function CashierPage() {
 
             <button
               onClick={() =>
-                setSelectedTable(null)
+                setSelectedTable(
+                  null
+                )
               }
               className="mt-4 w-full py-2 text-sm text-slate-500"
             >
@@ -633,36 +849,51 @@ export default function CashierPage() {
       {showCloseShift &&
         currentShift && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
               <h2 className="text-2xl font-bold">
                 Clôture du shift
               </h2>
 
               <p className="mt-2 text-sm text-slate-500">
-                Vérifiez le récapitulatif
-                avant de clôturer votre
+                Vérifiez le
+                récapitulatif avant
+                de clôturer votre
                 caisse.
               </p>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">
-                    Commandes
+                    Payées
                   </p>
 
                   <p className="mt-1 text-2xl font-bold">
-                    {shiftSummary?.orderCount ||
+                    {shiftSummary
+                      ?.paidOrderCount ||
                       0}
                   </p>
                 </div>
 
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">
-                    Total
+                    Annulées
                   </p>
 
                   <p className="mt-1 text-2xl font-bold">
-                    {shiftSummary?.total ||
+                    {shiftSummary
+                      ?.cancelledOrderCount ||
+                      0}
+                  </p>
+                </div>
+
+                <div className="col-span-2 rounded-xl bg-slate-50 p-4 sm:col-span-1">
+                  <p className="text-sm text-slate-500">
+                    CA
+                  </p>
+
+                  <p className="mt-1 text-2xl font-bold">
+                    {shiftSummary
+                      ?.total ||
                       0}{" "}
                     MRU
                   </p>
@@ -676,24 +907,31 @@ export default function CashierPage() {
                   "Masrivi",
                   "Sedad",
                   "BCI PAY",
-                ].map((method) => (
-                  <div
-                    key={method}
-                    className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
-                  >
-                    <span>
-                      {method}
-                    </span>
-
-                    <span className="font-semibold">
-                      {shiftSummary
-                        ?.payments?.[
+                ].map(
+                  (method) => (
+                    <div
+                      key={
                         method
-                      ] || 0}{" "}
-                      MRU
-                    </span>
-                  </div>
-                ))}
+                      }
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                    >
+                      <span>
+                        {
+                          method
+                        }
+                      </span>
+
+                      <span className="font-semibold">
+                        {shiftSummary
+                          ?.payments?.[
+                          method
+                        ] ||
+                          0}{" "}
+                        MRU
+                      </span>
+                    </div>
+                  )
+                )}
               </div>
 
               <div className="mt-5 rounded-xl border p-4">
@@ -707,43 +945,147 @@ export default function CashierPage() {
                   ).toLocaleString(
                     "fr-FR",
                     {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      day:
+                        "2-digit",
+                      month:
+                        "2-digit",
+                      year:
+                        "numeric",
+                      hour:
+                        "2-digit",
+                      minute:
+                        "2-digit",
                     }
                   )}
                 </p>
               </div>
 
+              {(shiftSummary
+                ?.openOrderCount ||
+                0) > 0 && (
+                <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4">
+                  <p className="font-semibold text-red-700">
+                    Fermeture
+                    impossible
+                  </p>
+
+                  <p className="mt-1 text-sm text-red-600">
+                    {
+                      shiftSummary
+                        ?.openOrderCount
+                    }{" "}
+                    commande
+                    {(shiftSummary
+                      ?.openOrderCount ||
+                      0) > 1
+                      ? "s sont encore ouvertes."
+                      : " est encore ouverte."}
+                  </p>
+
+                  <div className="mt-3 space-y-2">
+                    {shiftSummary
+                      ?.openOrders?.map(
+                        (
+                          order
+                        ) => (
+                          <Link
+                            key={
+                              order.id
+                            }
+                            href={`/cashier/orders/${order.id}`}
+                            className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm"
+                          >
+                            <span className="font-medium">
+                              {
+                                order.label
+                              }
+                            </span>
+
+                            <span className="text-sky-600">
+                              Traiter →
+                            </span>
+                          </Link>
+                        )
+                      )}
+                  </div>
+
+                  <p className="mt-3 text-xs text-red-600">
+                    Encaissez ou
+                    annulez ces
+                    commandes avant
+                    de fermer le
+                    shift.
+                  </p>
+                </div>
+              )}
+
+              {shiftCloseError && (
+                <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {
+                    shiftCloseError
+                  }
+                </div>
+              )}
+
+              {(shiftSummary
+                ?.openOrderCount ||
+                0) === 0 && (
+                <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+                  Toutes les
+                  commandes sont
+                  traitées. Le
+                  shift peut être
+                  clôturé.
+                </div>
+              )}
+
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() =>
+                  onClick={() => {
                     setShowCloseShift(
                       false
-                    )
-                  }
+                    );
+
+                    setShiftCloseError(
+                      ""
+                    );
+                  }}
                   disabled={
                     shiftActionLoading
                   }
                   className="flex-1 rounded-xl border py-3 font-medium disabled:opacity-50"
                 >
-                  Annuler
+                  Retour
                 </button>
 
                 <button
-                  onClick={closeShift}
-                  disabled={
-                    shiftActionLoading
+                  onClick={
+                    closeShift
                   }
-                  className="flex-1 rounded-xl bg-red-500 py-3 font-semibold text-white disabled:opacity-50"
+                  disabled={
+                    shiftActionLoading ||
+                    (shiftSummary
+                      ?.openOrderCount ||
+                      0) > 0
+                  }
+                  className="flex-1 rounded-xl bg-red-500 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {shiftActionLoading
                     ? "Fermeture..."
                     : "Confirmer la clôture"}
                 </button>
               </div>
+
+              {(shiftSummary
+                ?.openOrderCount ||
+                0) === 0 && (
+                <p className="mt-3 text-center text-xs text-slate-400">
+                  Les rapports
+                  caisse et produits
+                  seront générés
+                  automatiquement.
+                </p>
+              )}
             </div>
           </div>
         )}
