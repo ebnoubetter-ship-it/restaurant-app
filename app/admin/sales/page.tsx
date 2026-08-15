@@ -26,7 +26,12 @@ function getBusinessDayRange() {
     );
   }
 
-  start.setUTCHours(7, 0, 0, 0);
+  start.setUTCHours(
+    7,
+    0,
+    0,
+    0
+  );
 
   const end = new Date(start);
 
@@ -43,11 +48,16 @@ function getBusinessDayRange() {
 function getWeekRange() {
   const now = new Date();
 
-  const businessNow = new Date(now);
+  const businessNow =
+    new Date(now);
 
-  if (businessNow.getUTCHours() < 7) {
+  if (
+    businessNow.getUTCHours() <
+    7
+  ) {
     businessNow.setUTCDate(
-      businessNow.getUTCDate() - 1
+      businessNow.getUTCDate() -
+        1
     );
   }
 
@@ -55,7 +65,9 @@ function getWeekRange() {
     businessNow.getUTCDay();
 
   const daysSinceMonday =
-    day === 0 ? 6 : day - 1;
+    day === 0
+      ? 6
+      : day - 1;
 
   const start =
     new Date(businessNow);
@@ -92,10 +104,12 @@ function getMonthRange() {
     new Date(now);
 
   if (
-    businessNow.getUTCHours() < 7
+    businessNow.getUTCHours() <
+    7
   ) {
     businessNow.setUTCDate(
-      businessNow.getUTCDate() - 1
+      businessNow.getUTCDate() -
+        1
     );
   }
 
@@ -113,7 +127,8 @@ function getMonthRange() {
   const end = new Date(
     Date.UTC(
       businessNow.getUTCFullYear(),
-      businessNow.getUTCMonth() + 1,
+      businessNow.getUTCMonth() +
+        1,
       1,
       7,
       0,
@@ -140,37 +155,65 @@ export default async function AdminSalesPage({
   const selectedPeriod: Period =
     params.period === "week"
       ? "week"
-      : params.period === "month"
+      : params.period ===
+        "month"
       ? "month"
-      : params.period === "all"
+      : params.period ===
+        "all"
       ? "all"
       : "today";
 
+  /*
+   * IMPORTANT :
+   *
+   * orders possède maintenant plusieurs
+   * relations vers users.
+   *
+   * On précise donc explicitement :
+   *
+   * cashier_id -> users
+   *
+   * On précise aussi la relation
+   * table_id -> restaurant_tables.
+   */
   let query = supabaseAdmin
     .from("orders")
     .select(`
       id,
+      order_number,
       total,
       payment_method,
       paid_at,
       cashier_id,
       order_type,
-      restaurant_tables (
+
+      restaurant_tables!orders_table_id_fkey (
         name
       ),
-      users (
+
+      cashier:users!orders_cashier_id_fkey (
         name
       )
     `)
-    .eq("status", "paid")
-    .order("paid_at", {
-      ascending: false,
-    });
+    .eq(
+      "status",
+      "paid"
+    )
+    .order(
+      "paid_at",
+      {
+        ascending: false,
+      }
+    );
 
   if (
-    selectedPeriod === "today"
+    selectedPeriod ===
+    "today"
   ) {
-    const { start, end } =
+    const {
+      start,
+      end,
+    } =
       getBusinessDayRange();
 
     query = query
@@ -185,9 +228,13 @@ export default async function AdminSalesPage({
   }
 
   if (
-    selectedPeriod === "week"
+    selectedPeriod ===
+    "week"
   ) {
-    const { start, end } =
+    const {
+      start,
+      end,
+    } =
       getWeekRange();
 
     query = query
@@ -202,9 +249,13 @@ export default async function AdminSalesPage({
   }
 
   if (
-    selectedPeriod === "month"
+    selectedPeriod ===
+    "month"
   ) {
-    const { start, end } =
+    const {
+      start,
+      end,
+    } =
       getMonthRange();
 
     query = query
@@ -224,6 +275,16 @@ export default async function AdminSalesPage({
   } = await query;
 
   if (error) {
+    /*
+     * Visible dans les logs Vercel.
+     * Très utile si une relation change
+     * plus tard.
+     */
+    console.error(
+      "ADMIN SALES ERROR:",
+      error
+    );
+
     return (
       <main className="min-h-screen bg-slate-50 p-6">
         <div className="mx-auto max-w-7xl">
@@ -249,7 +310,10 @@ export default async function AdminSalesPage({
 
   const totalSales =
     orders.reduce(
-      (sum, order) =>
+      (
+        sum,
+        order
+      ) =>
         sum +
         Number(
           order.total || 0
@@ -279,7 +343,10 @@ export default async function AdminSalesPage({
     "BCI PAY": 0,
   };
 
-  for (const order of orders) {
+  for (
+    const order of
+    orders
+  ) {
     if (
       !order.payment_method
     ) {
@@ -410,9 +477,13 @@ export default async function AdminSalesPage({
 
             <div className="mt-4 space-y-3">
               {paymentMethods.map(
-                (method) => (
+                (
+                  method
+                ) => (
                   <div
-                    key={method}
+                    key={
+                      method
+                    }
                     className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
                   >
                     <span className="text-sm">
@@ -438,8 +509,10 @@ export default async function AdminSalesPage({
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                {orderCount} commande
-                {orderCount > 1
+                {orderCount}{" "}
+                commande
+                {orderCount >
+                1
                   ? "s"
                   : ""}
               </p>
@@ -449,14 +522,16 @@ export default async function AdminSalesPage({
             0 ? (
               <div className="p-6">
                 <p className="text-slate-500">
-                  Aucune vente sur cette
-                  période.
+                  Aucune vente sur
+                  cette période.
                 </p>
               </div>
             ) : (
               <div className="divide-y">
                 {orders.map(
-                  (order) => {
+                  (
+                    order
+                  ) => {
                     const table =
                       Array.isArray(
                         order.restaurant_tables
@@ -467,10 +542,11 @@ export default async function AdminSalesPage({
 
                     const cashier =
                       Array.isArray(
-                        order.users
+                        order.cashier
                       )
-                        ? order.users[0]
-                        : order.users;
+                        ? order
+                            .cashier[0]
+                        : order.cashier;
 
                     const orderLabel =
                       order.order_type ===
@@ -481,20 +557,34 @@ export default async function AdminSalesPage({
 
                     return (
                       <Link
-                        key={order.id}
+                        key={
+                          order.id
+                        }
                         href={`/admin/orders/${order.id}`}
                         className="flex flex-col gap-3 p-5 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-semibold">
-                              {orderLabel}
+                              {
+                                orderLabel
+                              }
                             </p>
+
+                            {order.order_number && (
+                              <span className="text-sm text-slate-400">
+                                #
+                                {
+                                  order.order_number
+                                }
+                              </span>
+                            )}
 
                             {order.order_type ===
                               "takeaway" && (
                               <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
-                                À emporter
+                                À
+                                emporter
                               </span>
                             )}
                           </div>
@@ -506,7 +596,8 @@ export default async function AdminSalesPage({
                             </span>
 
                             <span>
-                              Caissier :{" "}
+                              Caissier
+                              :{" "}
                               {cashier?.name ||
                                 "—"}
                             </span>
@@ -537,7 +628,9 @@ export default async function AdminSalesPage({
 
                         <div className="flex items-center gap-4">
                           <p className="text-xl font-bold">
-                            {order.total}{" "}
+                            {
+                              order.total
+                            }{" "}
                             MRU
                           </p>
 
