@@ -58,6 +58,13 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  const cleanPinValue = (
+    value: string
+  ) =>
+    value
+      .replace(/\D/g, "")
+      .slice(0, 4);
+
   const handleContinue =
     async () => {
       const cleanName =
@@ -97,7 +104,6 @@ export default function LoginPage() {
             data.error ||
               "Utilisateur introuvable."
           );
-
           return;
         }
 
@@ -138,6 +144,8 @@ export default function LoginPage() {
         setMessage(
           "Les deux PIN ne correspondent pas."
         );
+
+        setConfirmPin("");
         return;
       }
 
@@ -170,6 +178,8 @@ export default function LoginPage() {
               "Impossible de créer le PIN."
           );
 
+          setPin("");
+          setConfirmPin("");
           return;
         }
 
@@ -180,7 +190,7 @@ export default function LoginPage() {
         setMessage(
           "Impossible de contacter le serveur. Réessayez."
         );
-
+      } finally {
         setLoading(false);
       }
     };
@@ -225,6 +235,12 @@ export default function LoginPage() {
               "PIN incorrect."
           );
 
+          /*
+           * Le mauvais PIN disparaît
+           * immédiatement pour permettre
+           * une nouvelle saisie.
+           */
+          setPin("");
           return;
         }
 
@@ -235,7 +251,13 @@ export default function LoginPage() {
         setMessage(
           "Impossible de contacter le serveur. Réessayez."
         );
-
+      } finally {
+        /*
+         * IMPORTANT :
+         * même si le PIN est incorrect,
+         * le bouton quitte l'état
+         * "Connexion..."
+         */
         setLoading(false);
       }
     };
@@ -251,96 +273,87 @@ export default function LoginPage() {
     setMessage("");
   };
 
-  const cleanPinValue = (
-    value: string
-  ) =>
-    value
-      .replace(/\D/g, "")
-      .slice(0, 4);
-
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f7f5] px-4 py-8">
-      {/* Décoration très légère */}
-      <div className="pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-sky-100/70 blur-3xl" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F5F2EB] px-4 py-8">
+      {/* Ambiance MAIDA */}
+      <div className="pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-[#DDE8DF] blur-3xl" />
 
-      <div className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full bg-slate-200/60 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-36 -right-28 h-96 w-96 rounded-full bg-[#E9E1D4] blur-3xl" />
 
       <div className="relative w-full max-w-md">
-        {/* IDENTITÉ MAIDA */}
+        {/* MARQUE */}
         <div className="mb-8 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 shadow-lg shadow-slate-950/10">
-            <span className="text-xl font-black tracking-tight text-white">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1E4D3A] shadow-lg shadow-[#1E4D3A]/15">
+            <span className="text-xl font-black text-white">
               M
             </span>
           </div>
 
-          <h1 className="mt-4 text-3xl font-black tracking-[-0.04em] text-slate-950">
+          <h1 className="mt-4 text-3xl font-black tracking-[-0.04em] text-[#1F2924]">
             MAIDA
           </h1>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[#6E756F]">
             Votre restaurant.
             Plus simple.
           </p>
         </div>
 
         {/* CARTE */}
-        <div className="rounded-[28px] border border-white/80 bg-white/95 p-6 shadow-[0_20px_60px_-20px_rgba(15,23,42,0.18)] sm:p-8">
+        <div className="rounded-[28px] border border-white/80 bg-white p-6 shadow-[0_20px_60px_-25px_rgba(31,41,36,0.25)] sm:p-8">
           {step === "name" && (
             <>
               <div className="mb-7">
-                <p className="text-sm font-semibold text-sky-600">
+                <p className="text-sm font-semibold text-[#2E6A50]">
                   Connexion
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+                <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
                   Bonjour
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-slate-500">
+                <p className="mt-2 text-sm leading-6 text-[#737A75]">
                   Entrez votre nom
                   pour accéder à votre
                   espace.
                 </p>
               </div>
 
-              <div>
-                <label
-                  htmlFor="name"
-                  className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                  Nom
-                </label>
+              <label
+                htmlFor="name"
+                className="mb-2 block text-sm font-semibold text-[#343D38]"
+              >
+                Nom
+              </label>
 
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  disabled={loading}
-                  autoFocus
-                  autoComplete="name"
-                  placeholder="Ex. Mohamed"
-                  onChange={(event) => {
-                    setName(
-                      event.target.value
-                    );
+              <input
+                id="name"
+                type="text"
+                value={name}
+                disabled={loading}
+                autoFocus
+                autoComplete="name"
+                placeholder="Ex. Mohamed"
+                onChange={(event) => {
+                  setName(
+                    event.target.value
+                  );
 
-                    if (message) {
-                      setMessage("");
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key ===
-                        "Enter" &&
-                      !loading
-                    ) {
-                      handleContinue();
-                    }
-                  }}
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-              </div>
+                  if (message) {
+                    setMessage("");
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                      "Enter" &&
+                    !loading
+                  ) {
+                    handleContinue();
+                  }
+                }}
+                className="h-14 w-full rounded-2xl border border-[#E1E5E2] bg-[#F8F9F7] px-4 text-base text-[#1F2924] outline-none transition placeholder:text-[#A2A8A4] focus:border-[#2E6A50] focus:bg-white focus:ring-4 focus:ring-[#DDE8DF] disabled:opacity-60"
+              />
 
               <button
                 type="button"
@@ -348,17 +361,15 @@ export default function LoginPage() {
                   handleContinue
                 }
                 disabled={loading}
-                className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-5 font-semibold text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
+                className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white transition hover:bg-[#173D2F] active:scale-[0.99] disabled:cursor-wait disabled:opacity-65"
               >
                 {loading && (
                   <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 )}
 
-                <span>
-                  {loading
-                    ? "Vérification..."
-                    : "Continuer"}
-                </span>
+                {loading
+                  ? "Vérification..."
+                  : "Continuer"}
               </button>
             </>
           )}
@@ -371,69 +382,67 @@ export default function LoginPage() {
                   type="button"
                   onClick={goBack}
                   disabled={loading}
-                  className="mb-5 inline-flex items-center gap-1 text-sm font-medium text-slate-500 transition hover:text-slate-950 disabled:opacity-50"
+                  className="mb-5 text-sm font-medium text-[#8A918C] transition hover:text-[#1E4D3A] disabled:opacity-50"
                 >
                   ← Changer
                   d&apos;utilisateur
                 </button>
 
-                <p className="text-sm font-semibold text-sky-600">
+                <p className="text-sm font-semibold text-[#2E6A50]">
                   {name}
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+                <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
                   Entrez votre PIN
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-slate-500">
+                <p className="mt-2 text-sm leading-6 text-[#737A75]">
                   Utilisez votre code
                   personnel à 4
                   chiffres.
                 </p>
               </div>
 
-              <div>
-                <label
-                  htmlFor="pin"
-                  className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                  Code PIN
-                </label>
+              <label
+                htmlFor="pin"
+                className="mb-2 block text-sm font-semibold text-[#343D38]"
+              >
+                Code PIN
+              </label>
 
-                <input
-                  id="pin"
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  autoFocus
-                  disabled={loading}
-                  value={pin}
-                  onChange={(event) => {
-                    setPin(
-                      cleanPinValue(
-                        event.target
-                          .value
-                      )
-                    );
+              <input
+                id="pin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                autoFocus
+                disabled={loading}
+                value={pin}
+                onChange={(event) => {
+                  setPin(
+                    cleanPinValue(
+                      event.target
+                        .value
+                    )
+                  );
 
-                    if (message) {
-                      setMessage("");
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key ===
-                        "Enter" &&
-                      !loading
-                    ) {
-                      handleLogin();
-                    }
-                  }}
-                  placeholder="••••"
-                  className="h-16 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-center text-3xl font-bold tracking-[0.45em] text-slate-950 outline-none transition placeholder:tracking-[0.35em] placeholder:text-slate-300 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-              </div>
+                  if (message) {
+                    setMessage("");
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                      "Enter" &&
+                    !loading
+                  ) {
+                    handleLogin();
+                  }
+                }}
+                placeholder="••••"
+                className="h-16 w-full rounded-2xl border border-[#E1E5E2] bg-[#F8F9F7] px-4 text-center text-3xl font-bold tracking-[0.45em] text-[#1F2924] outline-none transition placeholder:text-[#C5CAC7] focus:border-[#2E6A50] focus:bg-white focus:ring-4 focus:ring-[#DDE8DF] disabled:opacity-60"
+              />
 
               <button
                 type="button"
@@ -441,17 +450,15 @@ export default function LoginPage() {
                   handleLogin
                 }
                 disabled={loading}
-                className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-5 font-semibold text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
+                className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white transition hover:bg-[#173D2F] active:scale-[0.99] disabled:cursor-wait disabled:opacity-65"
               >
                 {loading && (
                   <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 )}
 
-                <span>
-                  {loading
-                    ? "Connexion..."
-                    : "Se connecter"}
-                </span>
+                {loading
+                  ? "Connexion..."
+                  : "Se connecter"}
               </button>
             </>
           )}
@@ -464,22 +471,22 @@ export default function LoginPage() {
                   type="button"
                   onClick={goBack}
                   disabled={loading}
-                  className="mb-5 inline-flex items-center gap-1 text-sm font-medium text-slate-500 transition hover:text-slate-950 disabled:opacity-50"
+                  className="mb-5 text-sm font-medium text-[#8A918C] transition hover:text-[#1E4D3A] disabled:opacity-50"
                 >
                   ← Retour
                 </button>
 
-                <p className="text-sm font-semibold text-sky-600">
+                <p className="text-sm font-semibold text-[#2E6A50]">
                   Première connexion
                 </p>
 
-                <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+                <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
                   Créez votre PIN
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-slate-500">
+                <p className="mt-2 text-sm leading-6 text-[#737A75]">
                   Bonjour{" "}
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-[#343D38]">
                     {name}
                   </span>
                   . Choisissez un
@@ -492,7 +499,7 @@ export default function LoginPage() {
                 <div>
                   <label
                     htmlFor="new-pin"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
+                    className="mb-2 block text-sm font-semibold text-[#343D38]"
                   >
                     Nouveau PIN
                   </label>
@@ -521,14 +528,14 @@ export default function LoginPage() {
                       }
                     }}
                     placeholder="••••"
-                    className="h-16 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-center text-3xl font-bold tracking-[0.45em] text-slate-950 outline-none transition placeholder:text-slate-300 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100 disabled:opacity-60"
+                    className="h-16 w-full rounded-2xl border border-[#E1E5E2] bg-[#F8F9F7] px-4 text-center text-3xl font-bold tracking-[0.45em] text-[#1F2924] outline-none transition placeholder:text-[#C5CAC7] focus:border-[#2E6A50] focus:bg-white focus:ring-4 focus:ring-[#DDE8DF] disabled:opacity-60"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="confirm-pin"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
+                    className="mb-2 block text-sm font-semibold text-[#343D38]"
                   >
                     Confirmer le PIN
                   </label>
@@ -567,7 +574,7 @@ export default function LoginPage() {
                       }
                     }}
                     placeholder="••••"
-                    className="h-16 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-center text-3xl font-bold tracking-[0.45em] text-slate-950 outline-none transition placeholder:text-slate-300 focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100 disabled:opacity-60"
+                    className="h-16 w-full rounded-2xl border border-[#E1E5E2] bg-[#F8F9F7] px-4 text-center text-3xl font-bold tracking-[0.45em] text-[#1F2924] outline-none transition placeholder:text-[#C5CAC7] focus:border-[#2E6A50] focus:bg-white focus:ring-4 focus:ring-[#DDE8DF] disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -578,21 +585,19 @@ export default function LoginPage() {
                   handleCreatePin
                 }
                 disabled={loading}
-                className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-5 font-semibold text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
+                className="mt-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white transition hover:bg-[#173D2F] active:scale-[0.99] disabled:cursor-wait disabled:opacity-65"
               >
                 {loading && (
                   <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 )}
 
-                <span>
-                  {loading
-                    ? "Création..."
-                    : "Créer mon PIN"}
-                </span>
+                {loading
+                  ? "Création..."
+                  : "Créer mon PIN"}
               </button>
 
-              <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
-                <p className="text-xs leading-5 text-slate-500">
+              <div className="mt-4 rounded-xl bg-[#F5F7F4] px-4 py-3">
+                <p className="text-xs leading-5 text-[#737A75]">
                   Ce PIN sera utilisé
                   pour vos prochaines
                   connexions. Ne le
@@ -605,16 +610,16 @@ export default function LoginPage() {
           {message && (
             <div
               aria-live="polite"
-              className="mt-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3"
+              className="mt-5 rounded-2xl border border-[#F2D4CE] bg-[#FFF4F1] px-4 py-3"
             >
-              <p className="text-sm font-medium text-red-700">
+              <p className="text-sm font-medium text-[#B54A3A]">
                 {message}
               </p>
             </div>
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-[#9A9F9B]">
           MAIDA · Gestion de
           restaurant
         </p>

@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  --background: #f5f2eb;
+  --foreground: #1f2924;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
+  background: var(--background);
 }
 
 body {
+  margin: 0;
+  min-height: 100vh;
+
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Empêche Safari / iOS d'appliquer
+ * automatiquement des couleurs sombres
+ * aux champs de formulaire.
+ */
+input,
+textarea,
+select,
+button {
+  color-scheme: light;
+}
+
+/*
+ * Les contrôles gardent la typographie
+ * de l'application.
+ */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/*
+ * Comportement tactile plus propre
+ * sur iPhone / iPad.
+ */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Évite certains zooms/comportements
+ * indésirables sur les contrôles iOS.
+ */
+input,
+textarea,
+select {
+  font-size: 16px;
 }
