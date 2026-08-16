@@ -2,29 +2,53 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getSession } from "@/lib/session";
 
+type KitchenRpcResult = {
+  success?: boolean;
+  type?: "initial" | "addition";
+  printJobId?: string;
+};
+
 export async function POST(
-  request: Request,
+  _request: Request,
   context: {
-    params: Promise<{ id: string }>;
+    params: Promise<{
+      id: string;
+    }>;
   }
 ) {
-  const session = await getSession();
+  /*
+   * ============================
+   * AUTHENTIFICATION
+   * ============================
+   */
+  const session =
+    await getSession();
 
   if (
     !session ||
-    session.role !== "cashier"
+    session.role !==
+      "cashier"
   ) {
     return NextResponse.json(
       {
-        error: "Accès non autorisé.",
+        error:
+          "Accès non autorisé.",
       },
-      { status: 403 }
+      {
+        status: 403,
+      }
     );
   }
 
-  const { id: orderId } =
-    await context.params;
+  const {
+    id: orderId,
+  } = await context.params;
 
+  /*
+   * ============================
+   * COMMANDE
+   * ============================
+   */
   const {
     data: order,
     error: orderError,
@@ -36,13 +60,15 @@ export async function POST(
       order_number,
       order_type,
       created_at,
-      sent_to_kitchen_at,
       restaurant_tables (
         name
       )
     `)
-    .eq("id", orderId)
-    .single();
+    .eq(
+      "id",
+      orderId
+    )
+    .maybeSingle();
 
   if (
     orderError ||
@@ -50,9 +76,12 @@ export async function POST(
   ) {
     return NextResponse.json(
       {
-        error: "Commande introuvable.",
+        error:
+          "Commande introuvable.",
       },
-      { status: 404 }
+      {
+        status: 404,
+      }
     );
   }
 
@@ -64,10 +93,17 @@ export async function POST(
         error:
           "Cette commande ne peut plus être envoyée en cuisine.",
       },
-      { status: 400 }
+      {
+        status: 409,
+      }
     );
   }
 
+  /*
+   * ============================
+   * ARTICLES
+   * ============================
+   */
   const {
     data: items,
     error: itemsError,
@@ -83,33 +119,56 @@ export async function POST(
         category
       )
     `)
-    .eq("order_id", orderId)
-    .gt("quantity", 0)
-    .order("created_at", {
-      ascending: true,
-    });
+    .eq(
+      "order_id",
+      orderId
+    )
+    .gt(
+      "quantity",
+      0
+    )
+    .order(
+      "created_at",
+      {
+        ascending: true,
+      }
+    );
 
   if (itemsError) {
+    console.error(
+      "SEND KITCHEN ITEMS ERROR:",
+      itemsError
+    );
+
     return NextResponse.json(
       {
         error:
           "Impossible de récupérer les articles.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
+  /*
+   * ============================
+   * ARTICLES À ENVOYER
+   * ============================
+   */
   const pendingItems =
     (items || [])
       .map((item) => {
         const quantity =
           Number(
-            item.quantity || 0
+            item.quantity ||
+              0
           );
 
         const sentQuantity =
           Number(
-            item.sent_quantity || 0
+            item.sent_quantity ||
+              0
           );
 
         const quantityToSend =
@@ -139,7 +198,8 @@ export async function POST(
 
           product: {
             id:
-              product?.id || "",
+              product?.id ||
+              "",
 
             name:
               product?.name ||
@@ -158,22 +218,31 @@ export async function POST(
       );
 
   if (
-    pendingItems.length === 0
+    pendingItems.length ===
+    0
   ) {
     return NextResponse.json(
       {
         error:
           "Aucun nouvel article à envoyer en cuisine.",
       },
-      { status: 400 }
+      {
+        status: 400,
+      }
     );
   }
 
+  /*
+   * ============================
+   * EMPLACEMENT
+   * ============================
+   */
   const table =
     Array.isArray(
       order.restaurant_tables
     )
-      ? order.restaurant_tables[0]
+      ? order
+          .restaurant_tables[0]
       : order.restaurant_tables;
 
   const location =
@@ -183,128 +252,16 @@ export async function POST(
       : table?.name ||
         "Table";
 
-  const isAddition =
-    Boolean(
-      order.sent_to_kitchen_at
-    );
-
-  /*
-   * On garde la liste des articles
-   * effectivement mis à jour.
-   *
-   * Elle nous permettra de revenir en
-   * arrière si la création du ticket
-   * échoue.
-   */
-  const updatedItems: {
-    id: string;
-    previousSentQuantity: number;
-  }[] = [];
-
-  for (
-    const item of pendingItems
-  ) {
-    const {
-      error: updateError,
-    } = await supabaseAdmin
-      .from("order_items")
-      .update({
-        sent_quantity:
-          item.currentQuantity,
-      })
-      .eq(
-        "id",
-        item.id
-      );
-
-    if (updateError) {
-      /*
-       * Retour en arrière sur les
-       * articles déjà modifiés.
-       */
-      for (
-        const updatedItem of
-        updatedItems
-      ) {
-        await supabaseAdmin
-          .from("order_items")
-          .update({
-            sent_quantity:
-              updatedItem.previousSentQuantity,
-          })
-          .eq(
-            "id",
-            updatedItem.id
-          );
-      }
-
-      return NextResponse.json(
-        {
-          error:
-            "Impossible d'enregistrer l'envoi en cuisine.",
-        },
-        { status: 500 }
-      );
-    }
-
-    updatedItems.push({
-      id: item.id,
-      previousSentQuantity:
-        item.previousSentQuantity,
-    });
-  }
-
   const sentAt =
     new Date().toISOString();
 
-  if (
-    !order.sent_to_kitchen_at
-  ) {
-    const {
-      error: orderUpdateError,
-    } = await supabaseAdmin
-      .from("orders")
-      .update({
-        sent_to_kitchen_at:
-          sentAt,
-      })
-      .eq(
-        "id",
-        orderId
-      );
-
-    if (orderUpdateError) {
-      for (
-        const updatedItem of
-        updatedItems
-      ) {
-        await supabaseAdmin
-          .from("order_items")
-          .update({
-            sent_quantity:
-              updatedItem.previousSentQuantity,
-          })
-          .eq(
-            "id",
-            updatedItem.id
-          );
-      }
-
-      return NextResponse.json(
-        {
-          error:
-            "Impossible d'enregistrer l'envoi de la commande.",
-        },
-        { status: 500 }
-      );
-    }
-  }
-
   /*
-   * Snapshot exact du ticket.
+   * Snapshot du contenu qui doit
+   * apparaître sur le ticket.
    *
-   * Même si la commande change ensuite,
-   * ce ticket restera identique.
+   * Le type "initial/addition" et
+   * sentAt sont ajoutés dans la
+   * fonction PostgreSQL.
    */
   const ticketPayload = {
     orderId:
@@ -317,13 +274,6 @@ export async function POST(
 
     orderType:
       order.order_type,
-
-    type:
-      isAddition
-        ? "addition"
-        : "initial",
-
-    sentAt,
 
     items:
       pendingItems.map(
@@ -341,85 +291,175 @@ export async function POST(
       ),
   };
 
+  /*
+   * État exact attendu par la DB.
+   *
+   * Si la commande change entre
+   * cette lecture et l'opération
+   * atomique, PostgreSQL refusera
+   * l'envoi.
+   */
+  const expectedItems =
+    pendingItems.map(
+      (item) => ({
+        id:
+          item.id,
+
+        currentQuantity:
+          item.currentQuantity,
+
+        previousSentQuantity:
+          item.previousSentQuantity,
+      })
+    );
+
+  /*
+   * ============================
+   * OPÉRATION ATOMIQUE
+   * ============================
+   *
+   * Cette fonction :
+   *
+   * - verrouille la commande
+   * - verrouille ses articles
+   * - revalide les quantités
+   * - met à jour sent_quantity
+   * - définit sent_to_kitchen_at
+   * - crée le print_job
+   *
+   * Si une étape échoue, aucune
+   * partie ne doit être validée.
+   */
   const {
-    data: printJob,
-    error: printJobError,
-  } = await supabaseAdmin
-    .from("print_jobs")
-    .insert({
-      order_id:
+    data: rpcData,
+    error: rpcError,
+  } = await supabaseAdmin.rpc(
+    "send_order_to_kitchen_atomic",
+    {
+      p_order_id:
         orderId,
 
-      created_by:
+      p_created_by:
         session.id,
 
-      printer_role:
-        "kitchen",
+      p_sent_at:
+        sentAt,
 
-      job_type:
-        isAddition
-          ? "kitchen_addition"
-          : "kitchen_order",
+      p_expected_items:
+        expectedItems,
 
-      status:
-        "pending",
-
-      payload:
+      p_ticket_payload:
         ticketPayload,
-    })
-    .select("id")
-    .single();
+    }
+  );
 
-  if (
-    printJobError ||
-    !printJob
-  ) {
-    /*
-     * Si le ticket n'a pas pu être créé,
-     * on remet sent_quantity dans son
-     * état précédent.
-     */
-    for (
-      const updatedItem of
-      updatedItems
+  if (rpcError) {
+    console.error(
+      "SEND KITCHEN RPC ERROR:",
+      rpcError
+    );
+
+    const message =
+      rpcError.message ||
+      "";
+
+    if (
+      message.includes(
+        "ORDER_NOT_FOUND"
+      )
     ) {
-      await supabaseAdmin
-        .from("order_items")
-        .update({
-          sent_quantity:
-            updatedItem.previousSentQuantity,
-        })
-        .eq(
-          "id",
-          updatedItem.id
-        );
+      return NextResponse.json(
+        {
+          error:
+            "Commande introuvable.",
+        },
+        {
+          status: 404,
+        }
+      );
     }
 
-    /*
-     * Si c'était le premier envoi,
-     * on annule aussi sent_to_kitchen_at.
-     */
     if (
-      !order.sent_to_kitchen_at
+      message.includes(
+        "ORDER_NOT_OPEN"
+      )
     ) {
-      await supabaseAdmin
-        .from("orders")
-        .update({
-          sent_to_kitchen_at:
-            null,
-        })
-        .eq(
-          "id",
-          orderId
-        );
+      return NextResponse.json(
+        {
+          error:
+            "Cette commande vient d'être clôturée.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    if (
+      message.includes(
+        "NO_PENDING_ITEMS"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Les articles ont déjà été envoyés en cuisine.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    if (
+      message.includes(
+        "ORDER_CHANGED"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "La commande a changé pendant l'envoi. Actualisez-la puis réessayez.",
+        },
+        {
+          status: 409,
+        }
+      );
     }
 
     return NextResponse.json(
       {
         error:
-          "Impossible de préparer le ticket cuisine.",
+          "Impossible d'enregistrer l'envoi en cuisine.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
+    );
+  }
+
+  const result =
+    rpcData as
+      | KitchenRpcResult
+      | null;
+
+  if (
+    !result?.printJobId ||
+    !result.type
+  ) {
+    console.error(
+      "SEND KITCHEN INVALID RPC RESULT:",
+      rpcData
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "L'envoi cuisine a retourné un résultat invalide.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 
@@ -427,12 +467,10 @@ export async function POST(
     success: true,
 
     type:
-      isAddition
-        ? "addition"
-        : "initial",
+      result.type,
 
     printJobId:
-      printJob.id,
+      result.printJobId,
 
     orderNumber:
       order.order_number,
