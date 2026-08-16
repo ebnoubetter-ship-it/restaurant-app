@@ -14,6 +14,7 @@ export default async function OrderPage({
       .from("orders")
       .select(`
         id,
+        order_number,
         status,
         order_type,
         restaurant_tables (
@@ -41,7 +42,12 @@ export default async function OrderPage({
   return (
     <OrderClient
       orderId={order.id}
-      tableName={orderLabel}
+      orderLabel={orderLabel}
+      orderNumber={
+        order.order_number
+          ? Number(order.order_number)
+          : null
+      }
     />
   );
 }
