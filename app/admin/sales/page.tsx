@@ -15,12 +15,25 @@ const paymentMethods = [
   "BCI PAY",
 ];
 
+function formatMoney(
+  value: number
+) {
+  return new Intl.NumberFormat(
+    "fr-FR",
+    {
+      maximumFractionDigits: 0,
+    }
+  ).format(value);
+}
+
 function getBusinessDayRange() {
   const now = new Date();
 
   const start = new Date(now);
 
-  if (now.getUTCHours() < 7) {
+  if (
+    now.getUTCHours() < 7
+  ) {
     start.setUTCDate(
       start.getUTCDate() - 1
     );
@@ -33,7 +46,8 @@ function getBusinessDayRange() {
     0
   );
 
-  const end = new Date(start);
+  const end =
+    new Date(start);
 
   end.setUTCDate(
     end.getUTCDate() + 1
@@ -70,7 +84,9 @@ function getWeekRange() {
       : day - 1;
 
   const start =
-    new Date(businessNow);
+    new Date(
+      businessNow
+    );
 
   start.setUTCDate(
     start.getUTCDate() -
@@ -113,33 +129,59 @@ function getMonthRange() {
     );
   }
 
-  const start = new Date(
-    Date.UTC(
-      businessNow.getUTCFullYear(),
-      businessNow.getUTCMonth(),
-      1,
-      7,
-      0,
-      0
-    )
-  );
-
-  const end = new Date(
-    Date.UTC(
-      businessNow.getUTCFullYear(),
-      businessNow.getUTCMonth() +
+  const start =
+    new Date(
+      Date.UTC(
+        businessNow.getUTCFullYear(),
+        businessNow.getUTCMonth(),
         1,
-      1,
-      7,
-      0,
-      0
-    )
-  );
+        7,
+        0,
+        0
+      )
+    );
+
+  const end =
+    new Date(
+      Date.UTC(
+        businessNow.getUTCFullYear(),
+        businessNow.getUTCMonth() +
+          1,
+        1,
+        7,
+        0,
+        0
+      )
+    );
 
   return {
     start,
     end,
   };
+}
+
+function getPeriodLabel(
+  period: Period
+) {
+  if (
+    period === "week"
+  ) {
+    return "Cette semaine";
+  }
+
+  if (
+    period === "month"
+  ) {
+    return "Ce mois";
+  }
+
+  if (
+    period === "all"
+  ) {
+    return "Toutes les ventes";
+  }
+
+  return "Aujourd’hui";
 }
 
 export default async function AdminSalesPage({
@@ -156,55 +198,54 @@ export default async function AdminSalesPage({
     params.period === "week"
       ? "week"
       : params.period ===
-        "month"
-      ? "month"
-      : params.period ===
-        "all"
-      ? "all"
-      : "today";
+          "month"
+        ? "month"
+        : params.period ===
+            "all"
+          ? "all"
+          : "today";
 
   /*
-   * IMPORTANT :
-   *
-   * orders possède maintenant plusieurs
-   * relations vers users.
-   *
-   * On précise donc explicitement :
+   * On garde les relations
+   * Supabase explicites :
    *
    * cashier_id -> users
+   * table_id -> restaurant_tables
    *
-   * On précise aussi la relation
-   * table_id -> restaurant_tables.
+   * C'est nécessaire car orders
+   * possède plusieurs relations
+   * vers users.
    */
-  let query = supabaseAdmin
-    .from("orders")
-    .select(`
-      id,
-      order_number,
-      total,
-      payment_method,
-      paid_at,
-      cashier_id,
-      order_type,
+  let query =
+    supabaseAdmin
+      .from("orders")
+      .select(`
+        id,
+        order_number,
+        total,
+        payment_method,
+        paid_at,
+        cashier_id,
+        order_type,
 
-      restaurant_tables!orders_table_id_fkey (
-        name
-      ),
+        restaurant_tables!orders_table_id_fkey (
+          name
+        ),
 
-      cashier:users!orders_cashier_id_fkey (
-        name
+        cashier:users!orders_cashier_id_fkey (
+          name
+        )
+      `)
+      .eq(
+        "status",
+        "paid"
       )
-    `)
-    .eq(
-      "status",
-      "paid"
-    )
-    .order(
-      "paid_at",
-      {
-        ascending: false,
-      }
-    );
+      .order(
+        "paid_at",
+        {
+          ascending: false,
+        }
+      );
 
   if (
     selectedPeriod ===
@@ -275,31 +316,62 @@ export default async function AdminSalesPage({
   } = await query;
 
   if (error) {
-    /*
-     * Visible dans les logs Vercel.
-     * Très utile si une relation change
-     * plus tard.
-     */
     console.error(
       "ADMIN SALES ERROR:",
       error
     );
 
     return (
-      <main className="min-h-screen bg-slate-50 p-6">
+      <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
         <div className="mx-auto max-w-7xl">
-          <Link
-            href="/admin"
-            className="text-sm text-sky-600"
-          >
-            ← Retour à
-            l&apos;administration
-          </Link>
+          <header className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
+              M
+            </div>
 
-          <p className="mt-6">
-            Impossible de charger
-            les ventes.
-          </p>
+            <div>
+              <p className="text-lg font-black tracking-[-0.03em] text-[#1F2924]">
+                MAIDA
+              </p>
+
+              <p className="text-xs text-[#7A817C]">
+                Administration
+              </p>
+            </div>
+          </header>
+
+          <div className="mt-10 rounded-[26px] border border-[#E8E5DE] bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF1EE] text-lg font-bold text-[#B24D3E]">
+              !
+            </div>
+
+            <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
+              Ventes indisponibles
+            </h1>
+
+            <p className="mt-2 text-sm text-[#737A75]">
+              Impossible de
+              récupérer les ventes
+              pour le moment.
+            </p>
+
+            <a
+              href="/admin/sales"
+              className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
+            >
+              Réessayer
+            </a>
+
+            <div>
+              <Link
+                href="/admin"
+                className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[#68706B]"
+              >
+                Retour à
+                l&apos;administration
+              </Link>
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -344,8 +416,7 @@ export default async function AdminSalesPage({
   };
 
   for (
-    const order of
-    orders
+    const order of orders
   ) {
     if (
       !order.payment_method
@@ -364,36 +435,76 @@ export default async function AdminSalesPage({
       );
   }
 
+  const getPaymentPercentage = (
+    amount: number
+  ) => {
+    if (
+      totalSales <= 0
+    ) {
+      return 0;
+    }
+
+    return Math.round(
+      (amount /
+        totalSales) *
+        100
+    );
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6">
+    <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6">
-          <Link
-            href="/admin"
-            className="text-sm text-sky-600"
-          >
-            ← Retour à
-            l&apos;administration
-          </Link>
+        {/* HEADER */}
+        <header className="mb-7">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
+              M
+            </div>
 
-          <h1 className="mt-2 text-3xl font-bold">
-            Ventes
-          </h1>
+            <div>
+              <p className="text-lg font-black tracking-[-0.03em] text-[#1F2924]">
+                MAIDA
+              </p>
 
-          <p className="mt-2 text-sm text-slate-500">
-            Journée commerciale :
-            07h00 → 07h00
-          </p>
-        </div>
+              <p className="text-xs text-[#7A817C]">
+                Administration
+              </p>
+            </div>
+          </div>
 
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-7">
+            <Link
+              href="/admin"
+              className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
+            >
+              ← Administration
+            </Link>
+
+            <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
+              Encaissements
+            </p>
+
+            <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924] md:text-4xl">
+              Ventes
+            </h1>
+
+            <p className="mt-2 text-sm text-[#737A75]">
+              Consultez chaque
+              vente et son mode de
+              paiement.
+            </p>
+          </div>
+        </header>
+
+        {/* FILTRES */}
+        <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/sales?period=today"
             className={
               selectedPeriod ===
               "today"
-                ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
-                : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
             Aujourd&apos;hui
@@ -404,11 +515,11 @@ export default async function AdminSalesPage({
             className={
               selectedPeriod ===
               "week"
-                ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
-                : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Cette semaine
+            Semaine
           </Link>
 
           <Link
@@ -416,11 +527,11 @@ export default async function AdminSalesPage({
             className={
               selectedPeriod ===
               "month"
-                ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
-                : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Ce mois
+            Mois
           </Link>
 
           <Link
@@ -428,110 +539,204 @@ export default async function AdminSalesPage({
             className={
               selectedPeriod ===
               "all"
-                ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 text-white"
-                : "whitespace-nowrap rounded-xl bg-white px-4 py-2 shadow-sm"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
             Tout
           </Link>
+        </nav>
+
+        {/* CONTEXTE */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-[#343D38]">
+            {getPeriodLabel(
+              selectedPeriod
+            )}
+          </p>
+
+          <p className="text-xs text-[#8A918C]">
+            Journée commerciale :
+            07h00 → 07h00
+          </p>
         </div>
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">
+        {/* KPI */}
+        <section className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
+            <p className="text-sm font-medium text-white/70">
               Chiffre
               d&apos;affaires
             </p>
 
-            <p className="mt-2 text-2xl font-bold">
-              {totalSales} MRU
+            <p className="mt-3 text-3xl font-black tracking-tight">
+              {formatMoney(
+                totalSales
+              )}{" "}
+              <span className="text-base font-semibold text-white/70">
+                MRU
+              </span>
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">
+          <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-[#737A75]">
               Commandes
             </p>
 
-            <p className="mt-2 text-2xl font-bold">
+            <p className="mt-3 text-3xl font-black text-[#1F2924]">
               {orderCount}
+            </p>
+
+            <p className="mt-3 text-xs text-[#9A9F9B]">
+              Ventes encaissées
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">
+          <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-[#737A75]">
               Ticket moyen
             </p>
 
-            <p className="mt-2 text-2xl font-bold">
-              {averageOrder} MRU
+            <p className="mt-3 text-3xl font-black text-[#1F2924]">
+              {formatMoney(
+                averageOrder
+              )}{" "}
+              <span className="text-base font-semibold text-[#737A75]">
+                MRU
+              </span>
+            </p>
+
+            <p className="mt-3 text-xs text-[#9A9F9B]">
+              Moyenne par vente
             </p>
           </div>
-        </div>
+        </section>
 
-        <div className="mb-6 grid gap-6 lg:grid-cols-[320px_1fr]">
-          <section className="rounded-2xl bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">
+        {/* CONTENU */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          {/* PAIEMENTS */}
+          <section className="h-fit rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6">
+            <h2 className="text-lg font-bold text-[#1F2924]">
               Paiements
             </h2>
 
-            <div className="mt-4 space-y-3">
-              {paymentMethods.map(
-                (
-                  method
-                ) => (
-                  <div
-                    key={
-                      method
-                    }
-                    className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
-                  >
-                    <span className="text-sm">
-                      {method}
-                    </span>
+            <p className="mt-1 text-sm text-[#7A817C]">
+              Répartition du CA
+            </p>
 
-                    <span className="font-semibold">
-                      {paymentTotals[
+            <div className="mt-5 space-y-5">
+              {paymentMethods.map(
+                (method) => {
+                  const amount =
+                    paymentTotals[
+                      method
+                    ] || 0;
+
+                  const percentage =
+                    getPaymentPercentage(
+                      amount
+                    );
+
+                  return (
+                    <div
+                      key={
                         method
-                      ] || 0}{" "}
-                      MRU
-                    </span>
-                  </div>
-                )
+                      }
+                    >
+                      <div className="mb-2 flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-[#343D38]">
+                            {
+                              method
+                            }
+                          </p>
+
+                          <p className="mt-0.5 text-xs text-[#9A9F9B]">
+                            {
+                              percentage
+                            }
+                            %
+                          </p>
+                        </div>
+
+                        <p className="text-sm font-bold text-[#1F2924]">
+                          {formatMoney(
+                            amount
+                          )}{" "}
+                          MRU
+                        </p>
+                      </div>
+
+                      <div className="h-2 overflow-hidden rounded-full bg-[#EEF0EC]">
+                        <div
+                          className="h-full rounded-full bg-[#2E6A50]"
+                          style={{
+                            width: `${percentage}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
               )}
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
-            <div className="border-b p-5">
-              <h2 className="text-lg font-semibold">
-                Détail des ventes
-              </h2>
+          {/* VENTES */}
+          <section className="overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
+            <div className="border-b border-[#EEECE6] p-5 sm:p-6">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
+                    Détail des ventes
+                  </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                {orderCount}{" "}
-                commande
+                  <p className="mt-1 text-sm text-[#7A817C]">
+                    {orderCount}{" "}
+                    commande
+                    {orderCount >
+                    1
+                      ? "s"
+                      : ""}
+                  </p>
+                </div>
+
                 {orderCount >
-                1
-                  ? "s"
-                  : ""}
-              </p>
+                  0 && (
+                  <span className="hidden rounded-full bg-[#EDF5EF] px-3 py-1.5 text-xs font-semibold text-[#2E6A50] sm:inline-flex">
+                    {
+                      getPeriodLabel(
+                        selectedPeriod
+                      )
+                    }
+                  </span>
+                )}
+              </div>
             </div>
 
             {orders.length ===
             0 ? (
-              <div className="p-6">
-                <p className="text-slate-500">
-                  Aucune vente sur
+              <div className="flex min-h-64 flex-col items-center justify-center p-8 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F1] text-[#8A918C]">
+                  —
+                </div>
+
+                <h3 className="mt-4 font-bold text-[#343D38]">
+                  Aucune vente
+                </h3>
+
+                <p className="mt-1 max-w-xs text-sm leading-6 text-[#8A918C]">
+                  Aucun encaissement
+                  n&apos;a été
+                  enregistré sur
                   cette période.
                 </p>
               </div>
             ) : (
-              <div className="divide-y">
+              <div className="divide-y divide-[#EEECE6]">
                 {orders.map(
-                  (
-                    order
-                  ) => {
+                  (order) => {
                     const table =
                       Array.isArray(
                         order.restaurant_tables
@@ -561,55 +766,59 @@ export default async function AdminSalesPage({
                           order.id
                         }
                         href={`/admin/orders/${order.id}`}
-                        className="flex flex-col gap-3 p-5 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                        className="group block p-4 transition hover:bg-[#FAFAF7] active:bg-[#F5F5F1] sm:p-5"
                       >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold">
-                              {
-                                orderLabel
-                              }
-                            </p>
-
-                            {order.order_number && (
-                              <span className="text-sm text-slate-400">
-                                #
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-bold text-[#1F2924] sm:text-lg">
                                 {
-                                  order.order_number
+                                  orderLabel
                                 }
+                              </h3>
+
+                              {order.order_number && (
+                                <span className="text-xs font-semibold text-[#9A9F9B]">
+                                  #
+                                  {
+                                    order.order_number
+                                  }
+                                </span>
+                              )}
+
+                              {order.order_type ===
+                                "takeaway" && (
+                                <span className="rounded-full bg-[#F3EFE8] px-2.5 py-1 text-[11px] font-semibold text-[#7D6755]">
+                                  À
+                                  emporter
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-[#F3F4F1] px-2.5 py-1 text-xs font-semibold text-[#5F6862]">
+                                {order.payment_method ||
+                                  "Paiement"}
                               </span>
-                            )}
 
-                            {order.order_type ===
-                              "takeaway" && (
-                              <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
-                                À
-                                emporter
+                              <span className="text-xs text-[#7A817C]">
+                                Caissier :{" "}
+                                <span className="font-semibold text-[#565E59]">
+                                  {cashier?.name ||
+                                    "—"}
+                                </span>
                               </span>
-                            )}
-                          </div>
+                            </div>
 
-                          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-500">
-                            <span>
-                              {order.payment_method ||
-                                "Paiement"}
-                            </span>
-
-                            <span>
-                              Caissier
-                              :{" "}
-                              {cashier?.name ||
-                                "—"}
-                            </span>
-                          </div>
-
-                          <p className="mt-1 text-xs text-slate-400">
-                            {order.paid_at
-                              ? new Date(
+                            {order.paid_at && (
+                              <p className="mt-2 text-xs text-[#9A9F9B]">
+                                {new Date(
                                   order.paid_at
                                 ).toLocaleString(
                                   "fr-FR",
                                   {
+                                    timeZone:
+                                      "Africa/Nouakchott",
                                     day:
                                       "2-digit",
                                     month:
@@ -621,22 +830,29 @@ export default async function AdminSalesPage({
                                     minute:
                                       "2-digit",
                                   }
+                                )}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <p className="text-lg font-black text-[#1F2924] sm:text-xl">
+                              {formatMoney(
+                                Number(
+                                  order.total ||
+                                    0
                                 )
-                              : ""}
-                          </p>
-                        </div>
+                              )}
+                            </p>
 
-                        <div className="flex items-center gap-4">
-                          <p className="text-xl font-bold">
-                            {
-                              order.total
-                            }{" "}
-                            MRU
-                          </p>
+                            <p className="text-[10px] font-semibold text-[#8A918C]">
+                              MRU
+                            </p>
 
-                          <span className="text-sm font-medium text-sky-600">
-                            Voir →
-                          </span>
+                            <p className="mt-3 text-sm font-semibold text-[#2E6A50] transition group-hover:translate-x-0.5">
+                              Voir →
+                            </p>
+                          </div>
                         </div>
                       </Link>
                     );
@@ -646,6 +862,12 @@ export default async function AdminSalesPage({
             )}
           </section>
         </div>
+
+        <footer className="mt-9 border-t border-[#E3E0D8] py-5">
+          <p className="text-center text-xs text-[#9A9F9B]">
+            MAIDA · Administration
+          </p>
+        </footer>
       </div>
     </main>
   );
