@@ -111,10 +111,6 @@ function getWeekRange() {
     );
   }
 
-  /*
-   * Même logique que la page Ventes :
-   * lundi 07h00 → lundi suivant 07h00.
-   */
   const day =
     businessNow.getUTCDay();
 
@@ -124,7 +120,9 @@ function getWeekRange() {
       : day - 1;
 
   const start =
-    new Date(businessNow);
+    new Date(
+      businessNow
+    );
 
   start.setUTCDate(
     start.getUTCDate() -
@@ -222,6 +220,30 @@ function getRange(
   return null;
 }
 
+function getPeriodLabel(
+  period: Period
+) {
+  if (
+    period === "week"
+  ) {
+    return "Cette semaine";
+  }
+
+  if (
+    period === "month"
+  ) {
+    return "Ce mois";
+  }
+
+  if (
+    period === "all"
+  ) {
+    return "Toute la période";
+  }
+
+  return "Aujourd’hui";
+}
+
 function formatMoney(
   value: number
 ) {
@@ -245,6 +267,8 @@ function formatDateTime(
   ).toLocaleString(
     "fr-FR",
     {
+      timeZone:
+        "Africa/Nouakchott",
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -266,6 +290,8 @@ function formatTime(
   ).toLocaleTimeString(
     "fr-FR",
     {
+      timeZone:
+        "Africa/Nouakchott",
       hour: "2-digit",
       minute: "2-digit",
     }
@@ -276,7 +302,8 @@ function parseShiftPayload(
   payload: unknown
 ): ShiftSummaryPayload {
   if (
-    typeof payload === "string"
+    typeof payload ===
+    "string"
   ) {
     try {
       return JSON.parse(
@@ -289,7 +316,8 @@ function parseShiftPayload(
 
   if (
     payload &&
-    typeof payload === "object"
+    typeof payload ===
+      "object"
   ) {
     return payload as ShiftSummaryPayload;
   }
@@ -310,11 +338,13 @@ export default async function AdminReportsPage({
   const selectedPeriod: Period =
     params.period === "week"
       ? "week"
-      : params.period === "month"
-      ? "month"
-      : params.period === "all"
-      ? "all"
-      : "today";
+      : params.period ===
+          "month"
+        ? "month"
+        : params.period ===
+            "all"
+          ? "all"
+          : "today";
 
   const range =
     getRange(
@@ -510,29 +540,70 @@ export default async function AdminReportsPage({
       {
         paid:
           paidOrdersResult.error,
+
         cancelled:
           cancelledOrdersResult.error,
+
         itemCancellations:
           itemCancellationsResult.error,
+
         shifts:
           shiftReportsResult.error,
       }
     );
 
     return (
-      <main className="min-h-screen bg-slate-50 p-6">
+      <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
         <div className="mx-auto max-w-7xl">
-          <Link
-            href="/admin"
-            className="text-sm text-sky-600"
-          >
-            ← Retour à
-            l&apos;administration
-          </Link>
+          <header className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
+              M
+            </div>
 
-          <div className="mt-6 rounded-2xl bg-white p-6 shadow-sm">
-            Impossible de
-            charger les rapports.
+            <div>
+              <p className="text-lg font-black tracking-[-0.03em] text-[#1F2924]">
+                MAIDA
+              </p>
+
+              <p className="text-xs text-[#7A817C]">
+                Administration
+              </p>
+            </div>
+          </header>
+
+          <div className="mt-10 rounded-[26px] border border-[#E8E5DE] bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FFF1EE] text-lg font-bold text-[#B24D3E]">
+              !
+            </div>
+
+            <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
+              Rapports
+              indisponibles
+            </h1>
+
+            <p className="mt-2 text-sm text-[#737A75]">
+              Impossible de
+              récupérer les
+              données pour le
+              moment.
+            </p>
+
+            <a
+              href="/admin/reports"
+              className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
+            >
+              Réessayer
+            </a>
+
+            <div>
+              <Link
+                href="/admin"
+                className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[#68706B]"
+              >
+                Retour à
+                l&apos;administration
+              </Link>
+            </div>
           </div>
         </div>
       </main>
@@ -563,11 +634,13 @@ export default async function AdminReportsPage({
   const orderIds = [
     ...new Set([
       ...paidOrders.map(
-        (order) => order.id
+        (order) =>
+          order.id
       ),
 
       ...cancelledOrders.map(
-        (order) => order.id
+        (order) =>
+          order.id
       ),
 
       ...itemCancellations.map(
@@ -577,8 +650,8 @@ export default async function AdminReportsPage({
     ]),
   ].filter(Boolean);
 
-  let allOrders:
-    any[] = [];
+  let allOrders: any[] =
+    [];
 
   if (
     orderIds.length > 0
@@ -634,8 +707,8 @@ export default async function AdminReportsPage({
    * ARTICLES DES COMMANDES
    * ============================
    */
-  let orderItems:
-    any[] = [];
+  let orderItems: any[] =
+    [];
 
   if (
     orderIds.length > 0
@@ -645,7 +718,9 @@ export default async function AdminReportsPage({
       error,
     } =
       await supabaseAdmin
-        .from("order_items")
+        .from(
+          "order_items"
+        )
         .select(`
           id,
           order_id,
@@ -688,7 +763,7 @@ export default async function AdminReportsPage({
 
   /*
    * ============================
-   * PRODUITS DU MENU
+   * PRODUITS
    * ============================
    */
   const menuItemIds = [
@@ -702,12 +777,11 @@ export default async function AdminReportsPage({
     ),
   ];
 
-  let menuItems:
-    any[] = [];
+  let menuItems: any[] =
+    [];
 
   if (
-    menuItemIds.length >
-    0
+    menuItemIds.length > 0
   ) {
     const {
       data,
@@ -776,8 +850,7 @@ export default async function AdminReportsPage({
     ]),
   ].filter(Boolean);
 
-  let users:
-    any[] = [];
+  let users: any[] = [];
 
   if (
     userIds.length > 0
@@ -839,8 +912,7 @@ export default async function AdminReportsPage({
     ),
   ];
 
-  let tables:
-    any[] = [];
+  let tables: any[] = [];
 
   if (
     tableIds.length > 0
@@ -1002,8 +1074,7 @@ export default async function AdminReportsPage({
       cashierStats.get(
         cashierId
       ) || {
-        id:
-          cashierId,
+        id: cashierId,
 
         name:
           usersMap.get(
@@ -1016,8 +1087,7 @@ export default async function AdminReportsPage({
         revenue: 0,
       };
 
-    current.orders +=
-      1;
+    current.orders += 1;
 
     current.revenue +=
       Number(
@@ -1034,10 +1104,7 @@ export default async function AdminReportsPage({
     Array.from(
       cashierStats.values()
     ).sort(
-      (
-        a,
-        b
-      ) =>
+      (a, b) =>
         b.revenue -
         a.revenue
     );
@@ -1074,8 +1141,7 @@ export default async function AdminReportsPage({
       productStats.get(
         menuItemId
       ) || {
-        id:
-          menuItemId,
+        id: menuItemId,
 
         name:
           menuItem?.name ||
@@ -1086,6 +1152,7 @@ export default async function AdminReportsPage({
           "",
 
         sold: 0,
+
         cancelled: 0,
       };
 
@@ -1192,10 +1259,7 @@ export default async function AdminReportsPage({
     Array.from(
       productStats.values()
     ).sort(
-      (
-        a,
-        b
-      ) =>
+      (a, b) =>
         b.sold +
           b.cancelled -
         (a.sold +
@@ -1229,8 +1293,7 @@ export default async function AdminReportsPage({
    * VALEUR ANNULÉE
    * ============================
    */
-  let cancelledValue =
-    0;
+  let cancelledValue = 0;
 
   /*
    * Annulations partielles.
@@ -1292,9 +1355,6 @@ export default async function AdminReportsPage({
   let cancelledAfterKitchen =
     0;
 
-  /*
-   * Annulations partielles.
-   */
   for (
     const cancellation of
     itemCancellations
@@ -1316,11 +1376,6 @@ export default async function AdminReportsPage({
     }
   }
 
-  /*
-   * Commandes entièrement annulées :
-   * on regarde les quantités qui avaient
-   * réellement déjà été envoyées.
-   */
   for (
     const item of
     orderItems
@@ -1360,8 +1415,7 @@ export default async function AdminReportsPage({
 
   /*
    * ============================
-   * REGROUPER LES ANNULATIONS
-   * D'ARTICLES D'UNE MÊME ACTION
+   * REGROUPEMENT ANNULATIONS
    * ============================
    */
   const groupedItemCancellations =
@@ -1495,10 +1549,7 @@ export default async function AdminReportsPage({
         })
       )
       .sort(
-        (
-          a,
-          b
-        ) =>
+        (a, b) =>
           b.count -
           a.count
       );
@@ -1512,9 +1563,6 @@ export default async function AdminReportsPage({
     CancellationHistoryItem[] =
       [];
 
-  /*
-   * Commandes complètes.
-   */
   for (
     const order of
     cancelledOrders
@@ -1526,11 +1574,8 @@ export default async function AdminReportsPage({
           order.id
       );
 
-    let beforeKitchen =
-      0;
-
-    let afterKitchen =
-      0;
+    let beforeKitchen = 0;
+    let afterKitchen = 0;
 
     for (
       const item of
@@ -1538,8 +1583,7 @@ export default async function AdminReportsPage({
     ) {
       const quantity =
         Number(
-          item.quantity ||
-            0
+          item.quantity || 0
         );
 
       const sent =
@@ -1556,8 +1600,7 @@ export default async function AdminReportsPage({
 
       beforeKitchen +=
         Math.max(
-          quantity -
-            sent,
+          quantity - sent,
           0
         );
     }
@@ -1608,9 +1651,6 @@ export default async function AdminReportsPage({
     });
   }
 
-  /*
-   * Articles.
-   */
   for (
     const [
       key,
@@ -1683,10 +1723,7 @@ export default async function AdminReportsPage({
   }
 
   cancellationHistory.sort(
-    (
-      a,
-      b
-    ) =>
+    (a, b) =>
       new Date(
         b.date
       ).getTime() -
@@ -1719,242 +1756,464 @@ export default async function AdminReportsPage({
   const cancelledOrderCount =
     cancelledOrders.length;
 
-  return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-6">
-          <Link
-            href="/admin"
-            className="text-sm font-medium text-sky-600"
-          >
-            ← Retour à
-            l&apos;administration
-          </Link>
+  const totalOrderDecisions =
+    paidOrderCount +
+    cancelledOrderCount;
 
-          <div className="mt-3">
-            <p className="text-sm text-slate-500">
+  const cancellationRate =
+    totalOrderDecisions > 0
+      ? Math.round(
+          (cancelledOrderCount /
+            totalOrderDecisions) *
+            100
+        )
+      : 0;
+
+  const totalCancellationUnits =
+    cancelledBeforeKitchen +
+    cancelledAfterKitchen;
+
+  const afterKitchenRate =
+    totalCancellationUnits > 0
+      ? Math.round(
+          (cancelledAfterKitchen /
+            totalCancellationUnits) *
+            100
+        )
+      : 0;
+
+  const getPaymentPercentage = (
+    amount: number
+  ) => {
+    if (revenue <= 0) {
+      return 0;
+    }
+
+    return Math.round(
+      (amount / revenue) *
+        100
+    );
+  };
+
+  const maxCashierRevenue =
+    cashierRows.length > 0
+      ? Math.max(
+          ...cashierRows.map(
+            (cashier) =>
+              cashier.revenue
+          )
+        )
+      : 0;
+
+  return (
+    <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
+      <div className="mx-auto max-w-7xl">
+        {/* HEADER */}
+        <header className="mb-7">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
+              M
+            </div>
+
+            <div>
+              <p className="text-lg font-black tracking-[-0.03em] text-[#1F2924]">
+                MAIDA
+              </p>
+
+              <p className="text-xs text-[#7A817C]">
+                Administration
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-7">
+            <Link
+              href="/admin"
+              className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
+            >
+              ← Administration
+            </Link>
+
+            <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
               Analyse de
               l&apos;activité
             </p>
 
-            <h1 className="mt-1 text-3xl font-bold text-slate-900">
+            <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924] md:text-4xl">
               Rapports
             </h1>
 
-            <p className="mt-2 text-sm text-slate-500">
-              Journée commerciale :
-              07h00 → 07h00
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#737A75]">
+              Ventes, produits,
+              caissiers et
+              annulations en une
+              seule vue.
             </p>
           </div>
         </header>
 
         {/* FILTRES */}
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-          {[
-            {
-              value:
-                "today",
-              label:
-                "Aujourd'hui",
-            },
-            {
-              value:
-                "week",
-              label:
-                "Cette semaine",
-            },
-            {
-              value:
-                "month",
-              label:
-                "Ce mois",
-            },
-            {
-              value:
-                "all",
-              label:
-                "Tout",
-            },
-          ].map(
-            (item) => (
-              <Link
-                key={
-                  item.value
-                }
-                href={`/admin/reports?period=${item.value}`}
-                className={
-                  selectedPeriod ===
-                  item.value
-                    ? "whitespace-nowrap rounded-xl bg-sky-500 px-4 py-2 font-medium text-white"
-                    : "whitespace-nowrap rounded-xl bg-white px-4 py-2 font-medium text-slate-700 shadow-sm"
-                }
-              >
-                {
-                  item.label
-                }
-              </Link>
-            )
-          )}
+        <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
+          <Link
+            href="/admin/reports?period=today"
+            className={
+              selectedPeriod ===
+              "today"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
+            }
+          >
+            Aujourd&apos;hui
+          </Link>
+
+          <Link
+            href="/admin/reports?period=week"
+            className={
+              selectedPeriod ===
+              "week"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
+            }
+          >
+            Semaine
+          </Link>
+
+          <Link
+            href="/admin/reports?period=month"
+            className={
+              selectedPeriod ===
+              "month"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
+            }
+          >
+            Mois
+          </Link>
+
+          <Link
+            href="/admin/reports?period=all"
+            className={
+              selectedPeriod ===
+              "all"
+                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
+                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
+            }
+          >
+            Tout
+          </Link>
+        </nav>
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-[#343D38]">
+            {getPeriodLabel(
+              selectedPeriod
+            )}
+          </p>
+
+          <p className="text-xs text-[#8A918C]">
+            Journée commerciale :
+            07h00 → 07h00
+          </p>
         </div>
 
-        {/* KPI CAISSE */}
-        <section>
-          <h2 className="mb-3 text-xl font-semibold">
-            Caisse
-          </h2>
+        {/* VUE D'ENSEMBLE */}
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
+            <p className="text-sm font-medium text-white/70">
+              Chiffre
+              d&apos;affaires
+            </p>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
-                Chiffre
-                d&apos;affaires
-              </p>
-
-              <p className="mt-2 text-2xl font-bold">
-                {formatMoney(
-                  revenue
-                )}{" "}
+            <p className="mt-3 text-3xl font-black tracking-tight">
+              {formatMoney(
+                revenue
+              )}{" "}
+              <span className="text-base font-semibold text-white/70">
                 MRU
-              </p>
-            </div>
+              </span>
+            </p>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
-                Commandes payées
-              </p>
+            <p className="mt-4 text-xs text-white/60">
+              {
+                paidOrderCount
+              }{" "}
+              commande
+              {paidOrderCount >
+              1
+                ? "s"
+                : ""}{" "}
+              encaissée
+              {paidOrderCount >
+              1
+                ? "s"
+                : ""}
+            </p>
+          </div>
 
-              <p className="mt-2 text-2xl font-bold">
-                {
-                  paidOrderCount
-                }
-              </p>
-            </div>
+          <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-[#737A75]">
+              Ticket moyen
+            </p>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
-                Ticket moyen
-              </p>
-
-              <p className="mt-2 text-2xl font-bold">
-                {formatMoney(
-                  averageOrder
-                )}{" "}
+            <p className="mt-3 text-3xl font-black text-[#1F2924]">
+              {formatMoney(
+                averageOrder
+              )}{" "}
+              <span className="text-base font-semibold text-[#737A75]">
                 MRU
-              </p>
+              </span>
+            </p>
+
+            <p className="mt-4 text-xs text-[#9A9F9B]">
+              Par commande payée
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
+            <p className="text-sm font-medium text-[#737A75]">
+              Produits vendus
+            </p>
+
+            <p className="mt-3 text-3xl font-black text-[#1F2924]">
+              {
+                totalSoldItems
+              }
+            </p>
+
+            <p className="mt-4 text-xs text-[#9A9F9B]">
+              Unités encaissées
+            </p>
+          </div>
+
+          <div
+            className={
+              cancelledOrderCount >
+                0 ||
+              totalCancelledItems >
+                0
+                ? "rounded-[24px] border border-[#EDC7C0] bg-[#FFF7F5] p-5 shadow-sm"
+                : "rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm"
+            }
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-[#737A75]">
+                  Annulations
+                </p>
+
+                <p
+                  className={
+                    cancelledOrderCount >
+                      0 ||
+                    totalCancelledItems >
+                      0
+                      ? "mt-3 text-3xl font-black text-[#A74435]"
+                      : "mt-3 text-3xl font-black text-[#1F2924]"
+                  }
+                >
+                  {
+                    cancelledOrderCount
+                  }
+                </p>
+              </div>
+
+              {cancelledOrderCount >
+                0 && (
+                <span className="rounded-full bg-[#FCE4DF] px-2.5 py-1 text-xs font-semibold text-[#A74435]">
+                  {
+                    cancellationRate
+                  }
+                  %
+                </span>
+              )}
             </div>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
-                Commandes
-                annulées
-              </p>
-
-              <p className="mt-2 text-2xl font-bold text-red-600">
-                {
-                  cancelledOrderCount
-                }
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
-                Valeur annulée
-              </p>
-
-              <p className="mt-2 text-2xl font-bold text-red-600">
-                {formatMoney(
-                  cancelledValue
-                )}{" "}
-                MRU
-              </p>
-            </div>
+            <p className="mt-4 text-xs text-[#9A6A62]">
+              {formatMoney(
+                cancelledValue
+              )}{" "}
+              MRU de valeur
+              annulée
+            </p>
           </div>
         </section>
 
         {/* PAIEMENTS + CAISSIERS */}
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <section className="rounded-2xl bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">
+          {/* PAIEMENTS */}
+          <section className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm md:p-6">
+            <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
               Moyens de paiement
             </h2>
 
-            <div className="mt-4 space-y-2">
-              {paymentMethods.map(
-                (method) => (
-                  <div
-                    key={
-                      method
-                    }
-                    className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
-                  >
-                    <span>
-                      {method}
-                    </span>
+            <p className="mt-1 text-sm text-[#737A75]">
+              Répartition du
+              chiffre
+              d&apos;affaires
+            </p>
 
-                    <span className="font-semibold">
-                      {formatMoney(
-                        paymentTotals[
-                          method
-                        ] || 0
-                      )}{" "}
-                      MRU
-                    </span>
-                  </div>
-                )
+            <div className="mt-6 space-y-5">
+              {paymentMethods.map(
+                (method) => {
+                  const amount =
+                    paymentTotals[
+                      method
+                    ] || 0;
+
+                  const percentage =
+                    getPaymentPercentage(
+                      amount
+                    );
+
+                  return (
+                    <div
+                      key={
+                        method
+                      }
+                    >
+                      <div className="mb-2 flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-[#343D38]">
+                            {
+                              method
+                            }
+                          </p>
+
+                          <p className="mt-0.5 text-xs text-[#9A9F9B]">
+                            {
+                              percentage
+                            }
+                            % du CA
+                          </p>
+                        </div>
+
+                        <p className="text-sm font-bold text-[#1F2924]">
+                          {formatMoney(
+                            amount
+                          )}{" "}
+                          MRU
+                        </p>
+                      </div>
+
+                      <div className="h-2 overflow-hidden rounded-full bg-[#EEF0EC]">
+                        <div
+                          className="h-full rounded-full bg-[#2E6A50]"
+                          style={{
+                            width: `${percentage}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
               )}
             </div>
           </section>
 
-          <section className="rounded-2xl bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">
+          {/* CAISSIERS */}
+          <section className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm md:p-6">
+            <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
               Par caissier
             </h2>
 
+            <p className="mt-1 text-sm text-[#737A75]">
+              Encaissements par
+              utilisateur
+            </p>
+
             {cashierRows.length ===
             0 ? (
-              <p className="mt-4 text-sm text-slate-500">
-                Aucune vente sur
-                cette période.
-              </p>
+              <div className="mt-6 rounded-2xl bg-[#F6F6F2] p-6 text-center">
+                <p className="text-sm text-[#8A918C]">
+                  Aucune vente sur
+                  cette période.
+                </p>
+              </div>
             ) : (
-              <div className="mt-4 space-y-2">
+              <div className="mt-6 space-y-5">
                 {cashierRows.map(
                   (
-                    cashier
-                  ) => (
-                    <div
-                      key={
-                        cashier.id
-                      }
-                      className="rounded-xl bg-slate-50 px-4 py-3"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="font-medium">
-                          {
-                            cashier.name
-                          }
-                        </span>
+                    cashier,
+                    index
+                  ) => {
+                    const share =
+                      maxCashierRevenue >
+                      0
+                        ? Math.round(
+                            (cashier.revenue /
+                              maxCashierRevenue) *
+                              100
+                          )
+                        : 0;
 
-                        <span className="font-semibold">
-                          {formatMoney(
-                            cashier.revenue
-                          )}{" "}
-                          MRU
-                        </span>
+                    const average =
+                      cashier.orders >
+                      0
+                        ? Math.round(
+                            cashier.revenue /
+                              cashier.orders
+                          )
+                        : 0;
+
+                    return (
+                      <div
+                        key={
+                          cashier.id
+                        }
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EDF5EF] text-sm font-black text-[#2E6A50]">
+                              {
+                                index +
+                                1
+                              }
+                            </span>
+
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#1F2924]">
+                                {
+                                  cashier.name
+                                }
+                              </p>
+
+                              <p className="mt-0.5 text-xs text-[#8A918C]">
+                                {
+                                  cashier.orders
+                                }{" "}
+                                commande
+                                {cashier.orders >
+                                1
+                                  ? "s"
+                                  : ""}{" "}
+                                · Ticket{" "}
+                                {formatMoney(
+                                  average
+                                )}{" "}
+                                MRU
+                              </p>
+                            </div>
+                          </div>
+
+                          <p className="shrink-0 font-bold text-[#1F2924]">
+                            {formatMoney(
+                              cashier.revenue
+                            )}{" "}
+                            MRU
+                          </p>
+                        </div>
+
+                        <div className="ml-12 mt-2 h-2 overflow-hidden rounded-full bg-[#EEF0EC]">
+                          <div
+                            className="h-full rounded-full bg-[#2E6A50]"
+                            style={{
+                              width: `${share}%`,
+                            }}
+                          />
+                        </div>
                       </div>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        {
-                          cashier.orders
-                        }{" "}
-                        commande
-                        {cashier.orders >
-                        1
-                          ? "s"
-                          : ""}
-                      </p>
-                    </div>
-                  )
+                    );
+                  }
                 )}
               </div>
             )}
@@ -1962,208 +2221,289 @@ export default async function AdminReportsPage({
         </div>
 
         {/* PRODUITS */}
-        <section className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm">
-          <div className="border-b p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <section className="mt-6 overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
+          <div className="border-b border-[#EEECE6] p-5 md:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
                   Produits
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  Produits du menu
-                  vendus et annulés
+                <p className="mt-1 text-sm text-[#737A75]">
+                  Ce qui a été
+                  vendu et annulé
                 </p>
               </div>
 
-              <div className="flex gap-4 text-sm">
-                <span>
-                  Vendus :{" "}
-                  <strong>
+              <div className="flex gap-2">
+                <div className="rounded-xl bg-[#EDF5EF] px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#66806E]">
+                    Vendus
+                  </p>
+
+                  <p className="mt-0.5 text-lg font-black text-[#1E4D3A]">
                     {
                       totalSoldItems
                     }
-                  </strong>
-                </span>
+                  </p>
+                </div>
 
-                <span>
-                  Annulés :{" "}
-                  <strong className="text-red-600">
+                <div className="rounded-xl bg-[#FFF1EE] px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#A16A61]">
+                    Annulés
+                  </p>
+
+                  <p className="mt-0.5 text-lg font-black text-[#A74435]">
                     {
                       totalCancelledItems
                     }
-                  </strong>
-                </span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           {productRows.length ===
           0 ? (
-            <p className="p-6 text-slate-500">
-              Aucun produit sur
-              cette période.
-            </p>
+            <div className="p-8 text-center">
+              <p className="font-semibold text-[#4E5651]">
+                Aucun produit
+              </p>
+
+              <p className="mt-1 text-sm text-[#8A918C]">
+                Aucun mouvement de
+                produit sur cette
+                période.
+              </p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead className="bg-slate-50 text-left text-sm text-slate-500">
-                  <tr>
-                    <th className="px-5 py-3 font-medium">
-                      Produit
-                    </th>
+            <div className="divide-y divide-[#EEECE6]">
+              {productRows.map(
+                (product) => {
+                  const totalActivity =
+                    product.sold +
+                    product.cancelled;
 
-                    <th className="px-5 py-3 font-medium">
-                      Catégorie
-                    </th>
+                  const cancellationPercentage =
+                    totalActivity >
+                    0
+                      ? Math.round(
+                          (product.cancelled /
+                            totalActivity) *
+                            100
+                        )
+                      : 0;
 
-                    <th className="px-5 py-3 text-right font-medium">
-                      Vendus
-                    </th>
-
-                    <th className="px-5 py-3 text-right font-medium">
-                      Annulés
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y">
-                  {productRows.map(
-                    (
-                      product
-                    ) => (
-                      <tr
-                        key={
-                          product.id
-                        }
-                      >
-                        <td className="px-5 py-4 font-medium">
+                  return (
+                    <div
+                      key={
+                        product.id
+                      }
+                      className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_120px_120px] sm:items-center sm:px-6 sm:py-4"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#1F2924]">
                           {
                             product.name
                           }
-                        </td>
+                        </p>
 
-                        <td className="px-5 py-4 text-sm text-slate-500">
+                        <p className="mt-1 text-xs text-[#8A918C]">
                           {
                             product.category
                           }
-                        </td>
+                        </p>
+                      </div>
 
-                        <td className="px-5 py-4 text-right font-semibold">
+                      <div className="flex items-center justify-between sm:block sm:text-right">
+                        <span className="text-xs text-[#8A918C] sm:hidden">
+                          Vendus
+                        </span>
+
+                        <span className="font-bold text-[#1E4D3A]">
                           {
                             product.sold
                           }
-                        </td>
+                        </span>
+                      </div>
 
-                        <td className="px-5 py-4 text-right font-semibold text-red-600">
-                          {
-                            product.cancelled
-                          }
-                        </td>
-                      </tr>
-                    )
-                  )}
-                </tbody>
-              </table>
+                      <div className="flex items-center justify-between sm:block sm:text-right">
+                        <span className="text-xs text-[#8A918C] sm:hidden">
+                          Annulés
+                        </span>
+
+                        <div>
+                          <span
+                            className={
+                              product.cancelled >
+                              0
+                                ? "font-bold text-[#A74435]"
+                                : "font-bold text-[#8A918C]"
+                            }
+                          >
+                            {
+                              product.cancelled
+                            }
+                          </span>
+
+                          {product.cancelled >
+                            0 && (
+                            <span className="ml-2 text-[10px] font-semibold text-[#B8786E]">
+                              {
+                                cancellationPercentage
+                              }
+                              %
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+              )}
             </div>
           )}
         </section>
 
         {/* ANNULATIONS */}
         <section className="mt-6">
-          <div className="mb-3">
-            <h2 className="text-xl font-semibold">
+          <div className="mb-4">
+            <p className="text-sm font-semibold text-[#A74435]">
+              Contrôle
+            </p>
+
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
               Annulations
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Suivi des commandes
-              et articles annulés
+            <p className="mt-1 text-sm text-[#737A75]">
+              Identifiez rapidement
+              où et pourquoi les
+              annulations ont lieu.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
+            <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
+              <p className="text-sm text-[#737A75]">
                 Commandes
-                annulées
               </p>
 
-              <p className="mt-2 text-2xl font-bold">
+              <p className="mt-2 text-2xl font-black text-[#A74435]">
                 {
                   cancelledOrderCount
                 }
               </p>
+
+              <p className="mt-2 text-xs text-[#9A9F9B]">
+                {
+                  cancellationRate
+                }
+                % des décisions
+                de commande
+              </p>
             </div>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
-                Articles annulés
+            <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
+              <p className="text-sm text-[#737A75]">
+                Articles
               </p>
 
-              <p className="mt-2 text-2xl font-bold">
+              <p className="mt-2 text-2xl font-black text-[#A74435]">
                 {
                   totalCancelledItems
                 }
               </p>
+
+              <p className="mt-2 text-xs text-[#9A9F9B]">
+                Unités annulées
+              </p>
             </div>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
+            <div className="rounded-[22px] border border-[#EED3A8] bg-[#FFF9F0] p-5">
+              <p className="text-sm text-[#8F6C43]">
                 Avant cuisine
               </p>
 
-              <p className="mt-2 text-2xl font-bold text-amber-600">
+              <p className="mt-2 text-2xl font-black text-[#9A5A18]">
                 {
                   cancelledBeforeKitchen
                 }
               </p>
+
+              <p className="mt-2 text-xs text-[#9B7B57]">
+                Avant préparation
+              </p>
             </div>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm text-slate-500">
+            <div className="rounded-[22px] border border-[#EDC7C0] bg-[#FFF7F5] p-5">
+              <p className="text-sm text-[#9A6A62]">
                 Après cuisine
               </p>
 
-              <p className="mt-2 text-2xl font-bold text-red-600">
+              <p className="mt-2 text-2xl font-black text-[#A74435]">
                 {
                   cancelledAfterKitchen
                 }
               </p>
+
+              <p className="mt-2 text-xs text-[#AD746A]">
+                {
+                  afterKitchenRate
+                }
+                % des unités
+                annulées
+              </p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[320px_1fr]">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             {/* MOTIFS */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <h3 className="text-lg font-semibold">
-                Motifs
+            <aside className="h-fit rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6">
+              <h3 className="text-lg font-bold text-[#1F2924]">
+                Principaux motifs
               </h3>
+
+              <p className="mt-1 text-sm text-[#737A75]">
+                Nombre
+                d&apos;événements
+              </p>
 
               {reasonRows.length ===
               0 ? (
-                <p className="mt-4 text-sm text-slate-500">
-                  Aucune annulation.
-                </p>
+                <div className="mt-5 rounded-2xl bg-[#F6F6F2] p-5 text-center">
+                  <p className="text-sm text-[#8A918C]">
+                    Aucune
+                    annulation.
+                  </p>
+                </div>
               ) : (
-                <div className="mt-4 space-y-2">
+                <div className="mt-5 space-y-3">
                   {reasonRows.map(
                     (
-                      reason
+                      reason,
+                      index
                     ) => (
                       <div
                         key={
                           reason.reason
                         }
-                        className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                        className="flex items-center gap-3 rounded-2xl bg-[#F7F7F3] px-3 py-3"
                       >
-                        <span className="text-sm">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-xs font-black text-[#8A918C]">
+                          {
+                            index +
+                            1
+                          }
+                        </span>
+
+                        <span className="min-w-0 flex-1 text-sm font-medium text-[#4E5651]">
                           {
                             reason.reason
                           }
                         </span>
 
-                        <span className="font-semibold">
+                        <span className="font-black text-[#A74435]">
                           {
                             reason.count
                           }
@@ -2173,17 +2513,16 @@ export default async function AdminReportsPage({
                   )}
                 </div>
               )}
-            </div>
+            </aside>
 
             {/* HISTORIQUE */}
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-              <div className="border-b p-5">
-                <h3 className="text-lg font-semibold">
-                  Historique des
-                  annulations
+            <div className="overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
+              <div className="border-b border-[#EEECE6] p-5">
+                <h3 className="text-lg font-bold text-[#1F2924]">
+                  Historique
                 </h3>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-[#737A75]">
                   {
                     cancellationHistory.length
                   }{" "}
@@ -2197,12 +2536,19 @@ export default async function AdminReportsPage({
 
               {cancellationHistory.length ===
               0 ? (
-                <p className="p-6 text-slate-500">
-                  Aucune annulation
-                  sur cette période.
-                </p>
+                <div className="p-8 text-center">
+                  <p className="font-semibold text-[#4E5651]">
+                    Aucune
+                    annulation
+                  </p>
+
+                  <p className="mt-1 text-sm text-[#8A918C]">
+                    Aucun événement
+                    sur cette période.
+                  </p>
+                </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-[#EEECE6]">
                   {cancellationHistory.map(
                     (
                       cancellation
@@ -2212,93 +2558,101 @@ export default async function AdminReportsPage({
                           cancellation.key
                         }
                         href={`/admin/orders/${cancellation.orderId}`}
-                        className="block p-5 transition hover:bg-slate-50"
+                        className="group block p-4 transition hover:bg-[#FAFAF7] sm:p-5"
                       >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold">
+                              <p className="font-bold text-[#1F2924]">
                                 {
                                   cancellation.label
                                 }
                               </p>
 
-                              <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+                              <span
+                                className={
+                                  cancellation.type ===
+                                  "order"
+                                    ? "rounded-full bg-[#FCE4DF] px-2.5 py-1 text-[11px] font-semibold text-[#A74435]"
+                                    : "rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[11px] font-semibold text-[#B35A4C]"
+                                }
+                              >
                                 {cancellation.type ===
                                 "order"
-                                  ? "Commande annulée"
-                                  : "Article annulé"}
+                                  ? "Commande"
+                                  : "Article"}
                               </span>
                             </div>
 
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p className="mt-1 text-sm text-[#737A75]">
                               {cancellation.orderNumber
-                                ? `Commande #${cancellation.orderNumber} · `
+                                ? `#${cancellation.orderNumber} · `
                                 : ""}
                               {
                                 cancellation.location
                               }
                             </p>
 
-                            <p className="mt-2 text-sm">
-                              Motif :{" "}
-                              <span className="font-medium">
+                            <div className="mt-3 rounded-xl bg-[#F7F7F3] px-3 py-2">
+                              <p className="text-xs text-[#8A918C]">
+                                Motif
+                              </p>
+
+                              <p className="mt-0.5 text-sm font-semibold text-[#4E5651]">
                                 {
                                   cancellation.reason
                                 }
-                              </span>
-                            </p>
-
-                            {cancellation.quantity >
-                              0 && (
-                              <p className="mt-1 text-sm text-slate-500">
-                                Quantité :
-                                {" "}
-                                {
-                                  cancellation.quantity
-                                }
                               </p>
-                            )}
+                            </div>
 
-                            {(cancellation.beforeKitchen >
-                              0 ||
-                              cancellation.afterKitchen >
-                                0) && (
-                              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                {cancellation.beforeKitchen >
-                                  0 && (
-                                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700">
-                                    Avant cuisine :{" "}
-                                    {
-                                      cancellation.beforeKitchen
-                                    }
-                                  </span>
-                                )}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {cancellation.quantity >
+                                0 && (
+                                <span className="rounded-full bg-[#F1F2EF] px-2.5 py-1 text-xs font-semibold text-[#68706B]">
+                                  Qté{" "}
+                                  {
+                                    cancellation.quantity
+                                  }
+                                </span>
+                              )}
 
-                                {cancellation.afterKitchen >
-                                  0 && (
-                                  <span className="rounded-full bg-red-100 px-2.5 py-1 text-red-700">
-                                    Après cuisine :{" "}
-                                    {
-                                      cancellation.afterKitchen
-                                    }
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                              {cancellation.beforeKitchen >
+                                0 && (
+                                <span className="rounded-full bg-[#FFF6E9] px-2.5 py-1 text-xs font-semibold text-[#9A5A18]">
+                                  Avant cuisine{" "}
+                                  {
+                                    cancellation.beforeKitchen
+                                  }
+                                </span>
+                              )}
+
+                              {cancellation.afterKitchen >
+                                0 && (
+                                <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-xs font-semibold text-[#A74435]">
+                                  Après cuisine{" "}
+                                  {
+                                    cancellation.afterKitchen
+                                  }
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="text-left sm:text-right">
-                            <p className="text-sm font-medium">
+                          <div className="shrink-0 sm:text-right">
+                            <p className="text-sm font-semibold text-[#4E5651]">
                               {
                                 cancellation.cashier
                               }
                             </p>
 
-                            <p className="mt-1 text-xs text-slate-400">
+                            <p className="mt-1 text-xs text-[#9A9F9B]">
                               {formatDateTime(
                                 cancellation.date
                               )}
+                            </p>
+
+                            <p className="mt-3 text-xs font-semibold text-[#2E6A50] transition group-hover:translate-x-0.5">
+                              Voir →
                             </p>
                           </div>
                         </div>
@@ -2311,62 +2665,94 @@ export default async function AdminReportsPage({
           </div>
         </section>
 
-        {/* SHIFTS */}
-        <section className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
+        {/* RAPPORTS DE SHIFTS */}
+        <section className="mt-6 overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-[#EEECE6] p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
             <div>
-              <h2 className="text-xl font-semibold">
+              <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
                 Rapports de shifts
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[#737A75]">
                 Récapitulatifs
                 générés à la
-                clôture des caisses
+                clôture
               </p>
             </div>
 
             <Link
               href="/admin/shifts"
-              className="text-sm font-medium text-sky-600"
+              className="text-sm font-semibold text-[#2E6A50]"
             >
-              Voir les shifts →
+              Voir tous les shifts →
             </Link>
           </div>
 
           {shiftRows.length ===
           0 ? (
-            <p className="p-6 text-slate-500">
-              Aucun rapport de
-              shift sur cette
-              période.
-            </p>
+            <div className="p-8 text-center">
+              <p className="font-semibold text-[#4E5651]">
+                Aucun rapport
+              </p>
+
+              <p className="mt-1 text-sm text-[#8A918C]">
+                Aucun shift clôturé
+                sur cette période.
+              </p>
+            </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-[#EEECE6]">
               {shiftRows.map(
-                (
-                  report
-                ) => {
+                (report) => {
                   const payload =
                     report.payload;
 
+                  const paid =
+                    Number(
+                      payload.paidOrderCount ||
+                        0
+                    );
+
+                  const cancelled =
+                    Number(
+                      payload.cancelledOrderCount ||
+                        0
+                    );
+
+                  const activePayments =
+                    paymentMethods.filter(
+                      (method) =>
+                        Number(
+                          payload
+                            .payments?.[
+                            method
+                          ] || 0
+                        ) > 0
+                    );
+
                   return (
-                    <div
+                    <article
                       key={
                         report.id
                       }
-                      className="p-5"
+                      className="p-5 md:p-6"
                     >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="font-semibold">
-                            {payload
-                              .cashier
-                              ?.name ||
-                              "Caissier"}
-                          </p>
+                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-bold text-[#1F2924]">
+                              {payload
+                                .cashier
+                                ?.name ||
+                                "Caissier"}
+                            </h3>
 
-                          <p className="mt-1 text-sm text-slate-500">
+                            <span className="rounded-full bg-[#EDF5EF] px-2.5 py-1 text-[11px] font-semibold text-[#2E6A50]">
+                              Clôturé
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-sm text-[#737A75]">
                             {formatDateTime(
                               payload.startedAt
                             )}
@@ -2376,56 +2762,100 @@ export default async function AdminReportsPage({
                             )}
                           </p>
 
-                          <p className="mt-1 text-sm text-slate-500">
-                            {payload.paidOrderCount ||
-                              0}{" "}
-                            commande
-                            {(payload.paidOrderCount ||
-                              0) >
-                            1
-                              ? "s"
-                              : ""}{" "}
-                            payée
-                            {(payload.paidOrderCount ||
-                              0) >
-                            1
-                              ? "s"
-                              : ""}
-                            {" · "}
-                            {payload.cancelledOrderCount ||
-                              0}{" "}
-                            annulée
-                            {(payload.cancelledOrderCount ||
-                              0) >
-                            1
-                              ? "s"
-                              : ""}
-                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="rounded-full bg-[#F1F2EF] px-2.5 py-1 text-xs font-semibold text-[#68706B]">
+                              {paid} payée
+                              {paid >
+                              1
+                                ? "s"
+                                : ""}
+                            </span>
+
+                            {cancelled >
+                              0 && (
+                              <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-xs font-semibold text-[#A74435]">
+                                {
+                                  cancelled
+                                }{" "}
+                                annulée
+                                {cancelled >
+                                1
+                                  ? "s"
+                                  : ""}
+                              </span>
+                            )}
+                          </div>
+
+                          {activePayments.length >
+                            0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {activePayments.map(
+                                (
+                                  method
+                                ) => (
+                                  <div
+                                    key={
+                                      method
+                                    }
+                                    className="rounded-xl bg-[#F7F7F3] px-3 py-2"
+                                  >
+                                    <span className="text-xs text-[#7A817C]">
+                                      {
+                                        method
+                                      }
+                                    </span>
+
+                                    <span className="ml-2 text-sm font-bold text-[#1F2924]">
+                                      {formatMoney(
+                                        Number(
+                                          payload
+                                            .payments?.[
+                                            method
+                                          ] ||
+                                            0
+                                        )
+                                      )}{" "}
+                                      MRU
+                                    </span>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
                         </div>
 
-                        <div className="sm:text-right">
-                          <p className="text-sm text-slate-500">
+                        <div className="rounded-2xl bg-[#EDF5EF] px-5 py-4 lg:min-w-[180px] lg:text-right">
+                          <p className="text-xs font-medium text-[#667D6D]">
                             CA du shift
                           </p>
 
-                          <p className="mt-1 text-xl font-bold">
+                          <p className="mt-1 text-2xl font-black text-[#1E4D3A]">
                             {formatMoney(
                               Number(
                                 payload.revenue ||
                                   0
                               )
-                            )}{" "}
+                            )}
+                          </p>
+
+                          <p className="text-xs font-semibold text-[#6D8274]">
                             MRU
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </article>
                   );
                 }
               )}
             </div>
           )}
         </section>
+
+        <footer className="mt-9 border-t border-[#E3E0D8] py-5">
+          <p className="text-center text-xs text-[#9A9F9B]">
+            MAIDA · Administration
+          </p>
+        </footer>
       </div>
     </main>
   );
