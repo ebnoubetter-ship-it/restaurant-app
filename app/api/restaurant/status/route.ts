@@ -1,63 +1,37 @@
 import { NextResponse } from "next/server";
 
-import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
-import { deleteSession } from "@/lib/session";
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
+
+export const dynamic =
+  "force-dynamic";
 
 export async function GET() {
   const access =
-    await getSessionRestaurantAccess();
+    await requireApiRestaurantAccess();
 
-  if (
-    access.status ===
-    "unauthenticated"
-  ) {
-    return NextResponse.json(
-      {
-        authenticated: false,
-      },
-      {
-        status: 401,
-      }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  if (
-    access.status ===
-    "restricted"
-  ) {
-    /*
-     * On déconnecte l'employé,
-     * mais on conserve volontairement
-     * restaurant_context.
-     */
-    await deleteSession();
+  return NextResponse.json(
+    {
+      authenticated: true,
 
-    return NextResponse.json(
-      {
-        authenticated: false,
+      active: true,
 
-        restricted: true,
+      restaurant: {
+        id:
+          access.restaurant.id,
 
-        error:
-          "Votre accès est restreint. Contactez le support MAIDA.",
+        name:
+          access.restaurant.name,
       },
-      {
-        status: 403,
-      }
-    );
-  }
-
-  return NextResponse.json({
-    authenticated: true,
-
-    active: true,
-
-    restaurant: {
-      id:
-        access.restaurant.id,
-
-      name:
-        access.restaurant.name,
     },
-  });
+    {
+      headers: {
+        "Cache-Control":
+          "no-store, max-age=0",
+      },
+    }
+  );
 }
