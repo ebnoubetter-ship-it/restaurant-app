@@ -2,109 +2,111 @@
 
 import { useEffect } from "react";
 
-const CHECK_INTERVAL =
-  30_000;
+const CHECK_INTERVAL = 10_000;
 
 export default function RestaurantAccessGuard() {
   useEffect(() => {
-    let destroyed = false;
+    let active = true;
 
-    async function checkAccess() {
+    async function checkRestaurantAccess() {
       try {
-        const response =
-          await fetch(
-            "/api/restaurant/status",
-            {
-              method: "GET",
+        const response = await fetch(
+          `/api/restaurant/status?t=${Date.now()}`,
+          {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include",
+            headers: {
+              "Cache-Control": "no-cache",
+            },
+          }
+        );
 
-              cache: "no-store",
-
-              credentials:
-                "same-origin",
-            }
-          );
-
-        if (destroyed) {
+        if (!active) {
           return;
         }
 
-        if (
-          response.status ===
-          403
-        ) {
-          const data =
-            await response
-              .json()
-              .catch(() => null);
+        /*
+         * Restaurant désactivé.
+         *
+         * On ne dépend même plus du contenu
+         * JSON : un 403 suffit pour sortir
+         * immédiatement de l'application.
+         */
+        if (response.status === 403) {
+          window.location.replace(
+            "/restricted"
+          );
 
-          if (
-            data?.restricted
-          ) {
-            window.location.replace(
-              "/restricted"
-            );
-
-            return;
-          }
+          return;
         }
 
-        if (
-          response.status ===
-          401
-        ) {
+        /*
+         * Session absente ou invalide.
+         */
+        if (response.status === 401) {
           window.location.replace(
             "/login"
           );
+
+          return;
         }
       } catch {
         /*
-         * Une coupure réseau temporaire
-         * ne doit pas déconnecter
-         * immédiatement le caissier.
+         * Une coupure Internet temporaire
+         * ne doit pas déconnecter le caissier.
          *
-         * Le prochain contrôle
-         * réessaiera automatiquement.
+         * Le contrôle suivant réessaiera.
          */
       }
     }
 
-    function handleFocus() {
-      void checkAccess();
-    }
-
-    function handleVisibilityChange() {
-      if (
-        document.visibilityState ===
-        "visible"
-      ) {
-        void checkAccess();
-      }
-    }
-
     /*
-     * Premier contrôle dès que
-     * l'espace protégé est chargé.
+     * Contrôle immédiat au chargement.
      */
-    void checkAccess();
+    void checkRestaurantAccess();
 
     /*
-     * Puis contrôle régulier.
+     * Contrôle régulier.
      */
     const interval =
       window.setInterval(
         () => {
-          void checkAccess();
+          void checkRestaurantAccess();
         },
         CHECK_INTERVAL
       );
 
     /*
-     * Contrôle immédiat lorsque
-     * l'utilisateur revient sur MAIDA.
+     * Contrôle immédiat lorsque l'utilisateur
+     * revient dans l'application.
      */
+    const handleFocus = () => {
+      void checkRestaurantAccess();
+    };
+
+    const handleVisibilityChange =
+      () => {
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          void checkRestaurantAccess();
+        }
+      };
+
+    const handlePageShow = () => {
+      void checkRestaurantAccess();
+    };
+
     window.addEventListener(
       "focus",
       handleFocus
+    );
+
+    window.addEventListener(
+      "pageshow",
+      handlePageShow
     );
 
     document.addEventListener(
@@ -113,7 +115,7 @@ export default function RestaurantAccessGuard() {
     );
 
     return () => {
-      destroyed = true;
+      active = false;
 
       window.clearInterval(
         interval
@@ -122,6 +124,11 @@ export default function RestaurantAccessGuard() {
       window.removeEventListener(
         "focus",
         handleFocus
+      );
+
+      window.removeEventListener(
+        "pageshow",
+        handlePageShow
       );
 
       document.removeEventListener(
