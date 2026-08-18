@@ -1,20 +1,43 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
+
+import RestaurantAccessGuard from "@/components/RestaurantAccessGuard";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const access =
+    await getSessionRestaurantAccess();
 
-  if (!session) {
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
     redirect("/login");
   }
 
-  if (session.role !== "admin") {
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "admin"
+  ) {
     redirect("/unauthorized");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <RestaurantAccessGuard />
+
+      {children}
+    </>
+  );
 }
