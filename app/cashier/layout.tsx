@@ -1,20 +1,53 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
+
+import RestaurantAccessGuard from "@/components/RestaurantAccessGuard";
 
 export default async function CashierLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const access =
+    await getSessionRestaurantAccess();
 
-  if (!session) {
+  /*
+   * Pas de session ou ancienne session
+   * sans restaurantId.
+   */
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
     redirect("/login");
   }
 
-  if (session.role !== "cashier") {
+  /*
+   * Restaurant désactivé.
+   */
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  /*
+   * Mauvais rôle.
+   */
+  if (
+    access.session.role !==
+    "cashier"
+  ) {
     redirect("/unauthorized");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <RestaurantAccessGuard />
+
+      {children}
+    </>
+  );
 }
