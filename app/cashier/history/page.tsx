@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 function formatMoney(
@@ -20,15 +22,38 @@ export default async function CashierHistoryPage({
     period?: string;
   }>;
 }) {
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "cashier"
+  ) {
+    redirect("/unauthorized");
+  }
+
   const session =
-    await getSession();
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
 
   const { period } =
     await searchParams;
-
-  if (!session) {
-    return null;
-  }
 
   const selectedPeriod =
     period === "today"
@@ -45,18 +70,40 @@ export default async function CashierHistoryPage({
   ) {
     const {
       data: currentShift,
+      error:
+        currentShiftError,
     } = await supabaseAdmin
       .from("shifts")
       .select("id")
       .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
         "cashier_id",
         session.id
       )
-      .eq("status", "open")
-      .order("started_at", {
-        ascending: false,
-      })
+      .eq(
+        "status",
+        "open"
+      )
+      .order(
+        "started_at",
+        {
+          ascending: false,
+        }
+      )
+      .limit(1)
       .maybeSingle();
+
+    if (
+      currentShiftError
+    ) {
+      console.error(
+        "CASHIER CURRENT SHIFT ERROR:",
+        currentShiftError
+      );
+    }
 
     currentShiftId =
       currentShift?.id ||
@@ -79,25 +126,43 @@ export default async function CashierHistoryPage({
           name
         )
       `)
-      .eq("status", "paid")
-      .order("paid_at", {
-        ascending: false,
-      });
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "restaurant_tables.restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "status",
+        "paid"
+      )
+      .order(
+        "paid_at",
+        {
+          ascending: false,
+        }
+      );
 
   if (
     selectedPeriod ===
     "shift"
   ) {
-    if (currentShiftId) {
-      query = query.eq(
-        "shift_id",
-        currentShiftId
-      );
+    if (
+      currentShiftId
+    ) {
+      query =
+        query.eq(
+          "shift_id",
+          currentShiftId
+        );
     } else {
-      query = query.eq(
-        "shift_id",
-        "00000000-0000-0000-0000-000000000000"
-      );
+      query =
+        query.eq(
+          "shift_id",
+          "00000000-0000-0000-0000-000000000000"
+        );
     }
   }
 
@@ -138,15 +203,16 @@ export default async function CashierHistoryPage({
         1
     );
 
-    query = query
-      .gte(
-        "paid_at",
-        startOfDay.toISOString()
-      )
-      .lt(
-        "paid_at",
-        endOfDay.toISOString()
-      );
+    query =
+      query
+        .gte(
+          "paid_at",
+          startOfDay.toISOString()
+        )
+        .lt(
+          "paid_at",
+          endOfDay.toISOString()
+        );
   }
 
   const {
@@ -220,7 +286,8 @@ export default async function CashierHistoryPage({
     );
 
   const averageOrder =
-    historyOrders.length > 0
+    historyOrders.length >
+    0
       ? Math.round(
           totalSales /
             historyOrders.length
@@ -239,7 +306,8 @@ export default async function CashierHistoryPage({
   };
 
   for (
-    const order of historyOrders
+    const order of
+    historyOrders
   ) {
     if (
       !order.payment_method
@@ -250,9 +318,11 @@ export default async function CashierHistoryPage({
     paymentTotals[
       order.payment_method
     ] =
-      (paymentTotals[
-        order.payment_method
-      ] || 0) +
+      (
+        paymentTotals[
+          order.payment_method
+        ] || 0
+      ) +
       Number(
         order.total || 0
       );
@@ -269,7 +339,6 @@ export default async function CashierHistoryPage({
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-5xl">
-        {/* HEADER */}
         <header className="mb-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -288,7 +357,6 @@ export default async function CashierHistoryPage({
           </div>
         </header>
 
-        {/* NAV */}
         <nav className="mb-7 flex gap-1 rounded-2xl border border-[#E5E2DA] bg-white p-1 shadow-sm">
           <Link
             href="/cashier"
@@ -312,7 +380,6 @@ export default async function CashierHistoryPage({
           </Link>
         </nav>
 
-        {/* TITRE */}
         <section>
           <p className="text-sm font-semibold text-[#2E6A50]">
             Encaissements
@@ -329,7 +396,6 @@ export default async function CashierHistoryPage({
           </p>
         </section>
 
-        {/* FILTRES */}
         <div className="mt-5 inline-flex rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/cashier/history?period=shift"
@@ -381,7 +447,6 @@ export default async function CashierHistoryPage({
             </div>
           )}
 
-        {/* KPI */}
         <section className="mt-6 grid grid-cols-3 overflow-hidden rounded-[20px] border border-[#E5E2DA] bg-white shadow-sm">
           <div className="border-r border-[#ECE9E2] p-3.5 sm:p-4">
             <p className="text-xs font-medium text-[#737A75]">
@@ -428,7 +493,6 @@ export default async function CashierHistoryPage({
           </div>
         </section>
 
-        {/* PAIEMENTS */}
         {activePaymentMethods.length >
           0 && (
           <section className="mt-5 rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
@@ -465,7 +529,6 @@ export default async function CashierHistoryPage({
           </section>
         )}
 
-        {/* LISTE */}
         <section className="mt-7">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-[#1F2924]">

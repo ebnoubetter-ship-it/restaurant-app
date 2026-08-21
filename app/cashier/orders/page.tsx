@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 function formatMoney(
@@ -13,6 +16,33 @@ function formatMoney(
 }
 
 export default async function CashierOrdersPage() {
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "cashier"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
   const {
     data: orders,
     error,
@@ -32,10 +62,28 @@ export default async function CashierOrdersPage() {
         sent_quantity
       )
     `)
-    .eq("status", "open")
-    .order("created_at", {
-      ascending: false,
-    });
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "status",
+      "open"
+    )
+    .eq(
+      "order_items.restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "restaurant_tables.restaurant_id",
+      restaurantId
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false,
+      }
+    );
 
   if (error) {
     console.error(
@@ -203,11 +251,14 @@ export default async function CashierOrdersPage() {
           : null,
 
       orderLabel,
+
       orderType:
         order.order_type,
 
       total,
+
       totalUnits,
+
       pendingKitchenQuantity,
 
       createdAt:
@@ -294,7 +345,6 @@ export default async function CashierOrdersPage() {
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-5xl">
-        {/* HEADER */}
         <header className="mb-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -313,7 +363,6 @@ export default async function CashierOrdersPage() {
           </div>
         </header>
 
-        {/* NAVIGATION */}
         <nav className="mb-7 flex gap-1 rounded-2xl border border-[#E5E2DA] bg-white p-1 shadow-sm">
           <Link
             href="/cashier"
@@ -337,7 +386,6 @@ export default async function CashierOrdersPage() {
           </Link>
         </nav>
 
-        {/* TITRE */}
         <section className="mb-5">
           <p className="text-sm font-semibold text-[#2E6A50]">
             Service en cours
@@ -354,7 +402,6 @@ export default async function CashierOrdersPage() {
           </p>
         </section>
 
-        {/* INDICATEURS */}
         <section className="mb-6 grid grid-cols-3 overflow-hidden rounded-[20px] border border-[#E5E2DA] bg-white shadow-sm">
           <div className="border-r border-[#ECE9E2] px-2 py-3.5 text-center">
             <p className="text-xs font-medium text-[#737A75]">
@@ -397,7 +444,6 @@ export default async function CashierOrdersPage() {
           </div>
         </section>
 
-        {/* LISTE */}
         {formattedOrders.length ===
         0 ? (
           <section className="rounded-[26px] border border-[#E8E5DE] bg-white p-8 text-center shadow-sm">
