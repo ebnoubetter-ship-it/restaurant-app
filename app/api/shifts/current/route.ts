@@ -1,29 +1,58 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET() {
-  const session = await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (!session || session.role !== "cashier") {
-    return NextResponse.json(
-      { error: "Accès non autorisé." },
-      { status: 403 }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const { data: shift, error } =
-    await supabaseAdmin
-      .from("shifts")
-      .select(
-        "id, started_at, ended_at, status"
-      )
-      .eq("cashier_id", session.id)
-      .eq("status", "open")
-      .order("started_at", {
+  const session =
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
+
+  /*
+   * SHIFT ACTUEL
+   */
+  const {
+    data: shift,
+    error,
+  } = await supabaseAdmin
+    .from("shifts")
+    .select(`
+      id,
+      started_at,
+      ended_at,
+      status
+    `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "cashier_id",
+      session.id
+    )
+    .eq(
+      "status",
+      "open"
+    )
+    .order(
+      "started_at",
+      {
         ascending: false,
-      })
-      .maybeSingle();
+      }
+    )
+    .limit(1)
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json(
@@ -31,7 +60,9 @@ export async function GET() {
         error:
           "Impossible de récupérer le shift.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
@@ -43,18 +74,30 @@ export async function GET() {
   }
 
   /*
-   * COMMANDES PAYÉES DU SHIFT
+   * COMMANDES PAYÉES
+   * DU SHIFT
    */
   const {
     data: paidOrders,
     error: paidOrdersError,
   } = await supabaseAdmin
     .from("orders")
-    .select(
-      "total, payment_method"
+    .select(`
+      total,
+      payment_method
+    `)
+    .eq(
+      "restaurant_id",
+      restaurantId
     )
-    .eq("shift_id", shift.id)
-    .eq("status", "paid");
+    .eq(
+      "shift_id",
+      shift.id
+    )
+    .eq(
+      "status",
+      "paid"
+    );
 
   if (paidOrdersError) {
     return NextResponse.json(
@@ -62,16 +105,18 @@ export async function GET() {
         error:
           "Impossible de récupérer les ventes du shift.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
   /*
    * COMMANDES ANNULÉES
    *
-   * Elles n'ont pas forcément de shift_id,
-   * donc on utilise le caissier et la période
-   * du shift.
+   * Certaines n'ont pas de shift_id,
+   * donc filtre caissier + période
+   * + restaurant.
    */
   const {
     data: cancelledOrders,
@@ -79,6 +124,10 @@ export async function GET() {
   } = await supabaseAdmin
     .from("orders")
     .select("id")
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "status",
       "cancelled"
@@ -98,7 +147,9 @@ export async function GET() {
         error:
           "Impossible de récupérer les commandes annulées.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
@@ -119,6 +170,10 @@ export async function GET() {
       )
     `)
     .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
       "cashier_id",
       session.id
     )
@@ -133,27 +188,28 @@ export async function GET() {
         error:
           "Impossible de vérifier les commandes ouvertes.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
   const summary = {
-    /*
-     * On garde orderCount pour ne rien casser
-     * dans les écrans existants.
-     * Il correspond aux commandes payées.
-     */
     orderCount:
-      paidOrders?.length || 0,
+      paidOrders?.length ||
+      0,
 
     paidOrderCount:
-      paidOrders?.length || 0,
+      paidOrders?.length ||
+      0,
 
     cancelledOrderCount:
-      cancelledOrders?.length || 0,
+      cancelledOrders?.length ||
+      0,
 
     openOrderCount:
-      openOrders?.length || 0,
+      openOrders?.length ||
+      0,
 
     total: 0,
 
@@ -163,34 +219,38 @@ export async function GET() {
       Masrivi: 0,
       Sedad: 0,
       "BCI PAY": 0,
-    } as Record<string, number>,
+    } as Record<
+      string,
+      number
+    >,
 
     openOrders:
-      (openOrders || []).map(
-        (order) => {
-          const table =
-            Array.isArray(
-              order.restaurant_tables
-            )
-              ? order
-                  .restaurant_tables[0]
-              : order.restaurant_tables;
+      (
+        openOrders || []
+      ).map((order) => {
+        const table =
+          Array.isArray(
+            order.restaurant_tables
+          )
+            ? order
+                .restaurant_tables[0]
+            : order.restaurant_tables;
 
-          return {
-            id: order.id,
+        return {
+          id:
+            order.id,
 
-            orderNumber:
-              order.order_number,
+          orderNumber:
+            order.order_number,
 
-            label:
-              order.order_type ===
-              "takeaway"
-                ? "À emporter"
-                : table?.name ||
-                  "Table",
-          };
-        }
-      ),
+          label:
+            order.order_type ===
+            "takeaway"
+              ? "À emporter"
+              : table?.name ||
+                "Table",
+        };
+      }),
   };
 
   for (
@@ -211,10 +271,11 @@ export async function GET() {
       summary.payments[
         order.payment_method
       ] =
-        (summary.payments[
-          order.payment_method
-        ] || 0) +
-        amount;
+        (
+          summary.payments[
+            order.payment_method
+          ] || 0
+        ) + amount;
     }
   }
 

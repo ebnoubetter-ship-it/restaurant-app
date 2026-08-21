@@ -1,44 +1,120 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST() {
-  const session = await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (!session || session.role !== "cashier") {
-    return NextResponse.json(
-      { error: "Accès non autorisé." },
-      { status: 403 }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const { data: existingShift } = await supabaseAdmin
+  const session =
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
+
+  /*
+   * Vérifier qu'aucun shift
+   * n'est déjà ouvert pour ce
+   * caissier dans CE restaurant.
+   */
+  const {
+    data: existingShift,
+    error: existingShiftError,
+  } = await supabaseAdmin
     .from("shifts")
     .select("id")
-    .eq("cashier_id", session.id)
-    .eq("status", "open")
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "cashier_id",
+      session.id
+    )
+    .eq(
+      "status",
+      "open"
+    )
+    .limit(1)
     .maybeSingle();
+
+  if (existingShiftError) {
+    console.error(
+      "OPEN SHIFT CHECK ERROR:",
+      existingShiftError
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Impossible de vérifier le shift actuel.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
 
   if (existingShift) {
     return NextResponse.json(
-      { error: "Un shift est déjà ouvert." },
-      { status: 400 }
+      {
+        error:
+          "Un shift est déjà ouvert.",
+      },
+      {
+        status: 409,
+      }
     );
   }
 
-  const { data: shift, error } = await supabaseAdmin
+  /*
+   * restaurant_id est maintenant
+   * explicitement enregistré.
+   */
+  const {
+    data: shift,
+    error,
+  } = await supabaseAdmin
     .from("shifts")
     .insert({
-      cashier_id: session.id,
-      status: "open",
+      restaurant_id:
+        restaurantId,
+
+      cashier_id:
+        session.id,
+
+      status:
+        "open",
     })
-    .select("id, started_at, status")
+    .select(`
+      id,
+      started_at,
+      status,
+      restaurant_id
+    `)
     .single();
 
   if (error) {
+    console.error(
+      "OPEN SHIFT ERROR:",
+      error
+    );
+
     return NextResponse.json(
-      { error: "Impossible d'ouvrir le shift." },
-      { status: 500 }
+      {
+        error:
+          "Impossible d'ouvrir le shift.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 

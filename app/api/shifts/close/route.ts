@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const paymentMethods = [
@@ -19,22 +20,25 @@ type ProductStat = {
 };
 
 export async function POST() {
-  const session = await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (
-    !session ||
-    session.role !== "cashier"
-  ) {
-    return NextResponse.json(
-      {
-        error: "Accès non autorisé.",
-      },
-      { status: 403 }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
+  const session =
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
+
   /*
+   * ============================
    * SHIFT ACTUEL
+   * ============================
    */
   const {
     data: shift,
@@ -47,6 +51,10 @@ export async function POST() {
       started_at,
       status
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "cashier_id",
       session.id
@@ -61,6 +69,7 @@ export async function POST() {
         ascending: false,
       }
     )
+    .limit(1)
     .maybeSingle();
 
   if (
@@ -72,13 +81,16 @@ export async function POST() {
         error:
           "Aucun shift ouvert.",
       },
-      { status: 400 }
+      {
+        status: 400,
+      }
     );
   }
 
   /*
-   * 1. BLOQUER S'IL RESTE
-   * DES COMMANDES OUVERTES
+   * ============================
+   * COMMANDES OUVERTES
+   * ============================
    */
   const {
     data: openOrders,
@@ -89,6 +101,10 @@ export async function POST() {
       id,
       order_number
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "cashier_id",
       session.id
@@ -104,23 +120,32 @@ export async function POST() {
         error:
           "Impossible de vérifier les commandes ouvertes.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
   const openOrderCount =
-    (openOrders || []).length;
+    (
+      openOrders || []
+    ).length;
 
-  if (openOrderCount > 0) {
+  if (
+    openOrderCount >
+    0
+  ) {
     return NextResponse.json(
       {
         error:
           `${openOrderCount} commande${
-            openOrderCount > 1
+            openOrderCount >
+            1
               ? "s sont encore ouvertes"
               : " est encore ouverte"
           }. Encaissez ou annulez ${
-            openOrderCount > 1
+            openOrderCount >
+            1
               ? "ces commandes"
               : "cette commande"
           } avant de fermer le shift.`,
@@ -128,15 +153,21 @@ export async function POST() {
         openOrderCount,
 
         openOrders:
-          (openOrders || []).map(
+          (
+            openOrders || []
+          ).map(
             (order) => ({
-              id: order.id,
+              id:
+                order.id,
+
               orderNumber:
                 order.order_number,
             })
           ),
       },
-      { status: 400 }
+      {
+        status: 400,
+      }
     );
   }
 
@@ -144,13 +175,19 @@ export async function POST() {
     new Date().toISOString();
 
   /*
-   * NOM DU CAISSIER
+   * ============================
+   * CAISSIER
+   * ============================
    */
   const {
     data: cashier,
   } = await supabaseAdmin
     .from("users")
     .select("name")
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "id",
       session.id
@@ -162,7 +199,9 @@ export async function POST() {
     "Caissier";
 
   /*
-   * 2. COMMANDES PAYÉES DU SHIFT
+   * ============================
+   * COMMANDES PAYÉES
+   * ============================
    */
   const {
     data: paidOrders,
@@ -187,6 +226,10 @@ export async function POST() {
       )
     `)
     .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
       "status",
       "paid"
     )
@@ -201,13 +244,16 @@ export async function POST() {
         error:
           "Impossible de calculer les ventes du shift.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
   /*
-   * 3. COMMANDES COMPLÈTEMENT
-   * ANNULÉES PENDANT LE SHIFT
+   * ============================
+   * COMMANDES ANNULÉES
+   * ============================
    */
   const {
     data: cancelledOrders,
@@ -231,6 +277,10 @@ export async function POST() {
       )
     `)
     .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
       "status",
       "cancelled"
     )
@@ -253,17 +303,21 @@ export async function POST() {
         error:
           "Impossible de récupérer les commandes annulées.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
   /*
-   * 4. ANNULATIONS PARTIELLES
-   * D'ARTICLES PENDANT LE SHIFT
+   * ============================
+   * ANNULATIONS PARTIELLES
+   * ============================
    */
   const {
     data: itemCancellations,
-    error: itemCancellationsError,
+    error:
+      itemCancellationsError,
   } = await supabaseAdmin
     .from(
       "order_item_cancellations"
@@ -277,6 +331,10 @@ export async function POST() {
       created_at
     `)
     .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
       "cashier_id",
       session.id
     )
@@ -289,23 +347,26 @@ export async function POST() {
       endedAt
     );
 
-  if (itemCancellationsError) {
+  if (
+    itemCancellationsError
+  ) {
     return NextResponse.json(
       {
         error:
           "Impossible de récupérer les articles annulés.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 
-  /*
-   * On récupère les produits correspondant
-   * aux annulations partielles.
-   */
   const cancelledItemIds = [
     ...new Set(
-      (itemCancellations || [])
+      (
+        itemCancellations ||
+        []
+      )
         .map(
           (item) =>
             item.order_item_id
@@ -318,7 +379,8 @@ export async function POST() {
     any[] = [];
 
   if (
-    cancelledItemIds.length > 0
+    cancelledItemIds.length >
+    0
   ) {
     const {
       data,
@@ -335,6 +397,10 @@ export async function POST() {
           category
         )
       `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
       .in(
         "id",
         cancelledItemIds
@@ -346,7 +412,9 @@ export async function POST() {
           error:
             "Impossible de récupérer les produits annulés.",
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
@@ -355,21 +423,33 @@ export async function POST() {
   }
 
   /*
-   * 5. RAPPORT CAISSE
+   * ============================
+   * RAPPORT CAISSE
+   * ============================
    */
   const paidOrderCount =
-    (paidOrders || []).length;
+    (
+      paidOrders || []
+    ).length;
 
   const cancelledOrderCount =
-    (cancelledOrders || [])
-      .length;
+    (
+      cancelledOrders ||
+      []
+    ).length;
 
   const revenue =
-    (paidOrders || []).reduce(
-      (sum, order) =>
+    (
+      paidOrders || []
+    ).reduce(
+      (
+        sum,
+        order
+      ) =>
         sum +
         Number(
-          order.total || 0
+          order.total ||
+            0
         ),
       0
     );
@@ -402,13 +482,16 @@ export async function POST() {
         method
       ] +=
         Number(
-          order.total || 0
+          order.total ||
+            0
         );
     }
   }
 
   /*
-   * 6. RAPPORT PRODUITS
+   * ============================
+   * RAPPORT PRODUITS
+   * ============================
    */
   const products =
     new Map<
@@ -462,9 +545,6 @@ export async function POST() {
 
   /*
    * PRODUITS VENDUS
-   *
-   * Quantités restantes sur les
-   * commandes réellement payées.
    */
   for (
     const order of
@@ -472,34 +552,41 @@ export async function POST() {
   ) {
     for (
       const item of
-      order.order_items || []
+      order.order_items ||
+      []
     ) {
       const product =
         Array.isArray(
           item.menu_items
         )
-          ? item.menu_items[0]
+          ? item
+              .menu_items[0]
           : item.menu_items;
 
       addProduct(
         item.menu_item_id ||
           product?.id ||
           "",
+
         product?.name ||
           "Produit",
+
         product?.category ||
           "",
+
         "sold",
+
         Number(
-          item.quantity || 0
+          item.quantity ||
+            0
         )
       );
     }
   }
 
   /*
-   * PRODUITS D'UNE COMMANDE
-   * ENTIÈREMENT ANNULÉE
+   * PRODUITS DES COMMANDES
+   * ENTIÈREMENT ANNULÉES
    */
   for (
     const order of
@@ -507,26 +594,33 @@ export async function POST() {
   ) {
     for (
       const item of
-      order.order_items || []
+      order.order_items ||
+      []
     ) {
       const product =
         Array.isArray(
           item.menu_items
         )
-          ? item.menu_items[0]
+          ? item
+              .menu_items[0]
           : item.menu_items;
 
       addProduct(
         item.menu_item_id ||
           product?.id ||
           "",
+
         product?.name ||
           "Produit",
+
         product?.category ||
           "",
+
         "cancelled",
+
         Number(
-          item.quantity || 0
+          item.quantity ||
+            0
         )
       );
     }
@@ -554,7 +648,8 @@ export async function POST() {
 
   for (
     const cancellation of
-    itemCancellations || []
+    itemCancellations ||
+    []
   ) {
     const item =
       cancelledItemMap.get(
@@ -569,18 +664,23 @@ export async function POST() {
       Array.isArray(
         item.menu_items
       )
-        ? item.menu_items[0]
+        ? item
+            .menu_items[0]
         : item.menu_items;
 
     addProduct(
       item.menu_item_id ||
         product?.id ||
         "",
+
       product?.name ||
         "Produit",
+
       product?.category ||
         "",
+
       "cancelled",
+
       Number(
         cancellation.quantity ||
           0
@@ -600,7 +700,8 @@ export async function POST() {
           );
 
         if (
-          categoryCompare !== 0
+          categoryCompare !==
+          0
         ) {
           return categoryCompare;
         }
@@ -614,7 +715,10 @@ export async function POST() {
 
   const totalSoldItems =
     productReport.reduce(
-      (sum, product) =>
+      (
+        sum,
+        product
+      ) =>
         sum +
         product.soldQuantity,
       0
@@ -622,28 +726,33 @@ export async function POST() {
 
   const totalCancelledItems =
     productReport.reduce(
-      (sum, product) =>
+      (
+        sum,
+        product
+      ) =>
         sum +
         product.cancelledQuantity,
       0
     );
 
-  /*
-   * DATE DU RAPPORT
-   *
-   * Le service d'impression utilisera
-   * startedAt / endedAt pour afficher
-   * précisément les heures.
-   */
   const reportDate =
     new Date(
       shift.started_at
     )
       .toISOString()
-      .slice(0, 10);
+      .slice(
+        0,
+        10
+      );
 
   /*
-   * 7. FERMER LE SHIFT
+   * ============================
+   * FERMER LE SHIFT
+   * ============================
+   *
+   * restaurant_id empêche
+   * de fermer un shift d'un
+   * autre restaurant.
    */
   const {
     data: closedShift,
@@ -651,13 +760,23 @@ export async function POST() {
   } = await supabaseAdmin
     .from("shifts")
     .update({
-      status: "closed",
+      status:
+        "closed",
+
       ended_at:
         endedAt,
     })
     .eq(
       "id",
       shift.id
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "cashier_id",
+      session.id
     )
     .eq(
       "status",
@@ -675,12 +794,16 @@ export async function POST() {
         error:
           "Impossible de fermer le shift.",
       },
-      { status: 500 }
+      {
+        status: 409,
+      }
     );
   }
 
   /*
-   * 8. RAPPORT 1 : CAISSE
+   * ============================
+   * RAPPORT CAISSE
+   * ============================
    */
   const summaryPayload = {
     reportType:
@@ -716,7 +839,9 @@ export async function POST() {
   };
 
   /*
-   * 9. RAPPORT 2 : PRODUITS
+   * ============================
+   * RAPPORT PRODUITS
+   * ============================
    */
   const productsPayload = {
     reportType:
@@ -750,15 +875,20 @@ export async function POST() {
   };
 
   /*
-   * 10. CRÉER LES DEUX
-   * JOBS D'IMPRESSION
+   * ============================
+   * PRINT JOBS
+   * ============================
    */
   const {
-    error: printJobsError,
+    error:
+      printJobsError,
   } = await supabaseAdmin
     .from("print_jobs")
     .insert([
       {
+        restaurant_id:
+          restaurantId,
+
         shift_id:
           shift.id,
 
@@ -779,6 +909,9 @@ export async function POST() {
       },
 
       {
+        restaurant_id:
+          restaurantId,
+
         shift_id:
           shift.id,
 
@@ -799,10 +932,6 @@ export async function POST() {
       },
     ]);
 
-  /*
-   * Le shift reste bien fermé même si
-   * la préparation des impressions échoue.
-   */
   return NextResponse.json({
     success: true,
 
