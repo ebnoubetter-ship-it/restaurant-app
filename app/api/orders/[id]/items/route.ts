@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getSession } from "@/lib/session";
 
 type ItemCancelResult = {
   success?: boolean;
@@ -32,47 +33,70 @@ export async function GET(
     }>;
   }
 ) {
-  const session =
-    await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (
-    !session ||
-    session.role !==
-      "cashier"
-  ) {
+  if (!access.success) {
+    return access.response;
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
+  const { id: orderId } =
+    await context.params;
+
+  /*
+   * Vérifier que la commande appartient
+   * au restaurant.
+   */
+  const {
+    data: order,
+  } = await supabaseAdmin
+    .from("orders")
+    .select("id")
+    .eq(
+      "id",
+      orderId
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .maybeSingle();
+
+  if (!order) {
     return NextResponse.json(
       {
         error:
-          "Accès non autorisé.",
+          "Commande introuvable.",
       },
       {
-        status: 403,
+        status: 404,
       }
     );
   }
 
   const {
-    id: orderId,
-  } = await context.params;
-
-  const {
-    data,
+    data: items,
     error,
   } = await supabaseAdmin
     .from("order_items")
     .select(`
       id,
+      menu_item_id,
       quantity,
       unit_price,
       sent_quantity,
       cancelled_quantity,
-      cancelled_after_send_quantity,
-      menu_items (
-        id,
-        name,
-        category
-      )
+      cancelled_after_send_quantity
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "order_id",
       orderId
@@ -100,8 +124,93 @@ export async function GET(
     );
   }
 
+  const menuItemIds = [
+    ...new Set(
+      (items || [])
+        .map(
+          (item) =>
+            item.menu_item_id
+        )
+        .filter(
+          (
+            id
+          ): id is string =>
+            typeof id ===
+              "string" &&
+            id.length > 0
+        )
+    ),
+  ];
+
+  const productMap =
+    new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        category: string;
+      }
+    >();
+
+  if (
+    menuItemIds.length >
+    0
+  ) {
+    const {
+      data: products,
+      error: productsError,
+    } = await supabaseAdmin
+      .from("menu_items")
+      .select(`
+        id,
+        name,
+        category
+      `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .in(
+        "id",
+        menuItemIds
+      );
+
+    if (productsError) {
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de récupérer les produits.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    for (
+      const product of
+      products || []
+    ) {
+      productMap.set(
+        product.id,
+        product
+      );
+    }
+  }
+
   return NextResponse.json(
-    data || []
+    (items || []).map(
+      (item) => ({
+        ...item,
+
+        menu_items:
+          item.menu_item_id
+            ? productMap.get(
+                item.menu_item_id
+              ) || null
+            : null,
+      })
+    )
   );
 }
 
@@ -113,28 +222,20 @@ export async function POST(
     }>;
   }
 ) {
-  const session =
-    await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (
-    !session ||
-    session.role !==
-      "cashier"
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Accès non autorisé.",
-      },
-      {
-        status: 403,
-      }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const {
-    id: orderId,
-  } = await context.params;
+  const restaurantId =
+    access.restaurant.id;
+
+  const { id: orderId } =
+    await context.params;
 
   let body: {
     menuItemId?: unknown;
@@ -158,7 +259,7 @@ export async function POST(
   const menuItemId =
     typeof body.menuItemId ===
     "string"
-      ? body.menuItemId
+      ? body.menuItemId.trim()
       : "";
 
   if (!menuItemId) {
@@ -178,12 +279,17 @@ export async function POST(
     error: orderError,
   } = await supabaseAdmin
     .from("orders")
-    .select(
-      "id, status"
-    )
+    .select(`
+      id,
+      status
+    `)
     .eq(
       "id",
       orderId
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
     )
     .maybeSingle();
 
@@ -222,12 +328,17 @@ export async function POST(
     error: menuError,
   } = await supabaseAdmin
     .from("menu_items")
-    .select(
-      "id, price"
-    )
+    .select(`
+      id,
+      price
+    `)
     .eq(
       "id",
       menuItemId
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
     )
     .eq(
       "active",
@@ -260,6 +371,10 @@ export async function POST(
       quantity,
       sent_quantity
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "order_id",
       orderId
@@ -295,10 +410,6 @@ export async function POST(
           0
       );
 
-    /*
-     * Protection contre deux
-     * modifications simultanées.
-     */
     const {
       data: updatedItem,
       error,
@@ -311,6 +422,14 @@ export async function POST(
       .eq(
         "id",
         existingItem.id
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "order_id",
+        orderId
       )
       .eq(
         "quantity",
@@ -344,18 +463,23 @@ export async function POST(
     } = await supabaseAdmin
       .from("order_items")
       .insert({
+        restaurant_id:
+          restaurantId,
+
         order_id:
           orderId,
 
         menu_item_id:
           menuItemId,
 
-        quantity: 1,
+        quantity:
+          1,
 
         unit_price:
           menuItem.price,
 
-        sent_quantity: 0,
+        sent_quantity:
+          0,
 
         cancelled_quantity:
           0,
@@ -390,28 +514,23 @@ export async function PATCH(
     }>;
   }
 ) {
-  const session =
-    await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (
-    !session ||
-    session.role !==
-      "cashier"
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Accès non autorisé.",
-      },
-      {
-        status: 403,
-      }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const {
-    id: orderId,
-  } = await context.params;
+  const session =
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
+
+  const { id: orderId } =
+    await context.params;
 
   let body: {
     itemId?: unknown;
@@ -464,12 +583,17 @@ export async function PATCH(
     error: orderError,
   } = await supabaseAdmin
     .from("orders")
-    .select(
-      "id, status"
-    )
+    .select(`
+      id,
+      status
+    `)
     .eq(
       "id",
       orderId
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
     )
     .maybeSingle();
 
@@ -524,6 +648,10 @@ export async function PATCH(
       "order_id",
       orderId
     )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .maybeSingle();
 
   if (
@@ -548,7 +676,8 @@ export async function PATCH(
 
   const sentQuantity =
     Number(
-      item.sent_quantity || 0
+      item.sent_quantity ||
+        0
     );
 
   const cancelledQuantity =
@@ -564,9 +693,7 @@ export async function PATCH(
     );
 
   /*
-   * ============================
    * AUGMENTER
-   * ============================
    */
   if (
     action === "increase"
@@ -583,6 +710,14 @@ export async function PATCH(
       .eq(
         "id",
         itemId
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "order_id",
+        orderId
       )
       .eq(
         "quantity",
@@ -617,12 +752,7 @@ export async function PATCH(
   }
 
   /*
-   * ============================
    * DIMINUER
-   * ============================
-   *
-   * Une quantité non envoyée est
-   * simplement corrigée.
    */
   if (
     action === "decrease"
@@ -647,7 +777,8 @@ export async function PATCH(
       );
 
     if (
-      unsentQuantity <= 0
+      unsentQuantity <=
+      0
     ) {
       return NextResponse.json(
         {
@@ -666,14 +797,10 @@ export async function PATCH(
     const newQuantity =
       quantity - 1;
 
-    /*
-     * Suppression physique seulement
-     * s'il n'existe aucun historique
-     * d'annulation.
-     */
     if (
       newQuantity === 0 &&
-      cancelledQuantity === 0
+      cancelledQuantity ===
+        0
     ) {
       const {
         data: deletedItem,
@@ -684,6 +811,14 @@ export async function PATCH(
         .eq(
           "id",
           itemId
+        )
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
+        .eq(
+          "order_id",
+          orderId
         )
         .eq(
           "quantity",
@@ -726,6 +861,14 @@ export async function PATCH(
           itemId
         )
         .eq(
+          "restaurant_id",
+          restaurantId
+        )
+        .eq(
+          "order_id",
+          orderId
+        )
+        .eq(
           "quantity",
           quantity
         )
@@ -759,9 +902,7 @@ export async function PATCH(
   }
 
   /*
-   * ============================
    * SUPPRIMER
-   * ============================
    */
   if (
     action === "delete"
@@ -784,7 +925,8 @@ export async function PATCH(
     }
 
     if (
-      cancelledQuantity > 0
+      cancelledQuantity >
+      0
     ) {
       const {
         data: updatedItem,
@@ -797,6 +939,14 @@ export async function PATCH(
         .eq(
           "id",
           itemId
+        )
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
+        .eq(
+          "order_id",
+          orderId
         )
         .eq(
           "quantity",
@@ -836,6 +986,14 @@ export async function PATCH(
           itemId
         )
         .eq(
+          "restaurant_id",
+          restaurantId
+        )
+        .eq(
+          "order_id",
+          orderId
+        )
+        .eq(
           "quantity",
           quantity
         )
@@ -869,9 +1027,7 @@ export async function PATCH(
   }
 
   /*
-   * ============================
    * ANNULER
-   * ============================
    */
   if (
     action === "cancel"
@@ -919,7 +1075,8 @@ export async function PATCH(
       !Number.isInteger(
         quantityToCancel
       ) ||
-      quantityToCancel <= 0
+      quantityToCancel <=
+        0
     ) {
       return NextResponse.json(
         {
@@ -950,10 +1107,6 @@ export async function PATCH(
     const cancelledAt =
       new Date().toISOString();
 
-    /*
-     * Toute l'annulation est faite
-     * sous verrou PostgreSQL.
-     */
     const {
       data,
       error,
@@ -961,6 +1114,9 @@ export async function PATCH(
       await supabaseAdmin.rpc(
         "cancel_order_item_atomic",
         {
+          p_restaurant_id:
+            restaurantId,
+
           p_order_id:
             orderId,
 
@@ -976,12 +1132,6 @@ export async function PATCH(
           p_cancel_quantity:
             quantityToCancel,
 
-          /*
-           * Snapshot attendu.
-           *
-           * Le deuxième clic concurrent
-           * ne correspondra plus à cet état.
-           */
           p_expected_quantity:
             quantity,
 
@@ -1006,8 +1156,42 @@ export async function PATCH(
       );
 
       const message =
-        error.message ||
-        "";
+        error.message || "";
+
+      if (
+        message.includes(
+          "RESTAURANT_INACTIVE"
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Votre accès est restreint. Contactez le support MAIDA.",
+
+            restricted:
+              true,
+          },
+          {
+            status: 403,
+          }
+        );
+      }
+
+      if (
+        message.includes(
+          "USER_NOT_FOUND"
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Accès non autorisé.",
+          },
+          {
+            status: 403,
+          }
+        );
+      }
 
       if (
         message.includes(
@@ -1097,9 +1281,7 @@ export async function PATCH(
         | ItemCancelResult
         | null;
 
-    if (
-      !result?.success
-    ) {
+    if (!result?.success) {
       return NextResponse.json(
         {
           error:

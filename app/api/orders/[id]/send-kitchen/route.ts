@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getSession } from "@/lib/session";
 
 type KitchenRpcResult = {
   success?: boolean;
@@ -16,38 +17,26 @@ export async function POST(
     }>;
   }
 ) {
-  /*
-   * ============================
-   * AUTHENTIFICATION
-   * ============================
-   */
-  const session =
-    await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (
-    !session ||
-    session.role !==
-      "cashier"
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Accès non autorisé.",
-      },
-      {
-        status: 403,
-      }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const {
-    id: orderId,
-  } = await context.params;
+  const session =
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
+
+  const { id: orderId } =
+    await context.params;
 
   /*
-   * ============================
    * COMMANDE
-   * ============================
    */
   const {
     data: order,
@@ -56,17 +45,19 @@ export async function POST(
     .from("orders")
     .select(`
       id,
+      table_id,
       status,
       order_number,
       order_type,
-      created_at,
-      restaurant_tables (
-        name
-      )
+      created_at
     `)
     .eq(
       "id",
       orderId
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
     )
     .maybeSingle();
 
@@ -86,7 +77,8 @@ export async function POST(
   }
 
   if (
-    order.status !== "open"
+    order.status !==
+    "open"
   ) {
     return NextResponse.json(
       {
@@ -100,9 +92,65 @@ export async function POST(
   }
 
   /*
-   * ============================
+   * EMPLACEMENT
+   */
+  let tableName:
+    | string
+    | null = null;
+
+  if (
+    order.order_type ===
+      "dine_in" &&
+    order.table_id
+  ) {
+    const {
+      data: table,
+      error: tableError,
+    } = await supabaseAdmin
+      .from(
+        "restaurant_tables"
+      )
+      .select("name")
+      .eq(
+        "id",
+        order.table_id
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .maybeSingle();
+
+    if (tableError) {
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de récupérer la table.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!table) {
+      return NextResponse.json(
+        {
+          error:
+            "Table invalide.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    tableName =
+      table.name;
+  }
+
+  /*
    * ARTICLES
-   * ============================
    */
   const {
     data: items,
@@ -111,14 +159,14 @@ export async function POST(
     .from("order_items")
     .select(`
       id,
+      menu_item_id,
       quantity,
-      sent_quantity,
-      menu_items (
-        id,
-        name,
-        category
-      )
+      sent_quantity
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "order_id",
       orderId
@@ -152,9 +200,84 @@ export async function POST(
   }
 
   /*
-   * ============================
+   * PRODUITS DU RESTAURANT
+   */
+  const menuItemIds = [
+    ...new Set(
+      (items || [])
+        .map(
+          (item) =>
+            item.menu_item_id
+        )
+        .filter(
+          (
+            id
+          ): id is string =>
+            typeof id ===
+              "string" &&
+            id.length > 0
+        )
+    ),
+  ];
+
+  const productMap =
+    new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        category: string;
+      }
+    >();
+
+  if (
+    menuItemIds.length >
+    0
+  ) {
+    const {
+      data: products,
+      error: productsError,
+    } = await supabaseAdmin
+      .from("menu_items")
+      .select(`
+        id,
+        name,
+        category
+      `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .in(
+        "id",
+        menuItemIds
+      );
+
+    if (productsError) {
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de récupérer les produits.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    for (
+      const product of
+      products || []
+    ) {
+      productMap.set(
+        product.id,
+        product
+      );
+    }
+  }
+
+  /*
    * ARTICLES À ENVOYER
-   * ============================
    */
   const pendingItems =
     (items || [])
@@ -179,14 +302,15 @@ export async function POST(
           );
 
         const product =
-          Array.isArray(
-            item.menu_items
-          )
-            ? item.menu_items[0]
-            : item.menu_items;
+          item.menu_item_id
+            ? productMap.get(
+                item.menu_item_id
+              )
+            : undefined;
 
         return {
-          id: item.id,
+          id:
+            item.id,
 
           currentQuantity:
             quantity,
@@ -233,36 +357,37 @@ export async function POST(
   }
 
   /*
-   * ============================
-   * EMPLACEMENT
-   * ============================
+   * Aucun produit d'un autre restaurant
+   * ne doit se glisser dans la commande.
    */
-  const table =
-    Array.isArray(
-      order.restaurant_tables
-    )
-      ? order
-          .restaurant_tables[0]
-      : order.restaurant_tables;
+  const invalidProduct =
+    pendingItems.some(
+      (item) =>
+        !item.product.id
+    );
+
+  if (invalidProduct) {
+    return NextResponse.json(
+      {
+        error:
+          "La commande contient un produit invalide.",
+      },
+      {
+        status: 409,
+      }
+    );
+  }
 
   const location =
     order.order_type ===
     "takeaway"
       ? "À emporter"
-      : table?.name ||
+      : tableName ||
         "Table";
 
   const sentAt =
     new Date().toISOString();
 
-  /*
-   * Snapshot du contenu qui doit
-   * apparaître sur le ticket.
-   *
-   * Le type "initial/addition" et
-   * sentAt sont ajoutés dans la
-   * fonction PostgreSQL.
-   */
   const ticketPayload = {
     orderId:
       order.id,
@@ -291,14 +416,6 @@ export async function POST(
       ),
   };
 
-  /*
-   * État exact attendu par la DB.
-   *
-   * Si la commande change entre
-   * cette lecture et l'opération
-   * atomique, PostgreSQL refusera
-   * l'envoi.
-   */
   const expectedItems =
     pendingItems.map(
       (item) => ({
@@ -314,21 +431,7 @@ export async function POST(
     );
 
   /*
-   * ============================
    * OPÉRATION ATOMIQUE
-   * ============================
-   *
-   * Cette fonction :
-   *
-   * - verrouille la commande
-   * - verrouille ses articles
-   * - revalide les quantités
-   * - met à jour sent_quantity
-   * - définit sent_to_kitchen_at
-   * - crée le print_job
-   *
-   * Si une étape échoue, aucune
-   * partie ne doit être validée.
    */
   const {
     data: rpcData,
@@ -336,6 +439,9 @@ export async function POST(
   } = await supabaseAdmin.rpc(
     "send_order_to_kitchen_atomic",
     {
+      p_restaurant_id:
+        restaurantId,
+
       p_order_id:
         orderId,
 
@@ -360,8 +466,42 @@ export async function POST(
     );
 
     const message =
-      rpcError.message ||
-      "";
+      rpcError.message || "";
+
+    if (
+      message.includes(
+        "RESTAURANT_INACTIVE"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Votre accès est restreint. Contactez le support MAIDA.",
+
+          restricted:
+            true,
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    if (
+      message.includes(
+        "USER_NOT_FOUND"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Accès non autorisé.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
 
     if (
       message.includes(
@@ -447,11 +587,6 @@ export async function POST(
     !result?.printJobId ||
     !result.type
   ) {
-    console.error(
-      "SEND KITCHEN INVALID RPC RESULT:",
-      rpcData
-    );
-
     return NextResponse.json(
       {
         error:

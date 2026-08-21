@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getSession } from "@/lib/session";
 
 type CancelOrderResult = {
   success?: boolean;
@@ -18,28 +19,23 @@ export async function POST(
     }>;
   }
 ) {
-  const session =
-    await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (
-    !session ||
-    session.role !==
-      "cashier"
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Accès non autorisé.",
-      },
-      {
-        status: 403,
-      }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const {
-    id: orderId,
-  } = await context.params;
+  const session =
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
+
+  const { id: orderId } =
+    await context.params;
 
   let body: {
     reason?: unknown;
@@ -79,7 +75,8 @@ export async function POST(
   }
 
   if (
-    reason.length > 500
+    reason.length >
+    500
   ) {
     return NextResponse.json(
       {
@@ -95,15 +92,6 @@ export async function POST(
   const cancelledAt =
     new Date().toISOString();
 
-  /*
-   * Une seule transaction DB :
-   *
-   * - verrou commande
-   * - vérification OPEN
-   * - annulation
-   * - libération table
-   * - décision ticket cuisine
-   */
   const {
     data,
     error,
@@ -111,6 +99,9 @@ export async function POST(
     await supabaseAdmin.rpc(
       "cancel_order_atomic",
       {
+        p_restaurant_id:
+          restaurantId,
+
         p_order_id:
           orderId,
 
@@ -133,6 +124,41 @@ export async function POST(
 
     const message =
       error.message || "";
+
+    if (
+      message.includes(
+        "RESTAURANT_INACTIVE"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Votre accès est restreint. Contactez le support MAIDA.",
+
+          restricted:
+            true,
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    if (
+      message.includes(
+        "USER_NOT_FOUND"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Accès non autorisé.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
 
     if (
       message.includes(
@@ -214,9 +240,7 @@ export async function POST(
       | CancelOrderResult
       | null;
 
-  if (
-    !result?.success
-  ) {
+  if (!result?.success) {
     return NextResponse.json(
       {
         error:
@@ -242,8 +266,8 @@ export async function POST(
       result.printJobCreated
     );
 
-  const warnings: string[] =
-    [];
+  const warnings:
+    string[] = [];
 
   if (!tableReleased) {
     warnings.push(
