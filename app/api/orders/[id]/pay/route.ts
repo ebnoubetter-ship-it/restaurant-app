@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getSession } from "@/lib/session";
 
-const allowedMethods = [
-  "Bankily",
-  "Masrivi",
-  "Sedad",
-  "BCI PAY",
-  "Cash",
-] as const;
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(
   request: Request,
@@ -18,24 +11,23 @@ export async function POST(
 ) {
   /*
    * ============================
-   * AUTHENTIFICATION
+   * ACCÈS RESTAURANT + CAISSIER
    * ============================
    */
-  const session = await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (
-    !session ||
-    session.role !== "cashier"
-  ) {
-    return NextResponse.json(
-      {
-        error: "Accès non autorisé.",
-      },
-      {
-        status: 403,
-      }
-    );
+  if (!access.success) {
+    return access.response;
   }
+
+  const session =
+    access.session;
+
+  const restaurantId =
+    access.restaurant.id;
 
   const { id: orderId } =
     await context.params;
@@ -54,7 +46,8 @@ export async function POST(
   } catch {
     return NextResponse.json(
       {
-        error: "Requête invalide.",
+        error:
+          "Requête invalide.",
       },
       {
         status: 400,
@@ -63,16 +56,69 @@ export async function POST(
   }
 
   const paymentMethod =
-    typeof body.paymentMethod === "string"
-      ? body.paymentMethod
+    typeof body.paymentMethod ===
+    "string"
+      ? body.paymentMethod.trim()
       : "";
 
-  if (
-    !allowedMethods.includes(
-      paymentMethod as
-        (typeof allowedMethods)[number]
+  if (!paymentMethod) {
+    return NextResponse.json(
+      {
+        error:
+          "Mode de paiement invalide.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  /*
+   * ============================
+   * MODE DE PAIEMENT
+   * ============================
+   *
+   * Le moyen de paiement doit être
+   * actif pour CE restaurant.
+   */
+  const {
+    data: configuredPaymentMethod,
+    error: paymentMethodError,
+  } = await supabaseAdmin
+    .from("payment_methods")
+    .select("id, name")
+    .eq(
+      "restaurant_id",
+      restaurantId
     )
-  ) {
+    .eq(
+      "name",
+      paymentMethod
+    )
+    .eq(
+      "active",
+      true
+    )
+    .maybeSingle();
+
+  if (paymentMethodError) {
+    console.error(
+      "PAYMENT METHOD CHECK ERROR:",
+      paymentMethodError
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Impossible de vérifier le mode de paiement.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+  if (!configuredPaymentMethod) {
     return NextResponse.json(
       {
         error:
@@ -88,6 +134,10 @@ export async function POST(
    * ============================
    * COMMANDE
    * ============================
+   *
+   * Important :
+   * la commande doit appartenir
+   * au restaurant connecté.
    */
   const {
     data: order,
@@ -100,12 +150,16 @@ export async function POST(
       status,
       order_type,
       order_number,
-      created_at,
-      restaurant_tables (
-        name
-      )
+      created_at
     `)
-    .eq("id", orderId)
+    .eq(
+      "id",
+      orderId
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .maybeSingle();
 
   if (
@@ -139,8 +193,81 @@ export async function POST(
 
   /*
    * ============================
+   * TABLE
+   * ============================
+   *
+   * On récupère la table séparément
+   * pour vérifier qu'elle appartient
+   * bien au même restaurant.
+   */
+  let tableName:
+    | string
+    | null = null;
+
+  if (
+    order.order_type ===
+      "dine_in" &&
+    order.table_id
+  ) {
+    const {
+      data: table,
+      error: tableLookupError,
+    } = await supabaseAdmin
+      .from(
+        "restaurant_tables"
+      )
+      .select("id, name")
+      .eq(
+        "id",
+        order.table_id
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .maybeSingle();
+
+    if (tableLookupError) {
+      console.error(
+        "PAYMENT TABLE LOOKUP ERROR:",
+        tableLookupError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de vérifier la table.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (!table) {
+      return NextResponse.json(
+        {
+          error:
+            "La table associée à cette commande est invalide.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    tableName =
+      table.name;
+  }
+
+  /*
+   * ============================
    * SHIFT ACTUEL
    * ============================
+   *
+   * Le caissier doit avoir
+   * un shift ouvert dans
+   * CE restaurant.
    */
   const {
     data: currentShift,
@@ -148,6 +275,10 @@ export async function POST(
   } = await supabaseAdmin
     .from("shifts")
     .select("id")
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "cashier_id",
       session.id
@@ -206,15 +337,15 @@ export async function POST(
     .from("order_items")
     .select(`
       id,
+      menu_item_id,
       quantity,
       unit_price,
-      sent_quantity,
-      menu_items (
-        id,
-        name,
-        category
-      )
+      sent_quantity
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "order_id",
       orderId
@@ -249,6 +380,119 @@ export async function POST(
 
   /*
    * ============================
+   * PRODUITS
+   * ============================
+   *
+   * On vérifie aussi que les produits
+   * appartiennent au restaurant.
+   */
+  const menuItemIds = [
+    ...new Set(
+      (items || [])
+        .map(
+          (item) =>
+            item.menu_item_id
+        )
+        .filter(
+          (
+            id
+          ): id is string =>
+            typeof id ===
+              "string" &&
+            id.length > 0
+        )
+    ),
+  ];
+
+  const productMap =
+    new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        category: string;
+      }
+    >();
+
+  if (
+    menuItemIds.length > 0
+  ) {
+    const {
+      data: products,
+      error: productsError,
+    } = await supabaseAdmin
+      .from("menu_items")
+      .select(`
+        id,
+        name,
+        category
+      `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .in(
+        "id",
+        menuItemIds
+      );
+
+    if (productsError) {
+      console.error(
+        "PAYMENT PRODUCTS ERROR:",
+        productsError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de récupérer les produits de la commande.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    for (
+      const product of
+      products || []
+    ) {
+      productMap.set(
+        product.id,
+        product
+      );
+    }
+
+    /*
+     * Si un article pointe vers un produit
+     * d'un autre restaurant ou vers une
+     * configuration incohérente, on refuse
+     * l'encaissement.
+     */
+    const invalidProduct =
+      (items || []).some(
+        (item) =>
+          !item.menu_item_id ||
+          !productMap.has(
+            item.menu_item_id
+          )
+      );
+
+    if (invalidProduct) {
+      return NextResponse.json(
+        {
+          error:
+            "La commande contient un produit invalide.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+  }
+
+  /*
+   * ============================
    * SÉCURITÉ CUISINE
    * ============================
    *
@@ -260,12 +504,14 @@ export async function POST(
       (item) => {
         const quantity =
           Number(
-            item.quantity || 0
+            item.quantity ||
+              0
           );
 
         const sentQuantity =
           Number(
-            item.sent_quantity || 0
+            item.sent_quantity ||
+              0
           );
 
         return (
@@ -296,13 +542,18 @@ export async function POST(
    */
   const total =
     (items || []).reduce(
-      (sum, item) =>
+      (
+        sum,
+        item
+      ) =>
         sum +
         Number(
-          item.quantity || 0
+          item.quantity ||
+            0
         ) *
           Number(
-            item.unit_price || 0
+            item.unit_price ||
+              0
           ),
       0
     );
@@ -327,18 +578,10 @@ export async function POST(
    * ENREGISTREMENT DU PAIEMENT
    * ============================
    *
-   * IMPORTANT :
-   *
-   * On met à jour uniquement si la
-   * commande est encore OPEN.
-   *
-   * Puis on demande à PostgreSQL de
-   * retourner la ligne effectivement
-   * modifiée.
-   *
-   * Si aucune ligne n'est retournée,
-   * une autre requête a probablement
-   * déjà payé ou clôturé la commande.
+   * Les conditions empêchent :
+   * - paiement d'un autre restaurant
+   * - double paiement
+   * - paiement après annulation
    */
   const {
     data: paidOrder,
@@ -346,12 +589,13 @@ export async function POST(
   } = await supabaseAdmin
     .from("orders")
     .update({
-      status: "paid",
+      status:
+        "paid",
 
       total,
 
       payment_method:
-        paymentMethod,
+        configuredPaymentMethod.name,
 
       paid_at:
         paidAt,
@@ -362,6 +606,10 @@ export async function POST(
     .eq(
       "id",
       orderId
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
     )
     .eq(
       "status",
@@ -395,11 +643,8 @@ export async function POST(
   }
 
   /*
-   * Une autre requête a gagné la course.
-   *
-   * On s'arrête AVANT :
-   * - libération de la table
-   * - création du ticket
+   * Une autre requête a déjà
+   * clôturé la commande.
    */
   if (!paidOrder) {
     return NextResponse.json(
@@ -417,14 +662,9 @@ export async function POST(
    * ============================
    * LIBÉRATION DE LA TABLE
    * ============================
-   *
-   * Le paiement est déjà valide à ce
-   * stade.
-   *
-   * Une erreur de libération ne doit
-   * donc pas annuler le paiement.
    */
-  let tableReleased = true;
+  let tableReleased =
+    true;
 
   if (
     order.order_type ===
@@ -438,11 +678,16 @@ export async function POST(
         "restaurant_tables"
       )
       .update({
-        status: "available",
+        status:
+          "available",
       })
       .eq(
         "id",
         order.table_id
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
       );
 
     if (tableError) {
@@ -451,7 +696,8 @@ export async function POST(
         tableError
       );
 
-      tableReleased = false;
+      tableReleased =
+        false;
     }
   }
 
@@ -460,45 +706,38 @@ export async function POST(
    * EMPLACEMENT
    * ============================
    */
-  const table =
-    Array.isArray(
-      order.restaurant_tables
-    )
-      ? order
-          .restaurant_tables[0]
-      : order.restaurant_tables;
-
   const location =
     order.order_type ===
     "takeaway"
       ? "À emporter"
-      : table?.name ||
+      : tableName ||
         "Table";
 
   /*
    * ============================
-   * CONTENU DU TICKET
+   * TICKET
    * ============================
    */
   const receiptItems =
     (items || []).map(
       (item) => {
         const product =
-          Array.isArray(
-            item.menu_items
-          )
-            ? item
-                .menu_items[0]
-            : item.menu_items;
+          item.menu_item_id
+            ? productMap.get(
+                item.menu_item_id
+              )
+            : undefined;
 
         const quantity =
           Number(
-            item.quantity || 0
+            item.quantity ||
+              0
           );
 
         const unitPrice =
           Number(
-            item.unit_price || 0
+            item.unit_price ||
+              0
           );
 
         return {
@@ -555,6 +794,9 @@ export async function POST(
    * ============================
    * FILE D'IMPRESSION CAISSE
    * ============================
+   *
+   * restaurant_id est maintenant
+   * enregistré explicitement.
    */
   const {
     data: printJob,
@@ -562,6 +804,9 @@ export async function POST(
   } = await supabaseAdmin
     .from("print_jobs")
     .insert({
+      restaurant_id:
+        restaurantId,
+
       order_id:
         orderId,
 
@@ -588,7 +833,9 @@ export async function POST(
 
   const printJobCreated =
     !printJobError &&
-    Boolean(printJob);
+    Boolean(
+      printJob
+    );
 
   if (printJobError) {
     console.error(
@@ -601,12 +848,9 @@ export async function POST(
    * ============================
    * WARNING
    * ============================
-   *
-   * Le paiement reste valide même si
-   * une étape secondaire échoue.
    */
-  const warnings: string[] =
-    [];
+  const warnings:
+    string[] = [];
 
   if (!tableReleased) {
     warnings.push(
