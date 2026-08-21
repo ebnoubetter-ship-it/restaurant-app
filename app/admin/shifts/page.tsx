@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type Period =
@@ -243,6 +246,33 @@ export default async function AdminShiftsPage({
     period?: string;
   }>;
 }) {
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "admin"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
   const params =
     await searchParams;
 
@@ -267,6 +297,10 @@ export default async function AdminShiftsPage({
         ended_at,
         status
       `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
       .order(
         "started_at",
         {
@@ -438,6 +472,10 @@ export default async function AdminShiftsPage({
         .select(
           "id, name"
         )
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
         .in(
           "id",
           cashierIds
@@ -502,6 +540,10 @@ export default async function AdminShiftsPage({
           total,
           payment_method
         `)
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
         .eq(
           "status",
           "paid"
@@ -600,8 +642,7 @@ export default async function AdminShiftsPage({
 
           cashierName:
             cashierNames[
-              shift
-                .cashier_id
+              shift.cashier_id
             ] ||
             "Caissier",
 
@@ -663,7 +704,6 @@ export default async function AdminShiftsPage({
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
         <header className="mb-7">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -698,15 +738,13 @@ export default async function AdminShiftsPage({
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Suivez les
-              caissiers, leurs
-              horaires et leurs
+              Suivez les caissiers,
+              leurs horaires et leurs
               encaissements.
             </p>
           </div>
         </header>
 
-        {/* FILTRES */}
         <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/shifts?period=today"
@@ -770,7 +808,6 @@ export default async function AdminShiftsPage({
           </p>
         </div>
 
-        {/* KPI */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="rounded-[24px] border border-[#C7DACD] bg-[#EDF5EF] p-5">
             <div className="flex items-center gap-2">
@@ -859,7 +896,6 @@ export default async function AdminShiftsPage({
           </div>
         </section>
 
-        {/* SHIFTS EN COURS */}
         <section className="mt-8">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
@@ -989,9 +1025,8 @@ export default async function AdminShiftsPage({
                           0 ? (
                             <p className="mt-2 text-sm text-[#8A918C]">
                               Aucun
-                              encaissement
-                              pour le
-                              moment.
+                              encaissement pour
+                              le moment.
                             </p>
                           ) : (
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -1035,7 +1070,6 @@ export default async function AdminShiftsPage({
           )}
         </section>
 
-        {/* SHIFTS CLÔTURÉS */}
         <section className="mt-9">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">

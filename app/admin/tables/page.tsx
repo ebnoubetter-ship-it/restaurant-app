@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type TableStatus =
@@ -135,6 +138,33 @@ function getStatusDotStyle(
 }
 
 export default async function AdminTablesPage() {
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "admin"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
   const {
     data: tablesData,
     error: tablesError,
@@ -144,6 +174,10 @@ export default async function AdminTablesPage() {
     )
     .select(
       "id, name, zone, status"
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
     );
 
   if (tablesError) {
@@ -181,9 +215,8 @@ export default async function AdminTablesPage() {
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Impossible de
-              récupérer l&apos;état
-              des tables.
+              Impossible de récupérer
+              l&apos;état des tables.
             </p>
 
             <a
@@ -227,6 +260,14 @@ export default async function AdminTablesPage() {
         unit_price
       )
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "order_items.restaurant_id",
+      restaurantId
+    )
     .eq(
       "status",
       "open"
@@ -373,10 +414,6 @@ export default async function AdminTablesPage() {
           zone
       );
 
-    /*
-     * Tri naturel uniquement
-     * pour les Tables 1 → 50.
-     */
     if (
       zone === "Salle"
     ) {
@@ -664,7 +701,6 @@ export default async function AdminTablesPage() {
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
         <header className="mb-7">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -706,7 +742,6 @@ export default async function AdminTablesPage() {
           </div>
         </header>
 
-        {/* SYNTHÈSE */}
         <section className="mb-8">
           <div className="grid grid-cols-3 overflow-hidden rounded-[22px] border border-[#E5E2DA] bg-white shadow-sm">
             <div className="border-r border-[#ECE9E2] p-4 text-center">
@@ -784,7 +819,6 @@ export default async function AdminTablesPage() {
           </div>
         </section>
 
-        {/* ZONES */}
         {renderZone(
           "VIP",
           "VIP"

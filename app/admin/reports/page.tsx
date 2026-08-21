@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
@@ -332,6 +335,38 @@ export default async function AdminReportsPage({
     period?: string;
   }>;
 }) {
+  /*
+   * ============================
+   * RESTAURANT + ADMIN
+   * ============================
+   */
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "admin"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
   const params =
     await searchParams;
 
@@ -369,6 +404,10 @@ export default async function AdminReportsPage({
         payment_method,
         paid_at
       `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
       .eq(
         "status",
         "paid"
@@ -413,6 +452,10 @@ export default async function AdminReportsPage({
         sent_to_kitchen_at
       `)
       .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
         "status",
         "cancelled"
       )
@@ -456,6 +499,10 @@ export default async function AdminReportsPage({
         cashier_id,
         created_at
       `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
       .order(
         "created_at",
         {
@@ -492,6 +539,10 @@ export default async function AdminReportsPage({
         payload,
         created_at
       `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
       .eq(
         "job_type",
         "shift_summary"
@@ -583,9 +634,8 @@ export default async function AdminReportsPage({
 
             <p className="mt-2 text-sm text-[#737A75]">
               Impossible de
-              récupérer les
-              données pour le
-              moment.
+              récupérer les données
+              pour le moment.
             </p>
 
             <a
@@ -670,6 +720,10 @@ export default async function AdminReportsPage({
           cashier_id,
           status
         `)
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
         .in(
           "id",
           orderIds
@@ -729,6 +783,10 @@ export default async function AdminReportsPage({
           unit_price,
           sent_quantity
         `)
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
         .in(
           "order_id",
           orderIds
@@ -794,6 +852,10 @@ export default async function AdminReportsPage({
           name,
           category
         `)
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
         .in(
           "id",
           menuItemIds
@@ -865,6 +927,10 @@ export default async function AdminReportsPage({
           id,
           name
         `)
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
         .in(
           "id",
           userIds
@@ -929,6 +995,10 @@ export default async function AdminReportsPage({
           id,
           name
         `)
+        .eq(
+          "restaurant_id",
+          restaurantId
+        )
         .in(
           "id",
           tableIds
@@ -1184,9 +1254,6 @@ export default async function AdminReportsPage({
       )
     );
 
-  /*
-   * Produits réellement vendus.
-   */
   for (
     const item of
     orderItems
@@ -1206,10 +1273,6 @@ export default async function AdminReportsPage({
     }
   }
 
-  /*
-   * Produits restant dans une
-   * commande entièrement annulée.
-   */
   for (
     const item of
     orderItems
@@ -1229,9 +1292,6 @@ export default async function AdminReportsPage({
     }
   }
 
-  /*
-   * Annulations partielles.
-   */
   for (
     const cancellation of
     itemCancellations
@@ -1295,9 +1355,6 @@ export default async function AdminReportsPage({
    */
   let cancelledValue = 0;
 
-  /*
-   * Annulations partielles.
-   */
   for (
     const cancellation of
     itemCancellations
@@ -1321,10 +1378,6 @@ export default async function AdminReportsPage({
       );
   }
 
-  /*
-   * Quantités restantes lors
-   * d'une annulation complète.
-   */
   for (
     const item of
     orderItems
@@ -1808,7 +1861,6 @@ export default async function AdminReportsPage({
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
         <header className="mb-7">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -1852,7 +1904,6 @@ export default async function AdminReportsPage({
           </div>
         </header>
 
-        {/* FILTRES */}
         <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/reports?period=today"
@@ -1916,7 +1967,6 @@ export default async function AdminReportsPage({
           </p>
         </div>
 
-        {/* VUE D'ENSEMBLE */}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
@@ -2032,23 +2082,19 @@ export default async function AdminReportsPage({
               {formatMoney(
                 cancelledValue
               )}{" "}
-              MRU de valeur
-              annulée
+              MRU de valeur annulée
             </p>
           </div>
         </section>
 
-        {/* PAIEMENTS + CAISSIERS */}
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          {/* PAIEMENTS */}
           <section className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm md:p-6">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
               Moyens de paiement
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Répartition du
-              chiffre
+              Répartition du chiffre
               d&apos;affaires
             </p>
 
@@ -2110,7 +2156,6 @@ export default async function AdminReportsPage({
             </div>
           </section>
 
-          {/* CAISSIERS */}
           <section className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm md:p-6">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
               Par caissier
@@ -2220,7 +2265,6 @@ export default async function AdminReportsPage({
           </section>
         </div>
 
-        {/* PRODUITS */}
         <section className="mt-6 overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
           <div className="border-b border-[#EEECE6] p-5 md:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -2230,8 +2274,8 @@ export default async function AdminReportsPage({
                 </h2>
 
                 <p className="mt-1 text-sm text-[#737A75]">
-                  Ce qui a été
-                  vendu et annulé
+                  Ce qui a été vendu
+                  et annulé
                 </p>
               </div>
 
@@ -2365,7 +2409,6 @@ export default async function AdminReportsPage({
           )}
         </section>
 
-        {/* ANNULATIONS */}
         <section className="mt-6">
           <div className="mb-4">
             <p className="text-sm font-semibold text-[#A74435]">
@@ -2399,8 +2442,8 @@ export default async function AdminReportsPage({
                 {
                   cancellationRate
                 }
-                % des décisions
-                de commande
+                % des décisions de
+                commande
               </p>
             </div>
 
@@ -2451,14 +2494,12 @@ export default async function AdminReportsPage({
                 {
                   afterKitchenRate
                 }
-                % des unités
-                annulées
+                % des unités annulées
               </p>
             </div>
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-            {/* MOTIFS */}
             <aside className="h-fit rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6">
               <h3 className="text-lg font-bold text-[#1F2924]">
                 Principaux motifs
@@ -2515,7 +2556,6 @@ export default async function AdminReportsPage({
               )}
             </aside>
 
-            {/* HISTORIQUE */}
             <div className="overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
               <div className="border-b border-[#EEECE6] p-5">
                 <h3 className="text-lg font-bold text-[#1F2924]">
@@ -2538,8 +2578,7 @@ export default async function AdminReportsPage({
               0 ? (
                 <div className="p-8 text-center">
                   <p className="font-semibold text-[#4E5651]">
-                    Aucune
-                    annulation
+                    Aucune annulation
                   </p>
 
                   <p className="mt-1 text-sm text-[#8A918C]">
@@ -2665,7 +2704,6 @@ export default async function AdminReportsPage({
           </div>
         </section>
 
-        {/* RAPPORTS DE SHIFTS */}
         <section className="mt-6 overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-[#EEECE6] p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
             <div>
@@ -2675,8 +2713,7 @@ export default async function AdminReportsPage({
 
               <p className="mt-1 text-sm text-[#737A75]">
                 Récapitulatifs
-                générés à la
-                clôture
+                générés à la clôture
               </p>
             </div>
 
