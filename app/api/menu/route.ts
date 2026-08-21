@@ -1,30 +1,66 @@
 import { NextResponse } from "next/server";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getSession } from "@/lib/session";
 
 export async function GET() {
-  const session = await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (!session || session.role !== "cashier") {
-    return NextResponse.json(
-      { error: "Accès non autorisé." },
-      { status: 403 }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("menu_items")
-    .select("id, name, category, price")
-    .eq("active", true)
-    .order("category")
-    .order("name");
+  const restaurantId =
+    access.restaurant.id;
+
+  const { data, error } =
+    await supabaseAdmin
+      .from("menu_items")
+      .select(
+        "id, name, category, price"
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "active",
+        true
+      )
+      .order(
+        "category",
+        {
+          ascending: true,
+        }
+      )
+      .order(
+        "name",
+        {
+          ascending: true,
+        }
+      );
 
   if (error) {
+    console.error(
+      "MENU GET ERROR:",
+      error
+    );
+
     return NextResponse.json(
-      { error: "Impossible de récupérer le menu." },
-      { status: 500 }
+      {
+        error:
+          "Impossible de récupérer le menu.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(
+    data || []
+  );
 }
