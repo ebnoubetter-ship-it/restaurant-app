@@ -1,20 +1,52 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
+import RestaurantAccessGuard from "@/components/RestaurantAccessGuard";
 
 export default async function StockLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const access =
+    await getSessionRestaurantAccess();
 
-  if (!session) {
+  /*
+   * Pas de session valide.
+   */
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
     redirect("/login");
   }
 
-  if (session.role !== "stock_manager") {
+  /*
+   * Restaurant désactivé.
+   */
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  /*
+   * L'espace stock est réservé
+   * au gestionnaire de stock.
+   */
+  if (
+    access.session.role !==
+    "stock_manager"
+  ) {
     redirect("/unauthorized");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <RestaurantAccessGuard />
+
+      {children}
+    </>
+  );
 }
