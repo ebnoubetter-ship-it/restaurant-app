@@ -12,18 +12,7 @@ export type SessionUser = {
   id: string;
   name: string;
   role: UserRole;
-
-  /*
-   * TEMPORAIREMENT OPTIONNEL.
-   *
-   * Les anciennes sessions et le login
-   * actuel ne connaissent pas encore
-   * restaurantId.
-   *
-   * Une fois le login multi-restaurant
-   * terminé, ce champ deviendra obligatoire.
-   */
-  restaurantId?: string;
+  restaurantId: string;
 };
 
 const SESSION_COOKIE_NAME =
@@ -46,29 +35,24 @@ const allowedRoles: UserRole[] = [
 export async function createSession(
   user: SessionUser
 ) {
-  const payload: {
-    id: string;
-    name: string;
-    role: UserRole;
-    restaurantId?: string;
-  } = {
-    id: user.id,
-    name: user.name,
-    role: user.role,
-  };
-
   /*
-   * Pendant la transition, les anciennes
-   * routes peuvent encore appeler
-   * createSession sans restaurantId.
+   * Une session employé MAIDA est
+   * toujours rattachée à un restaurant.
    */
-  if (user.restaurantId) {
-    payload.restaurantId =
-      user.restaurantId;
+  if (!user.restaurantId) {
+    throw new Error(
+      "restaurantId requis pour créer une session MAIDA."
+    );
   }
 
   const token =
-    await new SignJWT(payload)
+    await new SignJWT({
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      restaurantId:
+        user.restaurantId,
+    })
       .setProtectedHeader({
         alg: "HS256",
       })
@@ -120,9 +104,9 @@ export async function getSession(): Promise<SessionUser | null> {
       );
 
     /*
-     * Validation minimale du contenu
-     * du JWT avant de le considérer
-     * comme une session MAIDA valide.
+     * Une session n'est valide que si
+     * toutes les informations nécessaires
+     * sont présentes dans le JWT.
      */
     if (
       typeof payload.id !==
@@ -133,26 +117,26 @@ export async function getSession(): Promise<SessionUser | null> {
         "string" ||
       !allowedRoles.includes(
         payload.role as UserRole
-      )
+      ) ||
+      typeof payload.restaurantId !==
+        "string" ||
+      !payload.restaurantId
     ) {
       return null;
     }
 
-    const restaurantId =
-      typeof payload.restaurantId ===
-      "string"
-        ? payload.restaurantId
-        : undefined;
-
     return {
-      id: payload.id,
+      id:
+        payload.id,
 
-      name: payload.name,
+      name:
+        payload.name,
 
       role:
         payload.role as UserRole,
 
-      restaurantId,
+      restaurantId:
+        payload.restaurantId,
     };
   } catch {
     return null;
