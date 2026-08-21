@@ -1,38 +1,109 @@
 import { NextResponse } from "next/server";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { getSession } from "@/lib/session";
 
 export async function GET(request: Request) {
-  const session = await getSession();
+  /*
+   * ============================
+   * ACCÈS RESTAURANT + CAISSIER
+   * ============================
+   */
+  const access =
+    await requireApiRestaurantAccess([
+      "cashier",
+    ]);
 
-  if (!session || session.role !== "cashier") {
-    return NextResponse.json(
-      { error: "Accès non autorisé." },
-      { status: 403 }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  const { searchParams } = new URL(request.url);
-  const tableId = searchParams.get("tableId");
+  const restaurantId =
+    access.restaurant.id;
+
+  /*
+   * ============================
+   * TABLE
+   * ============================
+   */
+  const { searchParams } =
+    new URL(request.url);
+
+  const tableId =
+    searchParams
+      .get("tableId")
+      ?.trim() || "";
 
   if (!tableId) {
     return NextResponse.json(
-      { error: "Table requise." },
-      { status: 400 }
+      {
+        error: "Table requise.",
+      },
+      {
+        status: 400,
+      }
     );
   }
 
-  const { data: order, error } = await supabaseAdmin
+  /*
+   * ============================
+   * COMMANDE OUVERTE
+   * ============================
+   *
+   * On recherche uniquement dans
+   * le restaurant connecté.
+   */
+  const {
+    data: order,
+    error,
+  } = await supabaseAdmin
     .from("orders")
     .select("id")
-    .eq("table_id", tableId)
-    .eq("status", "open")
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "table_id",
+      tableId
+    )
+    .eq(
+      "status",
+      "open"
+    )
+    .eq(
+      "order_type",
+      "dine_in"
+    )
+    .limit(1)
     .maybeSingle();
 
-  if (error || !order) {
+  if (error) {
+    console.error(
+      "OPEN ORDER LOOKUP ERROR:",
+      error
+    );
+
     return NextResponse.json(
-      { error: "Aucune commande ouverte pour cette table." },
-      { status: 404 }
+      {
+        error:
+          "Impossible de rechercher la commande.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+  if (!order) {
+    return NextResponse.json(
+      {
+        error:
+          "Aucune commande ouverte pour cette table.",
+      },
+      {
+        status: 404,
+      }
     );
   }
 
