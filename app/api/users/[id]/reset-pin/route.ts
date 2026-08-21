@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(
@@ -11,38 +12,21 @@ export async function POST(
   }
 ) {
   /*
-   * Sécurité serveur :
-   * l'utilisateur doit être connecté
-   * ET posséder le rôle admin.
+   * ============================
+   * ADMIN DU RESTAURANT
+   * ============================
    */
-  const session =
-    await getSession();
+  const access =
+    await requireApiRestaurantAccess([
+      "admin",
+    ]);
 
-  if (!session) {
-    return NextResponse.json(
-      {
-        error:
-          "Authentification requise.",
-      },
-      {
-        status: 401,
-      }
-    );
+  if (!access.success) {
+    return access.response;
   }
 
-  if (
-    session.role !== "admin"
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Accès réservé aux administrateurs.",
-      },
-      {
-        status: 403,
-      }
-    );
-  }
+  const restaurantId =
+    access.restaurant.id;
 
   const { id } =
     await context.params;
@@ -60,13 +44,12 @@ export async function POST(
   }
 
   /*
-   * On vérifie d'abord que
-   * l'utilisateur existe.
+   * ============================
+   * UTILISATEUR
+   * ============================
    *
-   * Une UPDATE Supabase sur un ID
-   * inexistant ne génère pas toujours
-   * une erreur, donc cette vérification
-   * est utile.
+   * L'admin ne peut cibler qu'un
+   * utilisateur de SON restaurant.
    */
   const {
     data: user,
@@ -77,7 +60,14 @@ export async function POST(
       id,
       name
     `)
-    .eq("id", id)
+    .eq(
+      "id",
+      id
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .maybeSingle();
 
   if (userError) {
@@ -109,22 +99,37 @@ export async function POST(
     );
   }
 
+  /*
+   * ============================
+   * RESET PIN
+   * ============================
+   */
   const {
     data: updatedUser,
     error,
   } = await supabaseAdmin
     .from("users")
     .update({
-      pin_hash: null,
-      pin_defined: false,
+      pin_hash:
+        null,
+
+      pin_defined:
+        false,
     })
-    .eq("id", id)
+    .eq(
+      "id",
+      id
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .select(`
       id,
       name,
       pin_defined
     `)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error(
@@ -143,13 +148,28 @@ export async function POST(
     );
   }
 
+  if (!updatedUser) {
+    return NextResponse.json(
+      {
+        error:
+          "Utilisateur introuvable.",
+      },
+      {
+        status: 404,
+      }
+    );
+  }
+
   return NextResponse.json({
     success: true,
+
     user: {
       id:
         updatedUser.id,
+
       name:
         updatedUser.name,
+
       pin_defined:
         updatedUser.pin_defined,
     },

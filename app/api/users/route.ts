@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+
+import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const allowedRoles = [
@@ -8,55 +9,29 @@ const allowedRoles = [
   "stock_manager",
 ] as const;
 
-async function requireAdmin() {
-  const session = await getSession();
-
-  if (!session) {
-    return {
-      error: NextResponse.json(
-        {
-          error:
-            "Authentification requise.",
-        },
-        {
-          status: 401,
-        }
-      ),
-      session: null,
-    };
-  }
-
-  if (
-    session.role !== "admin"
-  ) {
-    return {
-      error: NextResponse.json(
-        {
-          error:
-            "Accès réservé aux administrateurs.",
-        },
-        {
-          status: 403,
-        }
-      ),
-      session: null,
-    };
-  }
-
-  return {
-    error: null,
-    session,
-  };
-}
-
 export async function GET() {
-  const auth =
-    await requireAdmin();
+  /*
+   * ============================
+   * ADMIN DU RESTAURANT
+   * ============================
+   */
+  const access =
+    await requireApiRestaurantAccess([
+      "admin",
+    ]);
 
-  if (auth.error) {
-    return auth.error;
+  if (!access.success) {
+    return access.response;
   }
 
+  const restaurantId =
+    access.restaurant.id;
+
+  /*
+   * ============================
+   * UTILISATEURS DU RESTAURANT
+   * ============================
+   */
   const {
     data,
     error,
@@ -69,9 +44,16 @@ export async function GET() {
       pin_defined,
       created_at
     `)
-    .order("created_at", {
-      ascending: true,
-    });
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .order(
+      "created_at",
+      {
+        ascending: true,
+      }
+    );
 
   if (error) {
     console.error(
@@ -98,13 +80,28 @@ export async function GET() {
 export async function POST(
   request: Request
 ) {
-  const auth =
-    await requireAdmin();
+  /*
+   * ============================
+   * ADMIN DU RESTAURANT
+   * ============================
+   */
+  const access =
+    await requireApiRestaurantAccess([
+      "admin",
+    ]);
 
-  if (auth.error) {
-    return auth.error;
+  if (!access.success) {
+    return access.response;
   }
 
+  const restaurantId =
+    access.restaurant.id;
+
+  /*
+   * ============================
+   * BODY
+   * ============================
+   */
   let body: {
     name?: unknown;
     role?: unknown;
@@ -155,12 +152,9 @@ export async function POST(
     );
   }
 
-  /*
-   * Évite les noms vides/très longs.
-   * Cela protège aussi l'interface
-   * contre des saisies accidentelles.
-   */
-  if (name.length > 100) {
+  if (
+    name.length > 100
+  ) {
     return NextResponse.json(
       {
         error:
@@ -173,9 +167,16 @@ export async function POST(
   }
 
   /*
-   * Recherche insensible à la casse.
-   * "Ahmed" et "ahmed" ne doivent
-   * pas créer deux accès distincts.
+   * ============================
+   * DOUBLON DANS CE RESTAURANT
+   * ============================
+   *
+   * Ahmed chez Appetizer
+   * et Ahmed chez MAIDA TEST
+   * sont autorisés.
+   *
+   * Deux Ahmed dans le même
+   * restaurant ne le sont pas.
    */
   const {
     data: existingUser,
@@ -183,7 +184,14 @@ export async function POST(
   } = await supabaseAdmin
     .from("users")
     .select("id")
-    .ilike("name", name)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .ilike(
+      "name",
+      name
+    )
     .limit(1)
     .maybeSingle();
 
@@ -216,16 +224,32 @@ export async function POST(
     );
   }
 
+  /*
+   * ============================
+   * CRÉATION
+   * ============================
+   *
+   * restaurant_id est écrit
+   * explicitement.
+   */
   const {
     data,
     error,
   } = await supabaseAdmin
     .from("users")
     .insert({
+      restaurant_id:
+        restaurantId,
+
       name,
+
       role,
-      pin_defined: false,
-      pin_hash: null,
+
+      pin_defined:
+        false,
+
+      pin_hash:
+        null,
     })
     .select(`
       id,
@@ -240,6 +264,26 @@ export async function POST(
       "CREATE USER ERROR:",
       error
     );
+
+    /*
+     * Lorsque nous ajouterons la
+     * contrainte unique DB, elle
+     * protégera également les créations
+     * simultanées.
+     */
+    if (
+      error.code === "23505"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Un utilisateur avec ce nom existe déjà.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
 
     return NextResponse.json(
       {
