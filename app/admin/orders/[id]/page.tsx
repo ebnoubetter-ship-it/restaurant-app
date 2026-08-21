@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import {
+  notFound,
+  redirect,
+} from "next/navigation";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 function formatMoney(
@@ -43,9 +48,46 @@ export default async function AdminOrderDetailPage({
     id: string;
   }>;
 }) {
+  /*
+   * ============================
+   * RESTAURANT + ADMIN
+   * ============================
+   */
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "admin"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
   const { id } =
     await params;
 
+  /*
+   * ============================
+   * COMMANDE
+   * ============================
+   */
   const {
     data: order,
     error,
@@ -65,28 +107,17 @@ export default async function AdminOrderDetailPage({
       cancelled_at,
       sent_to_kitchen_at,
       order_type,
-
-      restaurant_tables!orders_table_id_fkey (
-        name,
-        zone
-      ),
-
-      order_items (
-        id,
-        quantity,
-        unit_price,
-        sent_quantity,
-        cancelled_quantity,
-        cancelled_after_send_quantity,
-
-        menu_items (
-          name,
-          category
-        )
-      )
+      table_id
     `)
-    .eq("id", id)
-    .single();
+    .eq(
+      "id",
+      id
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .maybeSingle();
 
   if (
     error ||
@@ -94,6 +125,190 @@ export default async function AdminOrderDetailPage({
   ) {
     notFound();
   }
+
+  /*
+   * ============================
+   * TABLE
+   * ============================
+   */
+  let table:
+    | {
+        name: string;
+        zone: string;
+      }
+    | null = null;
+
+  if (
+    order.table_id
+  ) {
+    const {
+      data: tableData,
+      error: tableError,
+    } = await supabaseAdmin
+      .from(
+        "restaurant_tables"
+      )
+      .select(`
+        name,
+        zone
+      `)
+      .eq(
+        "id",
+        order.table_id
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .maybeSingle();
+
+    if (tableError) {
+      console.error(
+        "ADMIN ORDER TABLE ERROR:",
+        tableError
+      );
+    }
+
+    table =
+      tableData || null;
+  }
+
+  /*
+   * ============================
+   * ARTICLES
+   * ============================
+   */
+  const {
+    data: orderItemsData,
+    error: orderItemsError,
+  } = await supabaseAdmin
+    .from("order_items")
+    .select(`
+      id,
+      menu_item_id,
+      quantity,
+      unit_price,
+      sent_quantity,
+      cancelled_quantity,
+      cancelled_after_send_quantity
+    `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "order_id",
+      order.id
+    )
+    .order(
+      "created_at",
+      {
+        ascending: true,
+      }
+    );
+
+  if (orderItemsError) {
+    console.error(
+      "ADMIN ORDER ITEMS ERROR:",
+      orderItemsError
+    );
+  }
+
+  const rawItems =
+    orderItemsData || [];
+
+  /*
+   * ============================
+   * PRODUITS
+   * ============================
+   */
+  const menuItemIds = [
+    ...new Set(
+      rawItems
+        .map(
+          (item) =>
+            item.menu_item_id
+        )
+        .filter(
+          (
+            value
+          ): value is string =>
+            typeof value ===
+              "string" &&
+            value.length > 0
+        )
+    ),
+  ];
+
+  const menuItemsMap =
+    new Map<
+      string,
+      {
+        name: string;
+        category: string;
+      }
+    >();
+
+  if (
+    menuItemIds.length >
+    0
+  ) {
+    const {
+      data: menuItems,
+      error: menuItemsError,
+    } = await supabaseAdmin
+      .from("menu_items")
+      .select(`
+        id,
+        name,
+        category
+      `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .in(
+        "id",
+        menuItemIds
+      );
+
+    if (menuItemsError) {
+      console.error(
+        "ADMIN ORDER MENU ITEMS ERROR:",
+        menuItemsError
+      );
+    }
+
+    for (
+      const item of
+      menuItems || []
+    ) {
+      menuItemsMap.set(
+        item.id,
+        {
+          name:
+            item.name,
+
+          category:
+            item.category,
+        }
+      );
+    }
+  }
+
+  const items =
+    rawItems.map(
+      (item) => ({
+        ...item,
+
+        menu_items:
+          item.menu_item_id
+            ? menuItemsMap.get(
+                item.menu_item_id
+              ) || null
+            : null,
+      })
+    );
 
   /*
    * ============================
@@ -118,6 +333,10 @@ export default async function AdminOrderDetailPage({
       cashier_id,
       created_at
     `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
     .eq(
       "order_id",
       order.id
@@ -150,6 +369,7 @@ export default async function AdminOrderDetailPage({
   const userIds = [
     order.cashier_id,
     order.cancelled_by,
+
     ...itemCancellations.map(
       (cancellation) =>
         cancellation.cashier_id
@@ -158,7 +378,9 @@ export default async function AdminOrderDetailPage({
     (
       value
     ): value is string =>
-      Boolean(value)
+      typeof value ===
+        "string" &&
+      value.length > 0
   );
 
   const uniqueUserIds = [
@@ -182,6 +404,10 @@ export default async function AdminOrderDetailPage({
       .from("users")
       .select(
         "id, name"
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
       )
       .in(
         "id",
@@ -210,29 +436,23 @@ export default async function AdminOrderDetailPage({
     order.cashier_id
       ? usersMap.get(
           order.cashier_id
-        ) || "Caissier"
+        ) ||
+        "Caissier"
       : "—";
 
   const cancelledByName =
     order.cancelled_by
       ? usersMap.get(
           order.cancelled_by
-        ) || "Caissier"
+        ) ||
+        "Caissier"
       : "—";
 
   /*
    * ============================
-   * TABLE / EMPLACEMENT
+   * EMPLACEMENT
    * ============================
    */
-  const table =
-    Array.isArray(
-      order.restaurant_tables
-    )
-      ? order
-          .restaurant_tables[0]
-      : order.restaurant_tables;
-
   const orderLabel =
     order.order_type ===
     "takeaway"
@@ -242,13 +462,9 @@ export default async function AdminOrderDetailPage({
 
   /*
    * ============================
-   * ARTICLES
+   * ARTICLES / TOTAL
    * ============================
    */
-  const items =
-    order.order_items ||
-    [];
-
   const calculatedTotal =
     items.reduce(
       (
@@ -320,8 +536,9 @@ export default async function AdminOrderDetailPage({
     );
 
   /*
-   * Regroupement des
-   * annulations par article.
+   * ============================
+   * ANNULATIONS PAR ARTICLE
+   * ============================
    */
   const cancellationsByItem =
     new Map<
@@ -408,20 +625,17 @@ export default async function AdminOrderDetailPage({
         cancellation
       ) =>
         sum +
-        (cancellation.after_kitchen
-          ? Number(
-              cancellation.quantity ||
-                0
-            )
-          : 0),
+        (
+          cancellation.after_kitchen
+            ? Number(
+                cancellation.quantity ||
+                  0
+              )
+            : 0
+        ),
       0
     );
 
-  /*
-   * ============================
-   * STATUT COMMANDE
-   * ============================
-   */
   const getStatusLabel =
     () => {
       if (
@@ -460,11 +674,6 @@ export default async function AdminOrderDetailPage({
       return "bg-[#FFF0D8] text-[#946021]";
     };
 
-  /*
-   * ============================
-   * ÉTAT CUISINE
-   * ============================
-   */
   let kitchenLabel =
     "Non envoyée";
 
@@ -528,7 +737,6 @@ export default async function AdminOrderDetailPage({
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-6xl">
-        {/* HEADER MAIDA */}
         <header className="mb-7">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -556,13 +764,11 @@ export default async function AdminOrderDetailPage({
           </div>
         </header>
 
-        {/* IDENTITÉ COMMANDE */}
         <section className="rounded-[28px] border border-[#E8E5DE] bg-white p-5 shadow-sm md:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-[#2E6A50]">
-                Détail de la
-                commande
+                Détail de la commande
               </p>
 
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -617,7 +823,6 @@ export default async function AdminOrderDetailPage({
           </div>
         </section>
 
-        {/* ANNULATION COMPLÈTE */}
         {order.status ===
           "cancelled" && (
           <section className="mt-4 rounded-[24px] border border-[#EDC7C0] bg-[#FFF7F5] p-5">
@@ -664,7 +869,6 @@ export default async function AdminOrderDetailPage({
           </section>
         )}
 
-        {/* INFORMATIONS */}
         <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-[#7A817C]">
@@ -712,7 +916,6 @@ export default async function AdminOrderDetailPage({
           </div>
         </section>
 
-        {/* PRODUITS */}
         <section className="mt-6 overflow-hidden rounded-[26px] border border-[#E8E5DE] bg-white shadow-sm">
           <div className="border-b border-[#EEECE6] p-5 md:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -782,12 +985,7 @@ export default async function AdminOrderDetailPage({
               {items.map(
                 (item) => {
                   const product =
-                    Array.isArray(
-                      item.menu_items
-                    )
-                      ? item
-                          .menu_items[0]
-                      : item.menu_items;
+                    item.menu_items;
 
                   const quantity =
                     Number(
@@ -962,7 +1160,6 @@ export default async function AdminOrderDetailPage({
           </div>
         </section>
 
-        {/* HISTORIQUE ANNULATIONS ARTICLES */}
         {itemCancellations.length >
           0 && (
           <section className="mt-6 overflow-hidden rounded-[26px] border border-[#EDC7C0] bg-white shadow-sm">
@@ -1020,14 +1217,8 @@ export default async function AdminOrderDetailPage({
                     );
 
                   const relatedProduct =
-                    relatedItem
-                      ? Array.isArray(
-                          relatedItem.menu_items
-                        )
-                        ? relatedItem
-                            .menu_items[0]
-                        : relatedItem.menu_items
-                      : null;
+                    relatedItem?.menu_items ||
+                    null;
 
                   const cancellationCashier =
                     cancellation.cashier_id
@@ -1106,7 +1297,6 @@ export default async function AdminOrderDetailPage({
           </section>
         )}
 
-        {/* RACCOURCIS */}
         <nav className="mt-6 flex flex-wrap gap-2">
           <Link
             href="/admin/tables"

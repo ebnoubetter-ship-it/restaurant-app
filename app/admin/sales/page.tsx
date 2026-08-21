@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type Period =
@@ -29,7 +32,8 @@ function formatMoney(
 function getBusinessDayRange() {
   const now = new Date();
 
-  const start = new Date(now);
+  const start =
+    new Date(now);
 
   if (
     now.getUTCHours() < 7
@@ -60,7 +64,8 @@ function getBusinessDayRange() {
 }
 
 function getWeekRange() {
-  const now = new Date();
+  const now =
+    new Date();
 
   const businessNow =
     new Date(now);
@@ -114,7 +119,8 @@ function getWeekRange() {
 }
 
 function getMonthRange() {
-  const now = new Date();
+  const now =
+    new Date();
 
   const businessNow =
     new Date(now);
@@ -191,6 +197,38 @@ export default async function AdminSalesPage({
     period?: string;
   }>;
 }) {
+  /*
+   * ============================
+   * RESTAURANT + ADMIN
+   * ============================
+   */
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "admin"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
   const params =
     await searchParams;
 
@@ -206,15 +244,9 @@ export default async function AdminSalesPage({
           : "today";
 
   /*
-   * On garde les relations
-   * Supabase explicites :
-   *
-   * cashier_id -> users
-   * table_id -> restaurant_tables
-   *
-   * C'est nécessaire car orders
-   * possède plusieurs relations
-   * vers users.
+   * ============================
+   * VENTES DU RESTAURANT
+   * ============================
    */
   let query =
     supabaseAdmin
@@ -227,15 +259,12 @@ export default async function AdminSalesPage({
         paid_at,
         cashier_id,
         order_type,
-
-        restaurant_tables!orders_table_id_fkey (
-          name
-        ),
-
-        cashier:users!orders_cashier_id_fkey (
-          name
-        )
+        table_id
       `)
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
       .eq(
         "status",
         "paid"
@@ -257,15 +286,16 @@ export default async function AdminSalesPage({
     } =
       getBusinessDayRange();
 
-    query = query
-      .gte(
-        "paid_at",
-        start.toISOString()
-      )
-      .lt(
-        "paid_at",
-        end.toISOString()
-      );
+    query =
+      query
+        .gte(
+          "paid_at",
+          start.toISOString()
+        )
+        .lt(
+          "paid_at",
+          end.toISOString()
+        );
   }
 
   if (
@@ -278,15 +308,16 @@ export default async function AdminSalesPage({
     } =
       getWeekRange();
 
-    query = query
-      .gte(
-        "paid_at",
-        start.toISOString()
-      )
-      .lt(
-        "paid_at",
-        end.toISOString()
-      );
+    query =
+      query
+        .gte(
+          "paid_at",
+          start.toISOString()
+        )
+        .lt(
+          "paid_at",
+          end.toISOString()
+        );
   }
 
   if (
@@ -299,15 +330,16 @@ export default async function AdminSalesPage({
     } =
       getMonthRange();
 
-    query = query
-      .gte(
-        "paid_at",
-        start.toISOString()
-      )
-      .lt(
-        "paid_at",
-        end.toISOString()
-      );
+    query =
+      query
+        .gte(
+          "paid_at",
+          start.toISOString()
+        )
+        .lt(
+          "paid_at",
+          end.toISOString()
+        );
   }
 
   const {
@@ -380,6 +412,142 @@ export default async function AdminSalesPage({
   const orders =
     sales || [];
 
+  /*
+   * ============================
+   * TABLES + CAISSIERS
+   * ============================
+   */
+  const tableIds = [
+    ...new Set(
+      orders
+        .map(
+          (order) =>
+            order.table_id
+        )
+        .filter(
+          (
+            value
+          ): value is string =>
+            typeof value ===
+              "string" &&
+            value.length > 0
+        )
+    ),
+  ];
+
+  const cashierIds = [
+    ...new Set(
+      orders
+        .map(
+          (order) =>
+            order.cashier_id
+        )
+        .filter(
+          (
+            value
+          ): value is string =>
+            typeof value ===
+              "string" &&
+            value.length > 0
+        )
+    ),
+  ];
+
+  const tablesMap =
+    new Map<
+      string,
+      string
+    >();
+
+  const cashiersMap =
+    new Map<
+      string,
+      string
+    >();
+
+  const [
+    tablesResult,
+    cashiersResult,
+  ] = await Promise.all([
+    tableIds.length > 0
+      ? supabaseAdmin
+          .from(
+            "restaurant_tables"
+          )
+          .select(
+            "id, name"
+          )
+          .eq(
+            "restaurant_id",
+            restaurantId
+          )
+          .in(
+            "id",
+            tableIds
+          )
+      : Promise.resolve({
+          data: [],
+          error: null,
+        }),
+
+    cashierIds.length > 0
+      ? supabaseAdmin
+          .from("users")
+          .select(
+            "id, name"
+          )
+          .eq(
+            "restaurant_id",
+            restaurantId
+          )
+          .in(
+            "id",
+            cashierIds
+          )
+      : Promise.resolve({
+          data: [],
+          error: null,
+        }),
+  ]);
+
+  if (
+    tablesResult.error
+  ) {
+    console.error(
+      "ADMIN SALES TABLES ERROR:",
+      tablesResult.error
+    );
+  }
+
+  if (
+    cashiersResult.error
+  ) {
+    console.error(
+      "ADMIN SALES CASHIERS ERROR:",
+      cashiersResult.error
+    );
+  }
+
+  for (
+    const table of
+    tablesResult.data || []
+  ) {
+    tablesMap.set(
+      table.id,
+      table.name
+    );
+  }
+
+  for (
+    const cashier of
+    cashiersResult.data || []
+  ) {
+    cashiersMap.set(
+      cashier.id,
+      cashier.name
+    );
+  }
+
   const totalSales =
     orders.reduce(
       (
@@ -427,9 +595,11 @@ export default async function AdminSalesPage({
     paymentTotals[
       order.payment_method
     ] =
-      (paymentTotals[
-        order.payment_method
-      ] || 0) +
+      (
+        paymentTotals[
+          order.payment_method
+        ] || 0
+      ) +
       Number(
         order.total || 0
       );
@@ -445,16 +615,16 @@ export default async function AdminSalesPage({
     }
 
     return Math.round(
-      (amount /
-        totalSales) *
-        100
+      (
+        amount /
+        totalSales
+      ) * 100
     );
   };
 
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
         <header className="mb-7">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -489,14 +659,12 @@ export default async function AdminSalesPage({
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Consultez chaque
-              vente et son mode de
-              paiement.
+              Consultez chaque vente
+              et son mode de paiement.
             </p>
           </div>
         </header>
 
-        {/* FILTRES */}
         <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/sales?period=today"
@@ -547,7 +715,6 @@ export default async function AdminSalesPage({
           </Link>
         </nav>
 
-        {/* CONTEXTE */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-[#343D38]">
             {getPeriodLabel(
@@ -561,7 +728,6 @@ export default async function AdminSalesPage({
           </p>
         </div>
 
-        {/* KPI */}
         <section className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
@@ -613,9 +779,7 @@ export default async function AdminSalesPage({
           </div>
         </section>
 
-        {/* CONTENU */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          {/* PAIEMENTS */}
           <section className="h-fit rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6">
             <h2 className="text-lg font-bold text-[#1F2924]">
               Paiements
@@ -639,17 +803,11 @@ export default async function AdminSalesPage({
                     );
 
                   return (
-                    <div
-                      key={
-                        method
-                      }
-                    >
+                    <div key={method}>
                       <div className="mb-2 flex items-end justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-[#343D38]">
-                            {
-                              method
-                            }
+                            {method}
                           </p>
 
                           <p className="mt-0.5 text-xs text-[#9A9F9B]">
@@ -683,7 +841,6 @@ export default async function AdminSalesPage({
             </div>
           </section>
 
-          {/* VENTES */}
           <section className="overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
             <div className="border-b border-[#EEECE6] p-5 sm:p-6">
               <div className="flex items-end justify-between gap-4">
@@ -705,11 +862,9 @@ export default async function AdminSalesPage({
                 {orderCount >
                   0 && (
                   <span className="hidden rounded-full bg-[#EDF5EF] px-3 py-1.5 text-xs font-semibold text-[#2E6A50] sm:inline-flex">
-                    {
-                      getPeriodLabel(
-                        selectedPeriod
-                      )
-                    }
+                    {getPeriodLabel(
+                      selectedPeriod
+                    )}
                   </span>
                 )}
               </div>
@@ -737,34 +892,28 @@ export default async function AdminSalesPage({
               <div className="divide-y divide-[#EEECE6]">
                 {orders.map(
                   (order) => {
-                    const table =
-                      Array.isArray(
-                        order.restaurant_tables
-                      )
-                        ? order
-                            .restaurant_tables[0]
-                        : order.restaurant_tables;
-
-                    const cashier =
-                      Array.isArray(
-                        order.cashier
-                      )
-                        ? order
-                            .cashier[0]
-                        : order.cashier;
-
                     const orderLabel =
                       order.order_type ===
                       "takeaway"
                         ? "À emporter"
-                        : table?.name ||
-                          "Table";
+                        : order.table_id
+                          ? tablesMap.get(
+                              order.table_id
+                            ) ||
+                            "Table"
+                          : "Table";
+
+                    const cashierName =
+                      order.cashier_id
+                        ? cashiersMap.get(
+                            order.cashier_id
+                          ) ||
+                          "—"
+                        : "—";
 
                     return (
                       <Link
-                        key={
-                          order.id
-                        }
+                        key={order.id}
                         href={`/admin/orders/${order.id}`}
                         className="group block p-4 transition hover:bg-[#FAFAF7] active:bg-[#F5F5F1] sm:p-5"
                       >
@@ -789,8 +938,7 @@ export default async function AdminSalesPage({
                               {order.order_type ===
                                 "takeaway" && (
                                 <span className="rounded-full bg-[#F3EFE8] px-2.5 py-1 text-[11px] font-semibold text-[#7D6755]">
-                                  À
-                                  emporter
+                                  À emporter
                                 </span>
                               )}
                             </div>
@@ -804,8 +952,9 @@ export default async function AdminSalesPage({
                               <span className="text-xs text-[#7A817C]">
                                 Caissier :{" "}
                                 <span className="font-semibold text-[#565E59]">
-                                  {cashier?.name ||
-                                    "—"}
+                                  {
+                                    cashierName
+                                  }
                                 </span>
                               </span>
                             </div>

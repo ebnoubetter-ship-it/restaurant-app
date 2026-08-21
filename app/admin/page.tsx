@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
 import LogoutButton from "@/components/LogoutButton";
+import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const paymentMethods = [
@@ -28,7 +31,8 @@ function getBusinessDayRange() {
     0
   );
 
-  const end = new Date(start);
+  const end =
+    new Date(start);
 
   end.setUTCDate(
     end.getUTCDate() + 1
@@ -52,9 +56,46 @@ function formatMoney(
 }
 
 export default async function AdminPage() {
+  /*
+   * ============================
+   * RESTAURANT + ADMIN
+   * ============================
+   */
+  const access =
+    await getSessionRestaurantAccess();
+
+  if (
+    access.status ===
+    "unauthenticated"
+  ) {
+    redirect("/login");
+  }
+
+  if (
+    access.status ===
+    "restricted"
+  ) {
+    redirect("/restricted");
+  }
+
+  if (
+    access.session.role !==
+    "admin"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
   const { start, end } =
     getBusinessDayRange();
 
+  /*
+   * ============================
+   * DONNÉES DU RESTAURANT
+   * ============================
+   */
   const [
     ordersResult,
     shiftsResult,
@@ -69,11 +110,16 @@ export default async function AdminPage() {
         payment_method,
         paid_at,
         order_type,
-        restaurant_tables (
-          name
-        )
+        table_id
       `)
-      .eq("status", "paid")
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "status",
+        "paid"
+      )
       .gte(
         "paid_at",
         start.toISOString()
@@ -82,9 +128,12 @@ export default async function AdminPage() {
         "paid_at",
         end.toISOString()
       )
-      .order("paid_at", {
-        ascending: false,
-      }),
+      .order(
+        "paid_at",
+        {
+          ascending: false,
+        }
+      ),
 
     supabaseAdmin
       .from("shifts")
@@ -92,11 +141,22 @@ export default async function AdminPage() {
         id,
         started_at
       `)
-      .eq("status", "open"),
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "status",
+        "open"
+      ),
 
     supabaseAdmin
       .from("orders")
       .select("id")
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
       .eq(
         "status",
         "cancelled"
@@ -186,7 +246,75 @@ export default async function AdminPage() {
     shiftsResult.data || [];
 
   const cancellations =
-    cancellationsResult.data || [];
+    cancellationsResult.data ||
+    [];
+
+  /*
+   * ============================
+   * TABLES DU RESTAURANT
+   * ============================
+   */
+  const tableIds = [
+    ...new Set(
+      orders
+        .map(
+          (order) =>
+            order.table_id
+        )
+        .filter(
+          (
+            value
+          ): value is string =>
+            typeof value ===
+              "string" &&
+            value.length > 0
+        )
+    ),
+  ];
+
+  const tablesMap =
+    new Map<
+      string,
+      string
+    >();
+
+  if (tableIds.length > 0) {
+    const {
+      data: tables,
+      error: tablesError,
+    } = await supabaseAdmin
+      .from(
+        "restaurant_tables"
+      )
+      .select(
+        "id, name"
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .in(
+        "id",
+        tableIds
+      );
+
+    if (tablesError) {
+      console.error(
+        "ADMIN DASHBOARD TABLES ERROR:",
+        tablesError
+      );
+    }
+
+    for (
+      const table of
+      tables || []
+    ) {
+      tablesMap.set(
+        table.id,
+        table.name
+      );
+    }
+  }
 
   const totalSales =
     orders.reduce(
@@ -235,9 +363,11 @@ export default async function AdminPage() {
     paymentTotals[
       order.payment_method
     ] =
-      (paymentTotals[
-        order.payment_method
-      ] || 0) +
+      (
+        paymentTotals[
+          order.payment_method
+        ] || 0
+      ) +
       Number(
         order.total || 0
       );
@@ -249,7 +379,9 @@ export default async function AdminPage() {
   const getPaymentPercentage = (
     amount: number
   ) => {
-    if (totalSales <= 0) {
+    if (
+      totalSales <= 0
+    ) {
       return 0;
     }
 
@@ -262,7 +394,6 @@ export default async function AdminPage() {
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
         <header className="mb-8">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -330,7 +461,6 @@ export default async function AdminPage() {
           </div>
         </header>
 
-        {/* KPI */}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
@@ -363,8 +493,7 @@ export default async function AdminPage() {
             </p>
 
             <p className="mt-4 text-xs text-[#9A9F9B]">
-              Commandes
-              encaissées
+              Commandes encaissées
             </p>
           </div>
 
@@ -383,8 +512,7 @@ export default async function AdminPage() {
             </p>
 
             <p className="mt-4 text-xs text-[#9A9F9B]">
-              Moyenne par
-              commande
+              Moyenne par commande
             </p>
           </div>
 
@@ -426,7 +554,6 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        {/* PAIEMENTS + DERNIÈRES VENTES */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
           <section className="rounded-[24px] border border-[#E9E6DF] bg-white p-5 shadow-sm md:p-6">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
@@ -435,8 +562,7 @@ export default async function AdminPage() {
 
             <p className="mt-1 text-sm text-[#737A75]">
               Répartition du
-              chiffre
-              d&apos;affaires
+              chiffre d&apos;affaires
             </p>
 
             <div className="mt-6 space-y-5">
@@ -453,9 +579,7 @@ export default async function AdminPage() {
                     );
 
                   return (
-                    <div
-                      key={method}
-                    >
+                    <div key={method}>
                       <div className="mb-2 flex items-center justify-between gap-4">
                         <div>
                           <p className="text-sm font-semibold text-[#343D38]">
@@ -535,35 +659,27 @@ export default async function AdminPage() {
               <div className="divide-y divide-[#EEECE6]">
                 {recentOrders.map(
                   (order) => {
-                    const table =
-                      Array.isArray(
-                        order.restaurant_tables
-                      )
-                        ? order
-                            .restaurant_tables[0]
-                        : order.restaurant_tables;
-
                     const location =
                       order.order_type ===
                       "takeaway"
                         ? "À emporter"
-                        : table?.name ||
-                          "Table";
+                        : order.table_id
+                          ? tablesMap.get(
+                              order.table_id
+                            ) ||
+                            "Table"
+                          : "Table";
 
                     return (
                       <Link
-                        key={
-                          order.id
-                        }
+                        key={order.id}
                         href={`/admin/orders/${order.id}`}
                         className="group flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-[#FAFAF7] md:px-6"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-semibold text-[#1F2924]">
-                              {
-                                location
-                              }
+                              {location}
                             </p>
 
                             {order.order_number && (
@@ -578,8 +694,7 @@ export default async function AdminPage() {
                             {order.order_type ===
                               "takeaway" && (
                               <span className="rounded-full bg-[#F3EFE8] px-2 py-0.5 text-[11px] font-semibold text-[#7D6755]">
-                                À
-                                emporter
+                                À emporter
                               </span>
                             )}
                           </div>
@@ -590,9 +705,7 @@ export default async function AdminPage() {
                                 "Paiement"}
                             </span>
 
-                            <span>
-                              ·
-                            </span>
+                            <span>·</span>
 
                             <span>
                               {order.paid_at
@@ -636,7 +749,6 @@ export default async function AdminPage() {
           </section>
         </div>
 
-        {/* ADMINISTRATION */}
         <section className="mt-8">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
@@ -644,14 +756,12 @@ export default async function AdminPage() {
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Accédez rapidement
-              aux fonctions de
-              gestion.
+              Accédez rapidement aux
+              fonctions de gestion.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {/* RAPPORTS */}
             <Link
               href="/admin/reports"
               className="group rounded-[24px] border border-[#CFE0D4] bg-[#EDF5EF] p-5 transition hover:-translate-y-0.5 hover:shadow-md"
@@ -672,13 +782,11 @@ export default async function AdminPage() {
 
               <p className="mt-1 text-sm leading-6 text-[#65726A]">
                 Analyse des ventes,
-                produits,
-                annulations et
-                shifts.
+                produits, annulations
+                et shifts.
               </p>
             </Link>
 
-            {/* VENTES */}
             <Link
               href="/admin/sales"
               className="group rounded-[24px] border border-[#E9E6DF] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#D8DDD8] hover:shadow-md"
@@ -704,7 +812,6 @@ export default async function AdminPage() {
               </p>
             </Link>
 
-            {/* SHIFTS */}
             <Link
               href="/admin/shifts"
               className="group rounded-[24px] border border-[#E9E6DF] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#D8DDD8] hover:shadow-md"
@@ -725,12 +832,11 @@ export default async function AdminPage() {
 
               <p className="mt-1 text-sm leading-6 text-[#737A75]">
                 Consultez les
-                horaires et
-                clôtures de caisse.
+                horaires et clôtures
+                de caisse.
               </p>
             </Link>
 
-            {/* TABLES */}
             <Link
               href="/admin/tables"
               className="group rounded-[24px] border border-[#E9E6DF] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#D8DDD8] hover:shadow-md"
@@ -751,12 +857,11 @@ export default async function AdminPage() {
 
               <p className="mt-1 text-sm leading-6 text-[#737A75]">
                 Visualisez
-                l&apos;occupation
-                du restaurant.
+                l&apos;occupation du
+                restaurant.
               </p>
             </Link>
 
-            {/* UTILISATEURS */}
             <Link
               href="/admin/users"
               className="group rounded-[24px] border border-[#E9E6DF] bg-white p-5 transition hover:-translate-y-0.5 hover:border-[#D8DDD8] hover:shadow-md"
@@ -776,12 +881,11 @@ export default async function AdminPage() {
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#737A75]">
-                Gérez les employés
-                et leurs accès.
+                Gérez les employés et
+                leurs accès.
               </p>
             </Link>
 
-            {/* STOCK - À VENIR */}
             <div
               aria-disabled="true"
               className="relative cursor-default rounded-[24px] border border-dashed border-[#D9D7CF] bg-[#F9F7F2] p-5"
