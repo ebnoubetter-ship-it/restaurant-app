@@ -170,13 +170,6 @@ export async function POST(
    * ============================
    * DOUBLON DANS CE RESTAURANT
    * ============================
-   *
-   * Ahmed chez Appetizer
-   * et Ahmed chez MAIDA TEST
-   * sont autorisés.
-   *
-   * Deux Ahmed dans le même
-   * restaurant ne le sont pas.
    */
   const {
     data: existingUser,
@@ -228,9 +221,6 @@ export async function POST(
    * ============================
    * CRÉATION
    * ============================
-   *
-   * restaurant_id est écrit
-   * explicitement.
    */
   const {
     data,
@@ -265,12 +255,6 @@ export async function POST(
       error
     );
 
-    /*
-     * Lorsque nous ajouterons la
-     * contrainte unique DB, elle
-     * protégera également les créations
-     * simultanées.
-     */
     if (
       error.code === "23505"
     ) {
@@ -302,4 +286,267 @@ export async function POST(
       status: 201,
     }
   );
+}
+
+export async function DELETE(
+  request: Request
+) {
+  /*
+   * ============================
+   * ADMIN DU RESTAURANT
+   * ============================
+   */
+  const access =
+    await requireApiRestaurantAccess([
+      "admin",
+    ]);
+
+  if (!access.success) {
+    return access.response;
+  }
+
+  const restaurantId =
+    access.restaurant.id;
+
+  /*
+   * ============================
+   * BODY
+   * ============================
+   */
+  let body: {
+    id?: unknown;
+  };
+
+  try {
+    body =
+      await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Requête invalide.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  const userId =
+    typeof body.id ===
+      "string"
+      ? body.id.trim()
+      : "";
+
+  if (!userId) {
+    return NextResponse.json(
+      {
+        error:
+          "Utilisateur invalide.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  /*
+   * ============================
+   * UTILISATEUR CIBLE
+   * ============================
+   *
+   * Le restaurant_id fait partie
+   * de la recherche : un admin
+   * Appetizer ne peut jamais
+   * supprimer un utilisateur
+   * MAIDA TEST.
+   */
+  const {
+    data: targetUser,
+    error: targetUserError,
+  } = await supabaseAdmin
+    .from("users")
+    .select(`
+      id,
+      name,
+      role
+    `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "id",
+      userId
+    )
+    .maybeSingle();
+
+  if (targetUserError) {
+    console.error(
+      "DELETE USER LOOKUP ERROR:",
+      targetUserError
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Impossible de vérifier l'utilisateur.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+  if (!targetUser) {
+    return NextResponse.json(
+      {
+        error:
+          "Utilisateur introuvable.",
+      },
+      {
+        status: 404,
+      }
+    );
+  }
+
+  /*
+   * ============================
+   * PROTECTION DERNIER ADMIN
+   * ============================
+   */
+  if (
+    targetUser.role ===
+    "admin"
+  ) {
+    const {
+      count,
+      error: adminCountError,
+    } = await supabaseAdmin
+      .from("users")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true,
+        }
+      )
+      .eq(
+        "restaurant_id",
+        restaurantId
+      )
+      .eq(
+        "role",
+        "admin"
+      );
+
+    if (adminCountError) {
+      console.error(
+        "COUNT ADMINS ERROR:",
+        adminCountError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de vérifier les administrateurs.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (
+      (count || 0) <= 1
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de supprimer le dernier administrateur du restaurant.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+  }
+
+  /*
+   * ============================
+   * SUPPRESSION
+   * ============================
+   */
+  const {
+    data: deletedUser,
+    error: deleteError,
+  } = await supabaseAdmin
+    .from("users")
+    .delete()
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "id",
+      userId
+    )
+    .select("id")
+    .maybeSingle();
+
+  if (deleteError) {
+    console.error(
+      "DELETE USER ERROR:",
+      deleteError
+    );
+
+    /*
+     * PostgreSQL FK violation.
+     *
+     * On préfère protéger
+     * commandes, shifts et
+     * historique plutôt que
+     * casser la traçabilité.
+     */
+    if (
+      deleteError.code ===
+      "23503"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Cet utilisateur est lié à l'historique du restaurant et ne peut pas être supprimé.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          "Impossible de supprimer l'utilisateur.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+
+  if (!deletedUser) {
+    return NextResponse.json(
+      {
+        error:
+          "Utilisateur introuvable.",
+      },
+      {
+        status: 404,
+      }
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+  });
 }

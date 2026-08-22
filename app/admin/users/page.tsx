@@ -80,8 +80,22 @@ export default function UsersPage() {
   >(null);
 
   const [
+    deletingUserId,
+    setDeletingUserId,
+  ] = useState<
+    string | null
+  >(null);
+
+  const [
     userToReset,
     setUserToReset,
+  ] = useState<User | null>(
+    null
+  );
+
+  const [
+    userToDelete,
+    setUserToDelete,
   ] = useState<User | null>(
     null
   );
@@ -303,6 +317,83 @@ export default function UsersPage() {
         );
       } finally {
         setResettingUserId(
+          null
+        );
+      }
+    };
+
+  const deleteUser =
+    async () => {
+      if (
+        !userToDelete ||
+        deletingUserId
+      ) {
+        return;
+      }
+
+      const userId =
+        userToDelete.id;
+
+      const userName =
+        userToDelete.name;
+
+      setDeletingUserId(
+        userId
+      );
+
+      try {
+        const response =
+          await fetch(
+            "/api/users",
+            {
+              method:
+                "DELETE",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body:
+                JSON.stringify(
+                  {
+                    id:
+                      userId,
+                  }
+                ),
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          notify(
+            "error",
+            data.error ||
+              "Impossible de supprimer l'utilisateur."
+          );
+
+          return;
+        }
+
+        setUserToDelete(
+          null
+        );
+
+        await loadUsers();
+
+        notify(
+          "success",
+          `${userName} a été supprimé de l'équipe.`
+        );
+      } catch {
+        notify(
+          "error",
+          "Impossible de supprimer l'utilisateur."
+        );
+      } finally {
+        setDeletingUserId(
           null
         );
       }
@@ -750,6 +841,15 @@ export default function UsersPage() {
                       resettingUserId ===
                       user.id;
 
+                    const deleting =
+                      deletingUserId ===
+                      user.id;
+
+                    const isLastAdmin =
+                      user.role ===
+                        "admin" &&
+                      adminCount <= 1;
+
                     return (
                       <article
                         key={
@@ -815,7 +915,9 @@ export default function UsersPage() {
                                 }
                                 disabled={
                                   resettingUserId !==
-                                  null
+                                    null ||
+                                  deletingUserId !==
+                                    null
                                 }
                                 className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#E3E0D8] px-3 text-sm font-semibold text-[#68706B] transition hover:bg-[#F7F7F3] disabled:opacity-40"
                               >
@@ -831,6 +933,41 @@ export default function UsersPage() {
                                 )}
                               </button>
                             )}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUserToDelete(
+                                  user
+                                )
+                              }
+                              disabled={
+                                isLastAdmin ||
+                                resettingUserId !==
+                                  null ||
+                                deletingUserId !==
+                                  null
+                              }
+                              title={
+                                isLastAdmin
+                                  ? "Le dernier administrateur ne peut pas être supprimé."
+                                  : `Supprimer ${user.name}`
+                              }
+                              className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#E8C7C1] bg-[#FFF8F6] px-3 text-sm font-semibold text-[#B24D3E] transition hover:bg-[#FFF1EE] disabled:cursor-not-allowed disabled:border-[#E5E2DA] disabled:bg-[#F7F7F3] disabled:text-[#A4A8A5] disabled:opacity-70"
+                            >
+                              {deleting ? (
+                                <>
+                                  <Spinner
+                                    dark
+                                  />
+                                  Suppression...
+                                </>
+                              ) : isLastAdmin ? (
+                                "Dernier admin"
+                              ) : (
+                                "Supprimer"
+                              )}
+                            </button>
                           </div>
                         </div>
                       </article>
@@ -920,6 +1057,90 @@ export default function UsersPage() {
                   </>
                 ) : (
                   "Réinitialiser"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION SUPPRESSION */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-[#17201B]/55 backdrop-blur-[2px] sm:items-center sm:p-4">
+          <div className="w-full max-w-md rounded-t-[30px] bg-white p-6 shadow-2xl sm:rounded-[30px] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-[#DDDAD3] sm:hidden" />
+
+            <p className="text-sm font-semibold text-[#B24D3E]">
+              Suppression
+            </p>
+
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
+              Supprimer cet utilisateur ?
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 text-[#737A75]">
+              <strong className="text-[#343D38]">
+                {
+                  userToDelete.name
+                }
+              </strong>{" "}
+              n&apos;aura plus
+              accès à MAIDA.
+            </p>
+
+            <div className="mt-5 rounded-2xl bg-[#FFF1EE] p-4">
+              <p className="text-sm font-semibold text-[#A74435]">
+                Cette action est
+                définitive.
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-[#9B665D]">
+                Si cet utilisateur
+                est déjà lié à
+                l&apos;historique
+                du restaurant,
+                MAIDA bloquera la
+                suppression afin
+                de préserver la
+                traçabilité.
+              </p>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  setUserToDelete(
+                    null
+                  )
+                }
+                disabled={
+                  deletingUserId !==
+                  null
+                }
+                className="min-h-[52px] flex-1 rounded-2xl border border-[#E3E0D8] font-semibold text-[#68706B] disabled:opacity-40"
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  deleteUser
+                }
+                disabled={
+                  deletingUserId !==
+                  null
+                }
+                className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-[#B84B3C] px-3 font-semibold text-white transition hover:bg-[#A64134] disabled:cursor-wait disabled:opacity-50"
+              >
+                {deletingUserId ? (
+                  <>
+                    <Spinner />
+                    Suppression...
+                  </>
+                ) : (
+                  "Supprimer"
                 )}
               </button>
             </div>
