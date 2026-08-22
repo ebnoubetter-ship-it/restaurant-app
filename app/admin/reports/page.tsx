@@ -10,7 +10,12 @@ type Period =
   | "today"
   | "week"
   | "month"
-  | "all";
+  | "range";
+
+type MonthOption = {
+  value: string;
+  label: string;
+};
 
 type ProductStat = {
   id: string;
@@ -109,8 +114,7 @@ function getWeekRange() {
     7
   ) {
     businessNow.setUTCDate(
-      businessNow.getUTCDate() -
-        1
+      businessNow.getUTCDate() - 1
     );
   }
 
@@ -152,27 +156,247 @@ function getWeekRange() {
   };
 }
 
-function getMonthRange() {
-  const now = new Date();
-
-  const businessNow =
-    new Date(now);
+function getBusinessDate(
+  source = new Date()
+) {
+  const date =
+    new Date(source);
 
   if (
-    businessNow.getUTCHours() <
-    7
+    date.getUTCHours() < 7
   ) {
-    businessNow.setUTCDate(
-      businessNow.getUTCDate() -
-        1
+    date.setUTCDate(
+      date.getUTCDate() - 1
     );
   }
+
+  return date;
+}
+
+function getMonthKey(
+  date: Date
+) {
+  const year =
+    date.getUTCFullYear();
+
+  const month =
+    String(
+      date.getUTCMonth() + 1
+    ).padStart(2, "0");
+
+  return `${year}-${month}`;
+}
+
+function getBusinessMonthKey(
+  date: Date
+) {
+  return getMonthKey(
+    getBusinessDate(date)
+  );
+}
+
+function isMonthKey(
+  value?: string
+) {
+  return Boolean(
+    value &&
+      /^\d{4}-(0[1-9]|1[0-2])$/.test(
+        value
+      )
+  );
+}
+
+function parseMonthKey(
+  value: string
+) {
+  const [
+    yearText,
+    monthText,
+  ] = value.split("-");
+
+  return {
+    year:
+      Number(yearText),
+
+    month:
+      Number(monthText) - 1,
+  };
+}
+
+function capitalizeFirst(
+  value: string
+) {
+  if (!value) {
+    return value;
+  }
+
+  return (
+    value.charAt(0).toUpperCase() +
+    value.slice(1)
+  );
+}
+
+function formatMonthLabel(
+  value: string
+) {
+  const {
+    year,
+    month,
+  } = parseMonthKey(
+    value
+  );
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month,
+        1,
+        12,
+        0,
+        0
+      )
+    );
+
+  return capitalizeFirst(
+    new Intl.DateTimeFormat(
+      "fr-FR",
+      {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }
+    ).format(date)
+  );
+}
+
+function formatDateLabel(
+  date: Date
+) {
+  return new Intl.DateTimeFormat(
+    "fr-FR",
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }
+  ).format(date);
+}
+
+function buildMonthOptions(
+  firstMonthKey: string,
+  currentMonthKey: string
+): MonthOption[] {
+  const first =
+    parseMonthKey(
+      firstMonthKey
+    );
+
+  const current =
+    parseMonthKey(
+      currentMonthKey
+    );
+
+  const firstDate =
+    new Date(
+      Date.UTC(
+        first.year,
+        first.month,
+        1,
+        12,
+        0,
+        0
+      )
+    );
+
+  const cursor =
+    new Date(
+      Date.UTC(
+        current.year,
+        current.month,
+        1,
+        12,
+        0,
+        0
+      )
+    );
+
+  const result:
+    MonthOption[] = [];
+
+  let safety = 0;
+
+  while (
+    cursor.getTime() >=
+      firstDate.getTime() &&
+    safety < 1200
+  ) {
+    const value =
+      getMonthKey(
+        cursor
+      );
+
+    result.push({
+      value,
+      label:
+        formatMonthLabel(
+          value
+        ),
+    });
+
+    cursor.setUTCMonth(
+      cursor.getUTCMonth() - 1
+    );
+
+    safety += 1;
+  }
+
+  if (
+    result.length === 0
+  ) {
+    result.push({
+      value:
+        currentMonthKey,
+
+      label:
+        formatMonthLabel(
+          currentMonthKey
+        ),
+    });
+  }
+
+  return result;
+}
+
+function getMonthRange(
+  monthKey: string,
+  currentMonthKey: string
+) {
+  const {
+    year,
+    month,
+  } = parseMonthKey(
+    monthKey
+  );
 
   const start =
     new Date(
       Date.UTC(
-        businessNow.getUTCFullYear(),
-        businessNow.getUTCMonth(),
+        year,
+        month,
+        1,
+        7,
+        0,
+        0
+      )
+    );
+
+  const naturalEnd =
+    new Date(
+      Date.UTC(
+        year,
+        month + 1,
         1,
         7,
         0,
@@ -181,17 +405,10 @@ function getMonthRange() {
     );
 
   const end =
-    new Date(
-      Date.UTC(
-        businessNow.getUTCFullYear(),
-        businessNow.getUTCMonth() +
-          1,
-        1,
-        7,
-        0,
-        0
-      )
-    );
+    monthKey ===
+    currentMonthKey
+      ? new Date()
+      : naturalEnd;
 
   return {
     start,
@@ -199,8 +416,35 @@ function getMonthRange() {
   };
 }
 
+function getCustomRange(
+  fromMonth: string,
+  toMonth: string,
+  currentMonthKey: string
+) {
+  const from =
+    getMonthRange(
+      fromMonth,
+      currentMonthKey
+    );
+
+  const to =
+    getMonthRange(
+      toMonth,
+      currentMonthKey
+    );
+
+  return {
+    start: from.start,
+    end: to.end,
+  };
+}
+
 function getRange(
-  period: Period
+  period: Period,
+  selectedMonth: string,
+  selectedFromMonth: string,
+  selectedToMonth: string,
+  currentMonthKey: string
 ) {
   if (
     period === "today"
@@ -217,14 +461,24 @@ function getRange(
   if (
     period === "month"
   ) {
-    return getMonthRange();
+    return getMonthRange(
+      selectedMonth,
+      currentMonthKey
+    );
   }
 
-  return null;
+  return getCustomRange(
+    selectedFromMonth,
+    selectedToMonth,
+    currentMonthKey
+  );
 }
 
 function getPeriodLabel(
-  period: Period
+  period: Period,
+  selectedMonth: string,
+  selectedFromMonth: string,
+  selectedToMonth: string
 ) {
   if (
     period === "week"
@@ -235,16 +489,92 @@ function getPeriodLabel(
   if (
     period === "month"
   ) {
-    return "Ce mois";
+    return formatMonthLabel(
+      selectedMonth
+    );
   }
 
   if (
-    period === "all"
+    period === "range"
   ) {
-    return "Toute la période";
+    if (
+      selectedFromMonth ===
+      selectedToMonth
+    ) {
+      return formatMonthLabel(
+        selectedFromMonth
+      );
+    }
+
+    return `${formatMonthLabel(
+      selectedFromMonth
+    )} → ${formatMonthLabel(
+      selectedToMonth
+    )}`;
   }
 
   return "Aujourd’hui";
+}
+
+function getExactRangeLabel(
+  period: Period,
+  selectedMonth: string,
+  selectedFromMonth: string,
+  selectedToMonth: string,
+  currentMonthKey: string
+) {
+  if (
+    period !== "month" &&
+    period !== "range"
+  ) {
+    return null;
+  }
+
+  const fromMonth =
+    period === "month"
+      ? selectedMonth
+      : selectedFromMonth;
+
+  const toMonth =
+    period === "month"
+      ? selectedMonth
+      : selectedToMonth;
+
+  const startRange =
+    getMonthRange(
+      fromMonth,
+      currentMonthKey
+    );
+
+  if (
+    toMonth ===
+    currentMonthKey
+  ) {
+    return `Du ${formatDateLabel(
+      startRange.start
+    )} à aujourd’hui`;
+  }
+
+  const endRange =
+    getMonthRange(
+      toMonth,
+      currentMonthKey
+    );
+
+  const lastDay =
+    new Date(
+      endRange.end.getTime() -
+        24 *
+          60 *
+          60 *
+          1000
+    );
+
+  return `Du ${formatDateLabel(
+    startRange.start
+  )} au ${formatDateLabel(
+    lastDay
+  )}`;
 }
 
 function formatMoney(
@@ -333,6 +663,9 @@ export default async function AdminReportsPage({
 }: {
   searchParams: Promise<{
     period?: string;
+    month?: string;
+    from?: string;
+    to?: string;
   }>;
 }) {
   /*
@@ -370,6 +703,84 @@ export default async function AdminReportsPage({
   const params =
     await searchParams;
 
+  /*
+   * ============================
+   * MOIS DISPONIBLES
+   * ============================
+   */
+  const now =
+    new Date();
+
+  const currentMonthKey =
+    getBusinessMonthKey(
+      now
+    );
+
+  const {
+    data: firstSale,
+    error: firstSaleError,
+  } = await supabaseAdmin
+    .from("orders")
+    .select("paid_at")
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "status",
+      "paid"
+    )
+    .not(
+      "paid_at",
+      "is",
+      null
+    )
+    .order(
+      "paid_at",
+      {
+        ascending: true,
+      }
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if (
+    firstSaleError
+  ) {
+    console.error(
+      "ADMIN REPORTS FIRST SALE ERROR:",
+      firstSaleError
+    );
+  }
+
+  const firstMonthKey =
+    firstSale?.paid_at
+      ? getBusinessMonthKey(
+          new Date(
+            firstSale.paid_at
+          )
+        )
+      : currentMonthKey;
+
+  const monthOptions =
+    buildMonthOptions(
+      firstMonthKey,
+      currentMonthKey
+    );
+
+  const availableMonthKeys =
+    new Set(
+      monthOptions.map(
+        (month) =>
+          month.value
+      )
+    );
+
+  /*
+   * ============================
+   * FILTRE SÉLECTIONNÉ
+   * ============================
+   */
   const selectedPeriod: Period =
     params.period === "week"
       ? "week"
@@ -377,13 +788,63 @@ export default async function AdminReportsPage({
           "month"
         ? "month"
         : params.period ===
-            "all"
-          ? "all"
+              "range" ||
+            params.period ===
+              "all"
+          ? "range"
           : "today";
+
+  const selectedMonth =
+    isMonthKey(
+      params.month
+    ) &&
+    availableMonthKeys.has(
+      params.month!
+    )
+      ? params.month!
+      : currentMonthKey;
+
+  let selectedFromMonth =
+    isMonthKey(
+      params.from
+    ) &&
+    availableMonthKeys.has(
+      params.from!
+    )
+      ? params.from!
+      : firstMonthKey;
+
+  let selectedToMonth =
+    isMonthKey(
+      params.to
+    ) &&
+    availableMonthKeys.has(
+      params.to!
+    )
+      ? params.to!
+      : currentMonthKey;
+
+  if (
+    selectedFromMonth >
+    selectedToMonth
+  ) {
+    const temporary =
+      selectedFromMonth;
+
+    selectedFromMonth =
+      selectedToMonth;
+
+    selectedToMonth =
+      temporary;
+  }
 
   const range =
     getRange(
-      selectedPeriod
+      selectedPeriod,
+      selectedMonth,
+      selectedFromMonth,
+      selectedToMonth,
+      currentMonthKey
     );
 
   /*
@@ -419,18 +880,16 @@ export default async function AdminReportsPage({
         }
       );
 
-  if (range) {
-    paidOrdersQuery =
-      paidOrdersQuery
-        .gte(
-          "paid_at",
-          range.start.toISOString()
-        )
-        .lt(
-          "paid_at",
-          range.end.toISOString()
-        );
-  }
+  paidOrdersQuery =
+    paidOrdersQuery
+      .gte(
+        "paid_at",
+        range.start.toISOString()
+      )
+      .lt(
+        "paid_at",
+        range.end.toISOString()
+      );
 
   /*
    * ============================
@@ -466,18 +925,16 @@ export default async function AdminReportsPage({
         }
       );
 
-  if (range) {
-    cancelledOrdersQuery =
-      cancelledOrdersQuery
-        .gte(
-          "cancelled_at",
-          range.start.toISOString()
-        )
-        .lt(
-          "cancelled_at",
-          range.end.toISOString()
-        );
-  }
+  cancelledOrdersQuery =
+    cancelledOrdersQuery
+      .gte(
+        "cancelled_at",
+        range.start.toISOString()
+      )
+      .lt(
+        "cancelled_at",
+        range.end.toISOString()
+      );
 
   /*
    * ============================
@@ -510,18 +967,16 @@ export default async function AdminReportsPage({
         }
       );
 
-  if (range) {
-    itemCancellationsQuery =
-      itemCancellationsQuery
-        .gte(
-          "created_at",
-          range.start.toISOString()
-        )
-        .lt(
-          "created_at",
-          range.end.toISOString()
-        );
-  }
+  itemCancellationsQuery =
+    itemCancellationsQuery
+      .gte(
+        "created_at",
+        range.start.toISOString()
+      )
+      .lt(
+        "created_at",
+        range.end.toISOString()
+      );
 
   /*
    * ============================
@@ -554,18 +1009,16 @@ export default async function AdminReportsPage({
         }
       );
 
-  if (range) {
-    shiftReportsQuery =
-      shiftReportsQuery
-        .gte(
-          "created_at",
-          range.start.toISOString()
-        )
-        .lt(
-          "created_at",
-          range.end.toISOString()
-        );
-  }
+  shiftReportsQuery =
+    shiftReportsQuery
+      .gte(
+        "created_at",
+        range.start.toISOString()
+      )
+      .lt(
+        "created_at",
+        range.end.toISOString()
+      );
 
   const [
     paidOrdersResult,
@@ -1858,6 +2311,23 @@ export default async function AdminReportsPage({
         )
       : 0;
 
+  const periodLabel =
+    getPeriodLabel(
+      selectedPeriod,
+      selectedMonth,
+      selectedFromMonth,
+      selectedToMonth
+    );
+
+  const exactRangeLabel =
+    getExactRangeLabel(
+      selectedPeriod,
+      selectedMonth,
+      selectedFromMonth,
+      selectedToMonth,
+      currentMonthKey
+    );
+
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
@@ -1904,7 +2374,8 @@ export default async function AdminReportsPage({
           </div>
         </header>
 
-        <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
+        {/* FILTRES PRINCIPAUX */}
+        <nav className="mb-4 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/reports?period=today"
             className={
@@ -1930,7 +2401,7 @@ export default async function AdminReportsPage({
           </Link>
 
           <Link
-            href="/admin/reports?period=month"
+            href={`/admin/reports?period=month&month=${currentMonthKey}`}
             className={
               selectedPeriod ===
               "month"
@@ -1942,24 +2413,185 @@ export default async function AdminReportsPage({
           </Link>
 
           <Link
-            href="/admin/reports?period=all"
+            href={`/admin/reports?period=range&from=${firstMonthKey}&to=${currentMonthKey}`}
             className={
               selectedPeriod ===
-              "all"
+              "range"
                 ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Tout
+            Période
           </Link>
         </nav>
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-[#343D38]">
-            {getPeriodLabel(
-              selectedPeriod
+        {/* CHOIX DU MOIS */}
+        {selectedPeriod ===
+          "month" && (
+          <form
+            action="/admin/reports"
+            method="get"
+            className="mb-4 rounded-[20px] border border-[#E3E0D8] bg-white p-4 shadow-sm"
+          >
+            <input
+              type="hidden"
+              name="period"
+              value="month"
+            />
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <label
+                  htmlFor="month"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
+                >
+                  Mois
+                </label>
+
+                <select
+                  id="month"
+                  name="month"
+                  defaultValue={
+                    selectedMonth
+                  }
+                  className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
+                >
+                  {monthOptions.map(
+                    (month) => (
+                      <option
+                        key={
+                          month.value
+                        }
+                        value={
+                          month.value
+                        }
+                      >
+                        {
+                          month.label
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
+              >
+                Afficher
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* CHOIX DE LA PÉRIODE */}
+        {selectedPeriod ===
+          "range" && (
+          <form
+            action="/admin/reports"
+            method="get"
+            className="mb-4 rounded-[20px] border border-[#E3E0D8] bg-white p-4 shadow-sm"
+          >
+            <input
+              type="hidden"
+              name="period"
+              value="range"
+            />
+
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <div>
+                <label
+                  htmlFor="from"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
+                >
+                  De
+                </label>
+
+                <select
+                  id="from"
+                  name="from"
+                  defaultValue={
+                    selectedFromMonth
+                  }
+                  className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
+                >
+                  {monthOptions.map(
+                    (month) => (
+                      <option
+                        key={
+                          month.value
+                        }
+                        value={
+                          month.value
+                        }
+                      >
+                        {
+                          month.label
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="to"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
+                >
+                  À
+                </label>
+
+                <select
+                  id="to"
+                  name="to"
+                  defaultValue={
+                    selectedToMonth
+                  }
+                  className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
+                >
+                  {monthOptions.map(
+                    (month) => (
+                      <option
+                        key={
+                          month.value
+                        }
+                        value={
+                          month.value
+                        }
+                      >
+                        {
+                          month.label
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
+              >
+                Afficher
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-[#343D38]">
+              {periodLabel}
+            </p>
+
+            {exactRangeLabel && (
+              <p className="mt-1 text-xs font-medium text-[#7A817C]">
+                {exactRangeLabel}
+              </p>
             )}
-          </p>
+          </div>
 
           <p className="text-xs text-[#8A918C]">
             Journée commerciale :
