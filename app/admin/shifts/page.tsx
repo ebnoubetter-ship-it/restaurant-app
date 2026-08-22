@@ -6,8 +6,6 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type Period =
   | "today"
-  | "week"
-  | "month"
   | "all";
 
 type ShiftRow = {
@@ -16,6 +14,11 @@ type ShiftRow = {
   started_at: string;
   ended_at: string | null;
   status: "open" | "closed";
+};
+
+type CashierRow = {
+  id: string;
+  name: string;
 };
 
 const paymentMethods = [
@@ -56,26 +59,9 @@ function formatDateTime(
   );
 }
 
-function getPeriodLabel(
-  period: Period
-) {
-  if (period === "week") {
-    return "Cette semaine";
-  }
-
-  if (period === "month") {
-    return "Ce mois";
-  }
-
-  if (period === "all") {
-    return "Tous les shifts";
-  }
-
-  return "Aujourd’hui";
-}
-
 function getBusinessDate() {
-  const now = new Date();
+  const now =
+    new Date();
 
   const businessDate =
     new Date(now);
@@ -96,96 +82,23 @@ function getTodayRange() {
   const businessDate =
     getBusinessDate();
 
-  const start = new Date(
-    Date.UTC(
-      businessDate.getUTCFullYear(),
-      businessDate.getUTCMonth(),
-      businessDate.getUTCDate(),
-      7,
-      0,
-      0
-    )
-  );
+  const start =
+    new Date(
+      Date.UTC(
+        businessDate.getUTCFullYear(),
+        businessDate.getUTCMonth(),
+        businessDate.getUTCDate(),
+        7,
+        0,
+        0
+      )
+    );
 
   const end =
     new Date(start);
 
   end.setUTCDate(
     end.getUTCDate() + 1
-  );
-
-  return {
-    start,
-    end,
-  };
-}
-
-function getWeekRange() {
-  const businessDate =
-    getBusinessDate();
-
-  const day =
-    businessDate.getUTCDay();
-
-  const daysSinceMonday =
-    day === 0
-      ? 6
-      : day - 1;
-
-  const start = new Date(
-    Date.UTC(
-      businessDate.getUTCFullYear(),
-      businessDate.getUTCMonth(),
-      businessDate.getUTCDate(),
-      7,
-      0,
-      0
-    )
-  );
-
-  start.setUTCDate(
-    start.getUTCDate() -
-      daysSinceMonday
-  );
-
-  const end =
-    new Date(start);
-
-  end.setUTCDate(
-    end.getUTCDate() + 7
-  );
-
-  return {
-    start,
-    end,
-  };
-}
-
-function getMonthRange() {
-  const businessDate =
-    getBusinessDate();
-
-  const start = new Date(
-    Date.UTC(
-      businessDate.getUTCFullYear(),
-      businessDate.getUTCMonth(),
-      1,
-      7,
-      0,
-      0
-    )
-  );
-
-  const end = new Date(
-    Date.UTC(
-      businessDate.getUTCFullYear(),
-      businessDate.getUTCMonth() +
-        1,
-      1,
-      7,
-      0,
-      0
-    )
   );
 
   return {
@@ -203,11 +116,12 @@ function formatDuration(
       startedAt
     ).getTime();
 
-  const end = endedAt
-    ? new Date(
-        endedAt
-      ).getTime()
-    : Date.now();
+  const end =
+    endedAt
+      ? new Date(
+          endedAt
+        ).getTime()
+      : Date.now();
 
   const duration =
     Math.max(
@@ -230,7 +144,9 @@ function formatDuration(
   const minutes =
     totalMinutes % 60;
 
-  if (hours === 0) {
+  if (
+    hours === 0
+  ) {
     return `${minutes} min`;
   }
 
@@ -244,8 +160,14 @@ export default async function AdminShiftsPage({
 }: {
   searchParams: Promise<{
     period?: string;
+    cashier?: string;
   }>;
 }) {
+  /*
+   * ============================
+   * RESTAURANT + ADMIN
+   * ============================
+   */
   const access =
     await getSessionRestaurantAccess();
 
@@ -277,16 +199,92 @@ export default async function AdminShiftsPage({
     await searchParams;
 
   const selectedPeriod: Period =
-    params.period === "week"
-      ? "week"
-      : params.period ===
-          "month"
-        ? "month"
-        : params.period ===
-            "all"
-          ? "all"
-          : "today";
+    params.period === "all"
+      ? "all"
+      : "today";
 
+  /*
+   * ============================
+   * CAISSIERS DU RESTAURANT
+   * ============================
+   *
+   * Ils servent au filtre de
+   * l'historique "Tous".
+   */
+  const {
+    data: cashiersData,
+    error: cashiersError,
+  } = await supabaseAdmin
+    .from("users")
+    .select(`
+      id,
+      name
+    `)
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "role",
+      "cashier"
+    )
+    .order(
+      "name",
+      {
+        ascending: true,
+      }
+    );
+
+  if (
+    cashiersError
+  ) {
+    console.error(
+      "ADMIN SHIFTS CASHIERS ERROR:",
+      cashiersError
+    );
+  }
+
+  const cashiers =
+    (cashiersData ||
+      []) as CashierRow[];
+
+  const availableCashierIds =
+    new Set(
+      cashiers.map(
+        (cashier) =>
+          cashier.id
+      )
+    );
+
+  /*
+   * Un cashier passé dans l'URL
+   * n'est accepté que s'il
+   * appartient bien au restaurant.
+   */
+  const selectedCashierId =
+    selectedPeriod === "all" &&
+    typeof params.cashier ===
+      "string" &&
+    availableCashierIds.has(
+      params.cashier
+    )
+      ? params.cashier
+      : "";
+
+  const selectedCashier =
+    selectedCashierId
+      ? cashiers.find(
+          (cashier) =>
+            cashier.id ===
+            selectedCashierId
+        ) || null
+      : null;
+
+  /*
+   * ============================
+   * SHIFTS
+   * ============================
+   */
   let shiftsQuery =
     supabaseAdmin
       .from("shifts")
@@ -308,6 +306,11 @@ export default async function AdminShiftsPage({
         }
       );
 
+  /*
+   * Aujourd'hui :
+   * journée commerciale
+   * 07h00 -> 07h00.
+   */
   if (
     selectedPeriod ===
     "today"
@@ -330,48 +333,21 @@ export default async function AdminShiftsPage({
         );
   }
 
+  /*
+   * Tous :
+   * filtre facultatif par
+   * caissier.
+   */
   if (
     selectedPeriod ===
-    "week"
+      "all" &&
+    selectedCashierId
   ) {
-    const {
-      start,
-      end,
-    } =
-      getWeekRange();
-
     shiftsQuery =
-      shiftsQuery
-        .gte(
-          "started_at",
-          start.toISOString()
-        )
-        .lt(
-          "started_at",
-          end.toISOString()
-        );
-  }
-
-  if (
-    selectedPeriod ===
-    "month"
-  ) {
-    const {
-      start,
-      end,
-    } =
-      getMonthRange();
-
-    shiftsQuery =
-      shiftsQuery
-        .gte(
-          "started_at",
-          start.toISOString()
-        )
-        .lt(
-          "started_at",
-          end.toISOString()
-        );
+      shiftsQuery.eq(
+        "cashier_id",
+        selectedCashierId
+      );
   }
 
   const {
@@ -379,7 +355,9 @@ export default async function AdminShiftsPage({
     error: shiftsError,
   } = await shiftsQuery;
 
-  if (shiftsError) {
+  if (
+    shiftsError
+  ) {
     console.error(
       "ADMIN SHIFTS ERROR:",
       shiftsError
@@ -445,6 +423,15 @@ export default async function AdminShiftsPage({
     (shiftsData ||
       []) as ShiftRow[];
 
+  /*
+   * ============================
+   * NOMS DES UTILISATEURS
+   * ============================
+   *
+   * On récupère les utilisateurs
+   * réellement liés aux shifts
+   * affichés.
+   */
   const cashierIds = [
     ...new Set(
       shifts.map(
@@ -481,7 +468,9 @@ export default async function AdminShiftsPage({
           cashierIds
         );
 
-    if (usersError) {
+    if (
+      usersError
+    ) {
       console.error(
         "ADMIN SHIFTS USERS ERROR:",
         usersError
@@ -509,6 +498,11 @@ export default async function AdminShiftsPage({
       );
   }
 
+  /*
+   * ============================
+   * COMMANDES DES SHIFTS
+   * ============================
+   */
   const shiftIds =
     shifts.map(
       (shift) =>
@@ -553,7 +547,9 @@ export default async function AdminShiftsPage({
           shiftIds
         );
 
-    if (ordersError) {
+    if (
+      ordersError
+    ) {
       console.error(
         "ADMIN SHIFTS ORDERS ERROR:",
         ordersError
@@ -580,6 +576,11 @@ export default async function AdminShiftsPage({
       );
   }
 
+  /*
+   * ============================
+   * RÉSUMÉS PAR SHIFT
+   * ============================
+   */
   const shiftSummaries =
     shifts.map(
       (shift) => {
@@ -628,9 +629,11 @@ export default async function AdminShiftsPage({
           payments[
             order.payment_method
           ] =
-            (payments[
-              order.payment_method
-            ] || 0) +
+            (
+              payments[
+                order.payment_method
+              ] || 0
+            ) +
             Number(
               order.total ||
                 0
@@ -701,9 +704,18 @@ export default async function AdminShiftsPage({
         )
       : 0;
 
+  const periodLabel =
+    selectedPeriod ===
+    "today"
+      ? "Aujourd’hui"
+      : selectedCashier
+        ? `Tous les shifts · ${selectedCashier.name}`
+        : "Tous les shifts";
+
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
+        {/* HEADER */}
         <header className="mb-7">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1E4D3A] text-lg font-black text-white">
@@ -745,7 +757,8 @@ export default async function AdminShiftsPage({
           </div>
         </header>
 
-        <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
+        {/* FILTRE PRINCIPAL */}
+        <nav className="mb-4 flex gap-1 rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/shifts?period=today"
             className={
@@ -759,30 +772,6 @@ export default async function AdminShiftsPage({
           </Link>
 
           <Link
-            href="/admin/shifts?period=week"
-            className={
-              selectedPeriod ===
-              "week"
-                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
-                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
-            }
-          >
-            Semaine
-          </Link>
-
-          <Link
-            href="/admin/shifts?period=month"
-            className={
-              selectedPeriod ===
-              "month"
-                ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
-                : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
-            }
-          >
-            Mois
-          </Link>
-
-          <Link
             href="/admin/shifts?period=all"
             className={
               selectedPeriod ===
@@ -791,15 +780,78 @@ export default async function AdminShiftsPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Tout
+            Tous
           </Link>
         </nav>
 
+        {/* FILTRE CAISSIER */}
+        {selectedPeriod ===
+          "all" && (
+          <form
+            action="/admin/shifts"
+            method="get"
+            className="mb-4 rounded-[20px] border border-[#E3E0D8] bg-white p-4 shadow-sm"
+          >
+            <input
+              type="hidden"
+              name="period"
+              value="all"
+            />
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <label
+                  htmlFor="cashier"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
+                >
+                  Caissier
+                </label>
+
+                <select
+                  id="cashier"
+                  name="cashier"
+                  defaultValue={
+                    selectedCashierId
+                  }
+                  className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
+                >
+                  <option value="">
+                    Tous les caissiers
+                  </option>
+
+                  {cashiers.map(
+                    (cashier) => (
+                      <option
+                        key={
+                          cashier.id
+                        }
+                        value={
+                          cashier.id
+                        }
+                      >
+                        {
+                          cashier.name
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
+              >
+                Afficher
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* PÉRIODE ACTIVE */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-[#343D38]">
-            {getPeriodLabel(
-              selectedPeriod
-            )}
+            {periodLabel}
           </p>
 
           <p className="text-xs text-[#8A918C]">
@@ -808,6 +860,7 @@ export default async function AdminShiftsPage({
           </p>
         </div>
 
+        {/* KPI */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="rounded-[24px] border border-[#C7DACD] bg-[#EDF5EF] p-5">
             <div className="flex items-center gap-2">
@@ -850,7 +903,7 @@ export default async function AdminShiftsPage({
             </p>
 
             <p className="mt-3 text-xs text-[#9A9F9B]">
-              Sur la période
+              Sur la sélection
             </p>
           </div>
 
@@ -896,6 +949,7 @@ export default async function AdminShiftsPage({
           </div>
         </section>
 
+        {/* SHIFTS EN COURS */}
         <section className="mt-8">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
@@ -921,8 +975,10 @@ export default async function AdminShiftsPage({
 
               <p className="mt-1 text-sm text-[#8A918C]">
                 Aucun caissier
-                n&apos;a actuellement
-                de caisse ouverte.
+                correspondant à la
+                sélection n&apos;a
+                actuellement de caisse
+                ouverte.
               </p>
             </div>
           ) : (
@@ -1070,6 +1126,7 @@ export default async function AdminShiftsPage({
           )}
         </section>
 
+        {/* SHIFTS CLÔTURÉS */}
         <section className="mt-9">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
@@ -1091,7 +1148,7 @@ export default async function AdminShiftsPage({
 
               <p className="mt-1 text-sm text-[#8A918C]">
                 Aucun résultat pour
-                cette période.
+                cette sélection.
               </p>
             </div>
           ) : (
