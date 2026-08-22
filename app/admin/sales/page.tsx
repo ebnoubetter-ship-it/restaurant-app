@@ -8,7 +8,12 @@ type Period =
   | "today"
   | "week"
   | "month"
-  | "all";
+  | "range";
+
+type MonthOption = {
+  value: string;
+  label: string;
+};
 
 const paymentMethods = [
   "Cash",
@@ -29,8 +34,226 @@ function formatMoney(
   ).format(value);
 }
 
+function getBusinessDate(
+  source = new Date()
+) {
+  const date =
+    new Date(source);
+
+  if (
+    date.getUTCHours() < 7
+  ) {
+    date.setUTCDate(
+      date.getUTCDate() - 1
+    );
+  }
+
+  return date;
+}
+
+function getMonthKey(
+  date: Date
+) {
+  const year =
+    date.getUTCFullYear();
+
+  const month =
+    String(
+      date.getUTCMonth() + 1
+    ).padStart(2, "0");
+
+  return `${year}-${month}`;
+}
+
+function getBusinessMonthKey(
+  date: Date
+) {
+  return getMonthKey(
+    getBusinessDate(date)
+  );
+}
+
+function isMonthKey(
+  value?: string
+) {
+  return Boolean(
+    value &&
+      /^\d{4}-(0[1-9]|1[0-2])$/.test(
+        value
+      )
+  );
+}
+
+function parseMonthKey(
+  value: string
+) {
+  const [
+    yearText,
+    monthText,
+  ] = value.split("-");
+
+  return {
+    year:
+      Number(yearText),
+
+    month:
+      Number(monthText) - 1,
+  };
+}
+
+function capitalizeFirst(
+  value: string
+) {
+  if (!value) {
+    return value;
+  }
+
+  return (
+    value.charAt(0).toUpperCase() +
+    value.slice(1)
+  );
+}
+
+function formatMonthLabel(
+  value: string
+) {
+  const {
+    year,
+    month,
+  } =
+    parseMonthKey(value);
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month,
+        1,
+        12,
+        0,
+        0
+      )
+    );
+
+  return capitalizeFirst(
+    new Intl.DateTimeFormat(
+      "fr-FR",
+      {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }
+    ).format(date)
+  );
+}
+
+function formatDateLabel(
+  date: Date
+) {
+  return new Intl.DateTimeFormat(
+    "fr-FR",
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }
+  ).format(date);
+}
+
+function buildMonthOptions(
+  firstMonthKey: string,
+  currentMonthKey: string
+): MonthOption[] {
+  const first =
+    parseMonthKey(
+      firstMonthKey
+    );
+
+  const current =
+    parseMonthKey(
+      currentMonthKey
+    );
+
+  const firstDate =
+    new Date(
+      Date.UTC(
+        first.year,
+        first.month,
+        1,
+        12,
+        0,
+        0
+      )
+    );
+
+  const cursor =
+    new Date(
+      Date.UTC(
+        current.year,
+        current.month,
+        1,
+        12,
+        0,
+        0
+      )
+    );
+
+  const result:
+    MonthOption[] = [];
+
+  /*
+   * Garde-fou très large :
+   * 100 ans maximum.
+   */
+  let safety = 0;
+
+  while (
+    cursor.getTime() >=
+      firstDate.getTime() &&
+    safety < 1200
+  ) {
+    const value =
+      getMonthKey(
+        cursor
+      );
+
+    result.push({
+      value,
+      label:
+        formatMonthLabel(
+          value
+        ),
+    });
+
+    cursor.setUTCMonth(
+      cursor.getUTCMonth() -
+        1
+    );
+
+    safety += 1;
+  }
+
+  if (
+    result.length === 0
+  ) {
+    result.push({
+      value:
+        currentMonthKey,
+
+      label:
+        formatMonthLabel(
+          currentMonthKey
+        ),
+    });
+  }
+
+  return result;
+}
+
 function getBusinessDayRange() {
-  const now = new Date();
+  const now =
+    new Date();
 
   const start =
     new Date(now);
@@ -68,17 +291,7 @@ function getWeekRange() {
     new Date();
 
   const businessNow =
-    new Date(now);
-
-  if (
-    businessNow.getUTCHours() <
-    7
-  ) {
-    businessNow.setUTCDate(
-      businessNow.getUTCDate() -
-        1
-    );
-  }
+    getBusinessDate(now);
 
   const day =
     businessNow.getUTCDay();
@@ -118,28 +331,23 @@ function getWeekRange() {
   };
 }
 
-function getMonthRange() {
-  const now =
-    new Date();
-
-  const businessNow =
-    new Date(now);
-
-  if (
-    businessNow.getUTCHours() <
-    7
-  ) {
-    businessNow.setUTCDate(
-      businessNow.getUTCDate() -
-        1
+function getMonthRange(
+  monthKey: string,
+  currentMonthKey: string
+) {
+  const {
+    year,
+    month,
+  } =
+    parseMonthKey(
+      monthKey
     );
-  }
 
   const start =
     new Date(
       Date.UTC(
-        businessNow.getUTCFullYear(),
-        businessNow.getUTCMonth(),
+        year,
+        month,
         1,
         7,
         0,
@@ -147,18 +355,28 @@ function getMonthRange() {
       )
     );
 
-  const end =
+  const naturalEnd =
     new Date(
       Date.UTC(
-        businessNow.getUTCFullYear(),
-        businessNow.getUTCMonth() +
-          1,
+        year,
+        month + 1,
         1,
         7,
         0,
         0
       )
     );
+
+  /*
+   * Si le mois sélectionné
+   * est le mois en cours,
+   * on s'arrête maintenant.
+   */
+  const end =
+    monthKey ===
+    currentMonthKey
+      ? new Date()
+      : naturalEnd;
 
   return {
     start,
@@ -166,8 +384,37 @@ function getMonthRange() {
   };
 }
 
+function getRangePeriod(
+  fromMonth: string,
+  toMonth: string,
+  currentMonthKey: string
+) {
+  const from =
+    getMonthRange(
+      fromMonth,
+      currentMonthKey
+    );
+
+  const to =
+    getMonthRange(
+      toMonth,
+      currentMonthKey
+    );
+
+  return {
+    start:
+      from.start,
+
+    end:
+      to.end,
+  };
+}
+
 function getPeriodLabel(
-  period: Period
+  period: Period,
+  selectedMonth: string,
+  selectedFromMonth: string,
+  selectedToMonth: string
 ) {
   if (
     period === "week"
@@ -178,16 +425,92 @@ function getPeriodLabel(
   if (
     period === "month"
   ) {
-    return "Ce mois";
+    return formatMonthLabel(
+      selectedMonth
+    );
   }
 
   if (
-    period === "all"
+    period === "range"
   ) {
-    return "Toutes les ventes";
+    if (
+      selectedFromMonth ===
+      selectedToMonth
+    ) {
+      return formatMonthLabel(
+        selectedFromMonth
+      );
+    }
+
+    return `${formatMonthLabel(
+      selectedFromMonth
+    )} → ${formatMonthLabel(
+      selectedToMonth
+    )}`;
   }
 
   return "Aujourd’hui";
+}
+
+function getExactRangeLabel(
+  period: Period,
+  selectedMonth: string,
+  selectedFromMonth: string,
+  selectedToMonth: string,
+  currentMonthKey: string
+) {
+  if (
+    period !== "month" &&
+    period !== "range"
+  ) {
+    return null;
+  }
+
+  const fromMonth =
+    period === "month"
+      ? selectedMonth
+      : selectedFromMonth;
+
+  const toMonth =
+    period === "month"
+      ? selectedMonth
+      : selectedToMonth;
+
+  const startRange =
+    getMonthRange(
+      fromMonth,
+      currentMonthKey
+    );
+
+  if (
+    toMonth ===
+    currentMonthKey
+  ) {
+    return `Du ${formatDateLabel(
+      startRange.start
+    )} à aujourd’hui`;
+  }
+
+  const endRange =
+    getMonthRange(
+      toMonth,
+      currentMonthKey
+    );
+
+  const lastDay =
+    new Date(
+      endRange.end.getTime() -
+        24 *
+          60 *
+          60 *
+          1000
+    );
+
+  return `Du ${formatDateLabel(
+    startRange.start
+  )} au ${formatDateLabel(
+    lastDay
+  )}`;
 }
 
 export default async function AdminSalesPage({
@@ -195,6 +518,9 @@ export default async function AdminSalesPage({
 }: {
   searchParams: Promise<{
     period?: string;
+    month?: string;
+    from?: string;
+    to?: string;
   }>;
 }) {
   /*
@@ -232,6 +558,86 @@ export default async function AdminSalesPage({
   const params =
     await searchParams;
 
+  /*
+   * ============================
+   * MOIS DISPONIBLES
+   * ============================
+   */
+  const now =
+    new Date();
+
+  const currentMonthKey =
+    getBusinessMonthKey(
+      now
+    );
+
+  const {
+    data: firstSale,
+    error: firstSaleError,
+  } = await supabaseAdmin
+    .from("orders")
+    .select(
+      "paid_at"
+    )
+    .eq(
+      "restaurant_id",
+      restaurantId
+    )
+    .eq(
+      "status",
+      "paid"
+    )
+    .not(
+      "paid_at",
+      "is",
+      null
+    )
+    .order(
+      "paid_at",
+      {
+        ascending: true,
+      }
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if (
+    firstSaleError
+  ) {
+    console.error(
+      "ADMIN SALES FIRST SALE ERROR:",
+      firstSaleError
+    );
+  }
+
+  const firstMonthKey =
+    firstSale?.paid_at
+      ? getBusinessMonthKey(
+          new Date(
+            firstSale.paid_at
+          )
+        )
+      : currentMonthKey;
+
+  const monthOptions =
+    buildMonthOptions(
+      firstMonthKey,
+      currentMonthKey
+    );
+
+  const availableMonthKeys =
+    new Set(
+      monthOptions.map(
+        (month) =>
+          month.value
+      )
+    );
+
+  /*
+   * ============================
+   * FILTRE SÉLECTIONNÉ
+   * ============================
+   */
   const selectedPeriod: Period =
     params.period === "week"
       ? "week"
@@ -239,9 +645,64 @@ export default async function AdminSalesPage({
           "month"
         ? "month"
         : params.period ===
-            "all"
-          ? "all"
+              "range" ||
+            params.period ===
+              "all"
+          ? "range"
           : "today";
+
+  const selectedMonth =
+    isMonthKey(
+      params.month
+    ) &&
+    availableMonthKeys.has(
+      params.month!
+    )
+      ? params.month!
+      : currentMonthKey;
+
+  let selectedFromMonth =
+    isMonthKey(
+      params.from
+    ) &&
+    availableMonthKeys.has(
+      params.from!
+    )
+      ? params.from!
+      : firstMonthKey;
+
+  let selectedToMonth =
+    isMonthKey(
+      params.to
+    ) &&
+    availableMonthKeys.has(
+      params.to!
+    )
+      ? params.to!
+      : currentMonthKey;
+
+  /*
+   * Si l'utilisateur inverse
+   * les deux mois, MAIDA les
+   * remet automatiquement
+   * dans le bon ordre.
+   *
+   * YYYY-MM est comparable
+   * directement.
+   */
+  if (
+    selectedFromMonth >
+    selectedToMonth
+  ) {
+    const temporary =
+      selectedFromMonth;
+
+    selectedFromMonth =
+      selectedToMonth;
+
+    selectedToMonth =
+      temporary;
+  }
 
   /*
    * ============================
@@ -328,7 +789,36 @@ export default async function AdminSalesPage({
       start,
       end,
     } =
-      getMonthRange();
+      getMonthRange(
+        selectedMonth,
+        currentMonthKey
+      );
+
+    query =
+      query
+        .gte(
+          "paid_at",
+          start.toISOString()
+        )
+        .lt(
+          "paid_at",
+          end.toISOString()
+        );
+  }
+
+  if (
+    selectedPeriod ===
+    "range"
+  ) {
+    const {
+      start,
+      end,
+    } =
+      getRangePeriod(
+        selectedFromMonth,
+        selectedToMonth,
+        currentMonthKey
+      );
 
     query =
       query
@@ -548,6 +1038,11 @@ export default async function AdminSalesPage({
     );
   }
 
+  /*
+   * ============================
+   * STATISTIQUES
+   * ============================
+   */
   const totalSales =
     orders.reduce(
       (
@@ -622,6 +1117,23 @@ export default async function AdminSalesPage({
     );
   };
 
+  const periodLabel =
+    getPeriodLabel(
+      selectedPeriod,
+      selectedMonth,
+      selectedFromMonth,
+      selectedToMonth
+    );
+
+  const exactRangeLabel =
+    getExactRangeLabel(
+      selectedPeriod,
+      selectedMonth,
+      selectedFromMonth,
+      selectedToMonth,
+      currentMonthKey
+    );
+
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
@@ -665,7 +1177,8 @@ export default async function AdminSalesPage({
           </div>
         </header>
 
-        <nav className="mb-6 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
+        {/* FILTRES PRINCIPAUX */}
+        <nav className="mb-4 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/sales?period=today"
             className={
@@ -691,7 +1204,7 @@ export default async function AdminSalesPage({
           </Link>
 
           <Link
-            href="/admin/sales?period=month"
+            href={`/admin/sales?period=month&month=${currentMonthKey}`}
             className={
               selectedPeriod ===
               "month"
@@ -703,24 +1216,186 @@ export default async function AdminSalesPage({
           </Link>
 
           <Link
-            href="/admin/sales?period=all"
+            href={`/admin/sales?period=range&from=${firstMonthKey}&to=${currentMonthKey}`}
             className={
               selectedPeriod ===
-              "all"
+              "range"
                 ? "min-h-11 flex-1 whitespace-nowrap rounded-xl bg-[#1E4D3A] px-4 py-2.5 text-center text-sm font-semibold text-white"
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Tout
+            Période
           </Link>
         </nav>
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-[#343D38]">
-            {getPeriodLabel(
-              selectedPeriod
+        {/* CHOIX DU MOIS */}
+        {selectedPeriod ===
+          "month" && (
+          <form
+            action="/admin/sales"
+            method="get"
+            className="mb-4 rounded-[20px] border border-[#E3E0D8] bg-white p-4 shadow-sm"
+          >
+            <input
+              type="hidden"
+              name="period"
+              value="month"
+            />
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <label
+                  htmlFor="month"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
+                >
+                  Mois
+                </label>
+
+                <select
+                  id="month"
+                  name="month"
+                  defaultValue={
+                    selectedMonth
+                  }
+                  className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
+                >
+                  {monthOptions.map(
+                    (month) => (
+                      <option
+                        key={
+                          month.value
+                        }
+                        value={
+                          month.value
+                        }
+                      >
+                        {
+                          month.label
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
+              >
+                Afficher
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* CHOIX DE LA PÉRIODE */}
+        {selectedPeriod ===
+          "range" && (
+          <form
+            action="/admin/sales"
+            method="get"
+            className="mb-4 rounded-[20px] border border-[#E3E0D8] bg-white p-4 shadow-sm"
+          >
+            <input
+              type="hidden"
+              name="period"
+              value="range"
+            />
+
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <div>
+                <label
+                  htmlFor="from"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
+                >
+                  De
+                </label>
+
+                <select
+                  id="from"
+                  name="from"
+                  defaultValue={
+                    selectedFromMonth
+                  }
+                  className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
+                >
+                  {monthOptions.map(
+                    (month) => (
+                      <option
+                        key={
+                          month.value
+                        }
+                        value={
+                          month.value
+                        }
+                      >
+                        {
+                          month.label
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="to"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
+                >
+                  À
+                </label>
+
+                <select
+                  id="to"
+                  name="to"
+                  defaultValue={
+                    selectedToMonth
+                  }
+                  className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
+                >
+                  {monthOptions.map(
+                    (month) => (
+                      <option
+                        key={
+                          month.value
+                        }
+                        value={
+                          month.value
+                        }
+                      >
+                        {
+                          month.label
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
+              >
+                Afficher
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* PÉRIODE ACTIVE */}
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-[#343D38]">
+              {periodLabel}
+            </p>
+
+            {exactRangeLabel && (
+              <p className="mt-1 text-xs font-medium text-[#7A817C]">
+                {exactRangeLabel}
+              </p>
             )}
-          </p>
+          </div>
 
           <p className="text-xs text-[#8A918C]">
             Journée commerciale :
@@ -728,6 +1403,7 @@ export default async function AdminSalesPage({
           </p>
         </div>
 
+        {/* KPI */}
         <section className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
@@ -780,6 +1456,7 @@ export default async function AdminSalesPage({
         </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          {/* PAIEMENTS */}
           <section className="h-fit rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6">
             <h2 className="text-lg font-bold text-[#1F2924]">
               Paiements
@@ -841,6 +1518,7 @@ export default async function AdminSalesPage({
             </div>
           </section>
 
+          {/* DÉTAIL DES VENTES */}
           <section className="overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
             <div className="border-b border-[#EEECE6] p-5 sm:p-6">
               <div className="flex items-end justify-between gap-4">
@@ -862,9 +1540,7 @@ export default async function AdminSalesPage({
                 {orderCount >
                   0 && (
                   <span className="hidden rounded-full bg-[#EDF5EF] px-3 py-1.5 text-xs font-semibold text-[#2E6A50] sm:inline-flex">
-                    {getPeriodLabel(
-                      selectedPeriod
-                    )}
+                    {periodLabel}
                   </span>
                 )}
               </div>
