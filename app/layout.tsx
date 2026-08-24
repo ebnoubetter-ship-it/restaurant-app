@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+import type {
+  Metadata,
+} from "next";
 import {
   Geist,
   Geist_Mono,
@@ -6,6 +8,11 @@ import {
 import {
   NextIntlClientProvider,
 } from "next-intl";
+import {
+  cookies,
+} from "next/headers";
+
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 import "./globals.css";
 
@@ -37,16 +44,40 @@ export const metadata: Metadata =
       "Gestion de restaurant",
   };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: LayoutProps<"/">) {
+  const cookieStore =
+    await cookies();
+
+  const cookieLocale =
+    cookieStore.get(
+      "maida_locale"
+    )?.value;
+
+  const locale =
+    cookieLocale === "ar"
+      ? "ar"
+      : "fr";
+
+  const direction =
+    locale === "ar"
+      ? "rtl"
+      : "ltr";
+
   return (
     <html
-      lang="fr"
-      dir="ltr"
+      lang={locale}
+      dir={direction}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <div className="fixed right-4 top-4 z-[100]">
+          <LanguageSwitcher
+            locale={locale}
+          />
+        </div>
+
         <NextIntlClientProvider>
           {children}
         </NextIntlClientProvider>
