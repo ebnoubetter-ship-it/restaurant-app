@@ -72,7 +72,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <div className="fixed right-4 top-4 z-[100]">
+        <div className="fixed bottom-4 left-4 z-[100]">
           <LanguageSwitcher
             locale={locale}
           />
