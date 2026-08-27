@@ -173,7 +173,7 @@
       "description": "Impossible de charger les commandes ouvertes."
     }
   },
-    "CashierHistory": {
+  "CashierHistory": {
     "cashier": "Caisse",
     "navigation": {
       "tables": "Tables",
@@ -212,6 +212,113 @@
       "title": "Historique indisponible",
       "description": "Impossible de charger les encaissements."
     }
+  },
+  "CashierOrder": {
+    "cashier": "Caisse",
+    "loading": "Chargement de la commande...",
+    "categories": {
+      "snacks": "Snacks",
+      "dishes": "Plats",
+      "desserts": "Desserts",
+      "drinks": "Boissons",
+      "breakfast": "Petit-déjeuner",
+      "shisha": "Chicha"
+    },
+    "search": {
+      "label": "Rechercher un produit",
+      "placeholder": "Rechercher un produit...",
+      "results": "Résultats",
+      "products": "{count, plural, one {# produit} other {# produits}}",
+      "noProduct": "Aucun produit trouvé",
+      "tryAnother": "Essayez une autre recherche ou une autre catégorie."
+    },
+    "order": {
+      "title": "Commande",
+      "number": "Commande #{number}",
+      "noItems": "Aucun article",
+      "items": "{count, plural, one {# article} other {# articles}}",
+      "mobileSummary": "Commande · {count, plural, one {# article} other {# articles}}",
+      "toSend": "à envoyer",
+      "empty": "Commande vide",
+      "touchProduct": "Touchez un produit pour l'ajouter.",
+      "item": "Article",
+      "unit": "unité",
+      "kitchen": "cuisine",
+      "cancelled": "annulé",
+      "total": "Total"
+    },
+    "kitchen": {
+      "sending": "Envoi en cuisine...",
+      "send": "Envoyer en cuisine",
+      "sendShort": "Envoyer",
+      "sendAdditions": "Envoyer les ajouts ({count})",
+      "sendBeforePayment": "Tous les articles doivent être envoyés avant l'encaissement.",
+      "allSent": "Tout est envoyé en cuisine"
+    },
+    "payment": {
+      "title": "Encaissement",
+      "choose": "Choisir le paiement",
+      "totalToCollect": "Total à encaisser",
+      "collect": "Encaisser"
+    },
+    "payments": {
+      "cash": "Cash"
+    },
+    "actions": {
+      "back": "Retour",
+      "backToTables": "Retour aux tables",
+      "backToTablesArrow": "← Tables",
+      "retry": "Réessayer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "clear": "Effacer",
+      "view": "Voir",
+      "close": "Fermer",
+      "continueAdding": "Continuer à ajouter",
+      "confirm": "Confirmer"
+    },
+    "cancellationReasons": {
+      "customerCancelled": "Client a annulé",
+      "inputError": "Erreur de saisie",
+      "unavailable": "Produit indisponible",
+      "other": "Autre"
+    },
+    "cancellation": {
+      "finalAction": "Action définitive",
+      "cancelOrder": "Annuler la commande",
+      "orderHistoryInfo": "La commande restera enregistrée dans l'historique avec son motif.",
+      "alreadySent": "Commande déjà envoyée en cuisine",
+      "kitchenCancellationGenerated": "Une annulation cuisine sera également générée.",
+      "reason": "Motif d'annulation",
+      "reasonPlaceholder": "Précisez le motif...",
+      "cancelling": "Annulation..."
+    },
+    "itemCancellation": {
+      "title": "Annulation article",
+      "quantity": "Quantité à annuler",
+      "outOf": "sur {count}",
+      "alreadySent": "Déjà envoyé en cuisine",
+      "kitchenInfo": "L'annulation sera conservée et transmise à la cuisine si nécessaire."
+    },
+    "feedback": {
+      "itemCancelled": "Article annulé.",
+      "additionsSent": "Ajouts envoyés en cuisine.",
+      "orderSent": "Commande envoyée en cuisine."
+    },
+    "errors": {
+      "loadOrder": "Impossible de charger la commande.",
+      "refreshOrder": "Impossible d'actualiser la commande.",
+      "addProduct": "Impossible d'ajouter le produit.",
+      "updateItem": "Impossible de modifier l'article.",
+      "chooseCancellationReason": "Choisissez un motif d'annulation.",
+      "invalidQuantity": "La quantité sélectionnée est invalide.",
+      "cancelItem": "Impossible d'annuler l'article.",
+      "sendKitchen": "Impossible d'envoyer en cuisine.",
+      "paymentFailed": "Paiement impossible.",
+      "cancelOrder": "Impossible d'annuler la commande."
+    },
+    "unavailable": {
+      "title": "Commande indisponible"
+    }
   }
-  
 }

@@ -173,7 +173,7 @@
       "description": "تعذر تحميل الطلبات المفتوحة."
     }
   },
-    "CashierHistory": {
+  "CashierHistory": {
     "cashier": "الصندوق",
     "navigation": {
       "tables": "الطاولات",
@@ -211,6 +211,114 @@
     "error": {
       "title": "السجل غير متاح",
       "description": "تعذر تحميل المدفوعات."
+    }
+  },
+  "CashierOrder": {
+    "cashier": "الصندوق",
+    "loading": "جارٍ تحميل الطلب...",
+    "categories": {
+      "snacks": "سناك",
+      "dishes": "الأطباق",
+      "desserts": "الحلويات",
+      "drinks": "المشروبات",
+      "breakfast": "الفطور",
+      "shisha": "الشيشة"
+    },
+    "search": {
+      "label": "البحث عن منتج",
+      "placeholder": "ابحث عن منتج...",
+      "results": "النتائج",
+      "products": "{count} منتج",
+      "noProduct": "لم يتم العثور على منتج",
+      "tryAnother": "جرّب بحثاً آخر أو فئة أخرى."
+    },
+    "order": {
+      "title": "الطلب",
+      "number": "الطلب #{number}",
+      "noItems": "لا توجد عناصر",
+      "items": "{count} عنصر",
+      "mobileSummary": "الطلب · {count} عنصر",
+      "toSend": "بانتظار الإرسال",
+      "empty": "الطلب فارغ",
+      "touchProduct": "اضغط على منتج لإضافته.",
+      "item": "عنصر",
+      "unit": "الوحدة",
+      "kitchen": "المطبخ",
+      "cancelled": "ملغى",
+      "total": "الإجمالي"
+    },
+    "kitchen": {
+      "sending": "جارٍ الإرسال إلى المطبخ...",
+      "send": "إرسال إلى المطبخ",
+      "sendShort": "إرسال",
+      "sendAdditions": "إرسال الإضافات ({count})",
+      "sendBeforePayment": "يجب إرسال جميع العناصر إلى المطبخ قبل الدفع.",
+      "allSent": "تم إرسال كل شيء إلى المطبخ"
+    },
+    "payment": {
+      "title": "الدفع",
+      "choose": "اختر طريقة الدفع",
+      "totalToCollect": "المبلغ الإجمالي",
+      "collect": "تحصيل"
+    },
+    "payments": {
+      "cash": "نقداً"
+    },
+    "actions": {
+      "back": "رجوع",
+      "backToTables": "العودة إلى الطاولات",
+      "backToTablesArrow": "الطاولات →",
+      "retry": "إعادة المحاولة",
+      "cancel": "إلغاء",
+      "delete": "حذف",
+      "clear": "مسح",
+      "view": "عرض",
+      "close": "إغلاق",
+      "continueAdding": "متابعة الإضافة",
+      "confirm": "تأكيد"
+    },
+    "cancellationReasons": {
+      "customerCancelled": "الزبون ألغى",
+      "inputError": "خطأ في الإدخال",
+      "unavailable": "المنتج غير متوفر",
+      "other": "أخرى"
+    },
+    "cancellation": {
+      "finalAction": "إجراء نهائي",
+      "cancelOrder": "إلغاء الطلب",
+      "orderHistoryInfo": "سيبقى الطلب مسجلاً في السجل مع سبب الإلغاء.",
+      "alreadySent": "تم إرسال الطلب إلى المطبخ مسبقاً",
+      "kitchenCancellationGenerated": "سيتم أيضاً إنشاء إلغاء للمطبخ.",
+      "reason": "سبب الإلغاء",
+      "reasonPlaceholder": "حدد السبب...",
+      "cancelling": "جارٍ الإلغاء..."
+    },
+    "itemCancellation": {
+      "title": "إلغاء عنصر",
+      "quantity": "الكمية المراد إلغاؤها",
+      "outOf": "من أصل {count}",
+      "alreadySent": "تم إرساله إلى المطبخ مسبقاً",
+      "kitchenInfo": "سيتم حفظ الإلغاء وإرساله إلى المطبخ إذا لزم الأمر."
+    },
+    "feedback": {
+      "itemCancelled": "تم إلغاء العنصر.",
+      "additionsSent": "تم إرسال الإضافات إلى المطبخ.",
+      "orderSent": "تم إرسال الطلب إلى المطبخ."
+    },
+    "errors": {
+      "loadOrder": "تعذر تحميل الطلب.",
+      "refreshOrder": "تعذر تحديث الطلب.",
+      "addProduct": "تعذر إضافة المنتج.",
+      "updateItem": "تعذر تعديل العنصر.",
+      "chooseCancellationReason": "اختر سبب الإلغاء.",
+      "invalidQuantity": "الكمية المحددة غير صالحة.",
+      "cancelItem": "تعذر إلغاء العنصر.",
+      "sendKitchen": "تعذر إرسال الطلب إلى المطبخ.",
+      "paymentFailed": "تعذر تنفيذ الدفع.",
+      "cancelOrder": "تعذر إلغاء الطلب."
+    },
+    "unavailable": {
+      "title": "الطلب غير متاح"
     }
   }
 }

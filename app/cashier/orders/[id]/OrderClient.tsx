@@ -7,6 +7,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 type MenuItem = {
   id: string;
@@ -67,18 +68,7 @@ const cancellationReasons = [
   "Erreur de saisie",
   "Produit indisponible",
   "Autre",
-];
-
-function formatMoney(
-  value: number
-) {
-  return new Intl.NumberFormat(
-    "fr-FR",
-    {
-      maximumFractionDigits: 0,
-    }
-  ).format(value);
-}
+] as const;
 
 function Spinner({
   dark = false,
@@ -106,6 +96,45 @@ export default function OrderClient({
   orderNumber: number | null;
 }) {
   const router = useRouter();
+  const t = useTranslations("CashierOrder");
+  const locale = useLocale();
+
+  const formatMoney = (value: number) => {
+    return new Intl.NumberFormat(
+      locale === "ar" ? "ar-MR" : "fr-FR",
+      {
+        maximumFractionDigits: 0,
+      }
+    ).format(value);
+  };
+
+  const getCategoryLabel = (value: string) => {
+    const labels: Record<string, string> = {
+      Snacks: t("categories.snacks"),
+      Plats: t("categories.dishes"),
+      Desserts: t("categories.desserts"),
+      Boissons: t("categories.drinks"),
+      "Petit-déjeuner": t("categories.breakfast"),
+      Chicha: t("categories.shisha"),
+    };
+
+    return labels[value] || value;
+  };
+
+  const getCancellationReasonLabel = (value: string) => {
+    const labels: Record<string, string> = {
+      "Client a annulé": t("cancellationReasons.customerCancelled"),
+      "Erreur de saisie": t("cancellationReasons.inputError"),
+      "Produit indisponible": t("cancellationReasons.unavailable"),
+      Autre: t("cancellationReasons.other"),
+    };
+
+    return labels[value] || value;
+  };
+
+  const getPaymentLabel = (value: string) => {
+    return value === "Cash" ? t("payments.cash") : value;
+  };
 
   const [menu, setMenu] =
     useState<MenuItem[]>([]);
@@ -350,7 +379,7 @@ export default function OrderClient({
         !orderLoaded
       ) {
         setInitialError(
-          "Impossible de charger la commande."
+          t("errors.loadOrder")
         );
       }
 
@@ -368,7 +397,7 @@ export default function OrderClient({
       if (!success) {
         notify(
           "error",
-          "Impossible d'actualiser la commande."
+          t("errors.refreshOrder")
         );
       }
 
@@ -409,7 +438,7 @@ export default function OrderClient({
         notify(
           "error",
           data.error ||
-            "Impossible d'ajouter le produit."
+            t("errors.addProduct")
         );
 
         return;
@@ -419,7 +448,7 @@ export default function OrderClient({
     } catch {
       notify(
         "error",
-        "Impossible d'ajouter le produit."
+        t("errors.addProduct")
       );
     } finally {
       setAddingId(null);
@@ -551,12 +580,12 @@ export default function OrderClient({
         notify(
           "error",
           data.error ||
-            "Impossible de modifier l'article."
+            t("errors.updateItem")
         );
       } catch {
         notify(
           "error",
-          "Impossible de modifier l'article."
+          t("errors.updateItem")
         );
       } finally {
         setUpdatingItemId(
@@ -586,7 +615,7 @@ export default function OrderClient({
 
       if (!finalReason) {
         setItemCancellationError(
-          "Choisissez un motif d'annulation."
+          t("errors.chooseCancellationReason")
         );
 
         return;
@@ -599,7 +628,7 @@ export default function OrderClient({
           itemToCancel.quantity
       ) {
         setItemCancellationError(
-          "La quantité sélectionnée est invalide."
+          t("errors.invalidQuantity")
         );
 
         return;
@@ -639,7 +668,7 @@ export default function OrderClient({
         if (!response.ok) {
           setItemCancellationError(
             data.error ||
-              "Impossible d'annuler l'article."
+              t("errors.cancelItem")
           );
 
           return;
@@ -657,12 +686,12 @@ export default function OrderClient({
         } else {
           notify(
             "success",
-            "Article annulé."
+            t("feedback.itemCancelled")
           );
         }
       } catch {
         setItemCancellationError(
-          "Impossible d'annuler l'article."
+          t("errors.cancelItem")
         );
       } finally {
         setCancellingItem(
@@ -699,7 +728,7 @@ export default function OrderClient({
           notify(
             "error",
             data.error ||
-              "Impossible d'envoyer en cuisine."
+              t("errors.sendKitchen")
           );
 
           return;
@@ -713,18 +742,18 @@ export default function OrderClient({
         ) {
           notify(
             "success",
-            "Ajouts envoyés en cuisine."
+            t("feedback.additionsSent")
           );
         } else {
           notify(
             "success",
-            "Commande envoyée en cuisine."
+            t("feedback.orderSent")
           );
         }
       } catch {
         notify(
           "error",
-          "Impossible d'envoyer en cuisine."
+          t("errors.sendKitchen")
         );
       } finally {
         setSendingKitchen(
@@ -776,7 +805,7 @@ export default function OrderClient({
       if (!response.ok) {
         setPaymentError(
           data.error ||
-            "Paiement impossible."
+            t("errors.paymentFailed")
         );
 
         return;
@@ -805,7 +834,7 @@ export default function OrderClient({
       );
     } catch {
       setPaymentError(
-        "Paiement impossible."
+        t("errors.paymentFailed")
       );
     } finally {
       setPayingMethod(
@@ -855,7 +884,7 @@ export default function OrderClient({
 
       if (!finalReason) {
         setCancellationError(
-          "Choisissez un motif d'annulation."
+          t("errors.chooseCancellationReason")
         );
 
         return;
@@ -887,7 +916,7 @@ export default function OrderClient({
         if (!response.ok) {
           setCancellationError(
             data.error ||
-              "Impossible d'annuler la commande."
+              t("errors.cancelOrder")
           );
 
           return;
@@ -916,7 +945,7 @@ export default function OrderClient({
         );
       } catch {
         setCancellationError(
-          "Impossible d'annuler la commande."
+          t("errors.cancelOrder")
         );
       } finally {
         setCancelling(
@@ -1042,19 +1071,14 @@ export default function OrderClient({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-              Commande
+              {t("order.title")}
             </h2>
 
             <p className="mt-1 text-sm text-[#7A817C]">
               {totalUnits ===
               0
-                ? "Aucun article"
-                : `${totalUnits} article${
-                    totalUnits >
-                    1
-                      ? "s"
-                      : ""
-                  }`}
+                ? t("order.noItems")
+                : t("order.items", { count: totalUnits })}
             </p>
           </div>
 
@@ -1064,7 +1088,7 @@ export default function OrderClient({
               {
                 pendingKitchenQuantity
               }{" "}
-              à envoyer
+              {t("order.toSend")}
             </span>
           )}
         </div>
@@ -1074,12 +1098,11 @@ export default function OrderClient({
             0 && (
             <div className="rounded-2xl bg-[#F7F7F3] px-4 py-8 text-center">
               <p className="font-semibold text-[#4E5651]">
-                Commande vide
+                {t("order.empty")}
               </p>
 
               <p className="mt-1 text-sm text-[#8A918C]">
-                Touchez un produit
-                pour l&apos;ajouter.
+                {t("order.touchProduct")}
               </p>
             </div>
           )}
@@ -1129,7 +1152,7 @@ export default function OrderClient({
                     <div className="min-w-0">
                       <p className="font-semibold leading-5 text-[#1F2924]">
                         {product?.name ||
-                          "Article"}
+                          t("order.item")}
                       </p>
 
                       <p className="mt-1 text-xs text-[#8A918C]">
@@ -1138,7 +1161,7 @@ export default function OrderClient({
                             item.unit_price
                           )
                         )}{" "}
-                        MRU / unité
+                        MRU / {t("order.unit")}
                       </p>
                     </div>
 
@@ -1160,7 +1183,7 @@ export default function OrderClient({
                         {
                           sentQuantity
                         }{" "}
-                        cuisine
+                        {t("order.kitchen")}
                       </span>
                     )}
 
@@ -1170,7 +1193,7 @@ export default function OrderClient({
                         {
                           pendingQuantity
                         }{" "}
-                        à envoyer
+                        {t("order.toSend")}
                       </span>
                     )}
 
@@ -1180,11 +1203,7 @@ export default function OrderClient({
                         {
                           cancelledQuantity
                         }{" "}
-                        annulé
-                        {cancelledQuantity >
-                        1
-                          ? "s"
-                          : ""}
+                        {t("order.cancelled")}
                       </span>
                     )}
                   </div>
@@ -1252,7 +1271,7 @@ export default function OrderClient({
                         }
                         className="min-h-10 rounded-xl px-3 text-sm font-semibold text-[#B24D3E] transition hover:bg-[#FFF1EE] disabled:opacity-40"
                       >
-                        Annuler
+                        {t("actions.cancel")}
                       </button>
                     ) : (
                       <button
@@ -1269,7 +1288,7 @@ export default function OrderClient({
                         }
                         className="min-h-10 rounded-xl px-3 text-sm font-medium text-[#A16A61] transition hover:bg-[#FFF1EE] disabled:opacity-40"
                       >
-                        Supprimer
+                        {t("actions.delete")}
                       </button>
                     )}
                   </div>
@@ -1282,7 +1301,7 @@ export default function OrderClient({
         <div className="mt-5 border-t border-[#E8E5DE] pt-5">
           <div className="flex items-end justify-between gap-4">
             <span className="font-semibold text-[#68706B]">
-              Total
+              {t("order.total")}
             </span>
 
             <p className="text-2xl font-black tracking-tight text-[#1F2924]">
@@ -1311,21 +1330,17 @@ export default function OrderClient({
                 {sendingKitchen ? (
                   <>
                     <Spinner />
-                    Envoi en
-                    cuisine...
+                    {t("kitchen.sending")}
                   </>
                 ) : hasBeenSentToKitchen ? (
-                  `Envoyer les ajouts (${pendingKitchenQuantity})`
+                  t("kitchen.sendAdditions", { count: pendingKitchenQuantity })
                 ) : (
-                  "Envoyer en cuisine"
+                  t("kitchen.send")
                 )}
               </button>
 
               <p className="mt-2 text-center text-xs leading-5 text-[#9A6A36]">
-                Tous les articles
-                doivent être envoyés
-                avant
-                l&apos;encaissement.
+                {t("kitchen.sendBeforePayment")}
               </p>
             </>
           ) : (
@@ -1334,8 +1349,7 @@ export default function OrderClient({
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#3D7D5E]" />
 
                 <p className="text-sm font-semibold text-[#1E4D3A]">
-                  Tout est envoyé
-                  en cuisine
+                  {t("kitchen.allSent")}
                 </p>
               </div>
             )
@@ -1355,7 +1369,7 @@ export default function OrderClient({
             }
             className="mt-3 flex min-h-[54px] w-full items-center justify-center rounded-2xl bg-[#1E4D3A] px-4 font-bold text-white transition active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-[#D8DCD8] disabled:text-[#8D938F]"
           >
-            Encaisser
+            {t("payment.collect")}
             {total > 0
               ? ` · ${formatMoney(
                   total
@@ -1375,7 +1389,7 @@ export default function OrderClient({
             }
             className="mt-3 min-h-11 w-full rounded-xl text-sm font-semibold text-[#B24D3E] transition hover:bg-[#FFF1EE] disabled:opacity-40"
           >
-            Annuler la commande
+            {t("cancellation.cancelOrder")}
           </button>
         </div>
       </>
@@ -1392,8 +1406,7 @@ export default function OrderClient({
           <div className="mx-auto mt-6 h-7 w-7 animate-spin rounded-full border-[3px] border-[#D4DDD7] border-t-[#1E4D3A]" />
 
           <p className="mt-4 font-semibold text-[#343D38]">
-            Chargement de la
-            commande...
+            {t("loading")}
           </p>
         </div>
       </main>
@@ -1409,7 +1422,7 @@ export default function OrderClient({
           </div>
 
           <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-            Commande indisponible
+            {t("unavailable.title")}
           </h1>
 
           <p className="mt-2 text-sm text-[#737A75]">
@@ -1423,14 +1436,14 @@ export default function OrderClient({
             }
             className="mt-5 min-h-12 w-full rounded-2xl bg-[#1E4D3A] font-semibold text-white"
           >
-            Réessayer
+            {t("actions.retry")}
           </button>
 
           <Link
             href="/cashier"
             className="mt-3 inline-flex py-2 text-sm font-semibold text-[#68706B]"
           >
-            Retour aux tables
+            {t("actions.backToTables")}
           </Link>
         </div>
       </main>
@@ -1471,13 +1484,12 @@ export default function OrderClient({
               href="/cashier"
               className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-semibold text-[#567362] transition hover:bg-white"
             >
-              ← Tables
+              {t("actions.backToTablesArrow")}
             </Link>
 
             {orderNumber && (
               <span className="rounded-full border border-[#E2DFD7] bg-white px-3 py-1.5 text-xs font-semibold text-[#727A75]">
-                Commande #
-                {orderNumber}
+                {t("order.number", { number: orderNumber })}
               </span>
             )}
           </div>
@@ -1485,7 +1497,7 @@ export default function OrderClient({
           <div className="mt-3 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#2E6A50]">
-                MAIDA · Caisse
+                MAIDA · {t("cashier")}
               </p>
 
               <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924]">
@@ -1493,9 +1505,9 @@ export default function OrderClient({
               </h1>
             </div>
 
-            <div className="hidden text-right sm:block">
+            <div className="hidden text-end sm:block">
               <p className="text-xs font-medium text-[#8A918C]">
-                Total
+                {t("order.total")}
               </p>
 
               <p className="mt-1 text-2xl font-black text-[#1F2924]">
@@ -1516,8 +1528,7 @@ export default function OrderClient({
             htmlFor="product-search"
             className="sr-only"
           >
-            Rechercher un
-            produit
+            {t("search.label")}
           </label>
 
           <input
@@ -1531,7 +1542,7 @@ export default function OrderClient({
                 event.target.value
               )
             }
-            placeholder="Rechercher un produit..."
+            placeholder={t("search.placeholder")}
             className="h-12 w-full rounded-2xl border border-[#E2DFD7] bg-white px-4 text-[#1F2924] outline-none transition placeholder:text-[#A0A6A2] focus:border-[#8EB19A] focus:ring-4 focus:ring-[#DDE8DF]"
           />
         </div>
@@ -1558,7 +1569,7 @@ export default function OrderClient({
                     : "min-h-10 whitespace-nowrap rounded-xl border border-[#E5E2DA] bg-white px-4 text-sm font-semibold text-[#68706B] transition hover:border-[#C9D7CC]"
                 }
               >
-                {item}
+                {getCategoryLabel(item)}
               </button>
             )
           )}
@@ -1571,19 +1582,15 @@ export default function OrderClient({
               <div>
                 <h2 className="text-lg font-bold text-[#1F2924]">
                   {search
-                    ? "Résultats"
-                    : category}
+                    ? t("search.results")
+                    : getCategoryLabel(category)}
                 </h2>
 
                 <p className="mt-0.5 text-xs text-[#8A918C]">
                   {
                     filteredMenu.length
                   }{" "}
-                  produit
-                  {filteredMenu.length >
-                  1
-                    ? "s"
-                    : ""}
+                  {t("search.products", { count: filteredMenu.length })}
                 </p>
               </div>
 
@@ -1595,7 +1602,7 @@ export default function OrderClient({
                   }
                   className="text-sm font-semibold text-[#2E6A50]"
                 >
-                  Effacer
+                  {t("actions.clear")}
                 </button>
               )}
             </div>
@@ -1604,14 +1611,11 @@ export default function OrderClient({
             0 ? (
               <div className="rounded-[24px] border border-[#E5E2DA] bg-white px-5 py-12 text-center">
                 <p className="font-semibold text-[#4E5651]">
-                  Aucun produit
-                  trouvé
+                  {t("search.noProduct")}
                 </p>
 
                 <p className="mt-1 text-sm text-[#8A918C]">
-                  Essayez une autre
-                  recherche ou une
-                  autre catégorie.
+                  {t("search.tryAnother")}
                 </p>
               </div>
             ) : (
@@ -1638,7 +1642,7 @@ export default function OrderClient({
                             addingId
                           )
                         }
-                        className="group relative min-h-[128px] rounded-[20px] border border-[#E8E5DE] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#C9D7CC] hover:shadow-md active:scale-[0.98] disabled:cursor-wait disabled:opacity-65"
+                        className="group relative min-h-[128px] rounded-[20px] border border-[#E8E5DE] bg-white p-4 text-start shadow-sm transition hover:-translate-y-0.5 hover:border-[#C9D7CC] hover:shadow-md active:scale-[0.98] disabled:cursor-wait disabled:opacity-65"
                       >
                         <div className="flex h-full flex-col justify-between">
                           <div className="flex items-start justify-between gap-2">
@@ -1695,14 +1699,10 @@ export default function OrderClient({
                 true
               )
             }
-            className="min-h-[52px] min-w-0 flex-1 rounded-2xl border border-[#E0DED7] bg-[#F8F8F5] px-4 text-left"
+            className="min-h-[52px] min-w-0 flex-1 rounded-2xl border border-[#E0DED7] bg-[#F8F8F5] px-4 text-start"
           >
             <p className="truncate text-xs font-medium text-[#7A817C]">
-              Commande ·{" "}
-              {totalUnits} article
-              {totalUnits > 1
-                ? "s"
-                : ""}
+              {t("order.mobileSummary", { count: totalUnits })}
             </p>
 
             <p className="mt-0.5 font-black text-[#1F2924]">
@@ -1729,7 +1729,7 @@ export default function OrderClient({
                 <Spinner />
               ) : (
                 <>
-                  Envoyer
+                  {t("kitchen.sendShort")}
                   <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
                     {
                       pendingKitchenQuantity
@@ -1746,7 +1746,7 @@ export default function OrderClient({
               }
               className="min-h-[52px] min-w-[120px] rounded-2xl bg-[#1E4D3A] px-4 text-sm font-bold text-white"
             >
-              Encaisser
+              {t("payment.collect")}
             </button>
           ) : (
             <button
@@ -1758,7 +1758,7 @@ export default function OrderClient({
               }
               className="min-h-[52px] rounded-2xl bg-[#1E4D3A] px-4 text-sm font-bold text-white"
             >
-              Voir
+              {t("actions.view")}
             </button>
           )}
         </div>
@@ -1778,9 +1778,9 @@ export default function OrderClient({
                     false
                   )
                 }
-                className="ml-auto hidden min-h-10 rounded-xl px-3 text-sm font-semibold text-[#68706B] sm:block"
+                className="ms-auto hidden min-h-10 rounded-xl px-3 text-sm font-semibold text-[#68706B] sm:block"
               >
-                Fermer
+                {t("actions.close")}
               </button>
             </div>
 
@@ -1795,7 +1795,7 @@ export default function OrderClient({
               }
               className="mt-3 min-h-11 w-full text-sm font-semibold text-[#7A817C] sm:hidden"
             >
-              Continuer à ajouter
+              {t("actions.continueAdding")}
             </button>
           </div>
         </div>
@@ -1808,16 +1808,16 @@ export default function OrderClient({
             <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-[#DDDAD3] sm:hidden" />
 
             <p className="text-sm font-semibold text-[#2E6A50]">
-              Encaissement
+              {t("payment.title")}
             </p>
 
             <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
-              Choisir le paiement
+              {t("payment.choose")}
             </h2>
 
             <div className="mt-5 rounded-2xl bg-[#EDF5EF] p-4">
               <p className="text-sm text-[#667D6D]">
-                Total à encaisser
+                {t("payment.totalToCollect")}
               </p>
 
               <p className="mt-1 text-3xl font-black tracking-tight text-[#1E4D3A]">
@@ -1855,9 +1855,7 @@ export default function OrderClient({
                       className="flex min-h-[54px] items-center justify-between rounded-2xl border border-[#E4E1D9] bg-white px-4 font-semibold text-[#343D38] transition hover:border-[#AFC7B6] hover:bg-[#F7FAF7] active:scale-[0.99] disabled:cursor-wait disabled:opacity-50"
                     >
                       <span>
-                        {
-                          method
-                        }
+                        {getPaymentLabel(method)}
                       </span>
 
                       {isPaying ? (
@@ -1898,7 +1896,7 @@ export default function OrderClient({
               }
               className="mt-4 min-h-11 w-full text-sm font-semibold text-[#7A817C] disabled:opacity-40"
             >
-              Retour
+              {t("actions.back")}
             </button>
           </div>
         </div>
@@ -1911,38 +1909,31 @@ export default function OrderClient({
             <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-[#DDDAD3] sm:hidden" />
 
             <p className="text-sm font-semibold text-[#B24D3E]">
-              Action définitive
+              {t("cancellation.finalAction")}
             </p>
 
             <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
-              Annuler la commande
+              {t("cancellation.cancelOrder")}
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-[#737A75]">
-              La commande restera
-              enregistrée dans
-              l&apos;historique avec
-              son motif.
+              {t("cancellation.orderHistoryInfo")}
             </p>
 
             {hasBeenSentToKitchen && (
               <div className="mt-4 rounded-2xl border border-[#EED3A8] bg-[#FFF6E9] p-4">
                 <p className="text-sm font-semibold text-[#8D5519]">
-                  Commande déjà
-                  envoyée en cuisine
+                  {t("cancellation.alreadySent")}
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-[#956D44]">
-                  Une annulation
-                  cuisine sera
-                  également générée.
+                  {t("cancellation.kitchenCancellationGenerated")}
                 </p>
               </div>
             )}
 
             <p className="mb-2 mt-5 text-sm font-semibold text-[#343D38]">
-              Motif
-              d&apos;annulation
+              {t("cancellation.reason")}
             </p>
 
             <div className="space-y-2">
@@ -1968,13 +1959,11 @@ export default function OrderClient({
                     className={
                       cancellationReason ===
                       reason
-                        ? "min-h-[50px] w-full rounded-2xl border border-[#C45D4D] bg-[#FFF1EE] px-4 text-left font-semibold text-[#A74435]"
-                        : "min-h-[50px] w-full rounded-2xl border border-[#E4E1D9] px-4 text-left font-medium text-[#4E5651] transition hover:bg-[#FAFAF7]"
+                        ? "min-h-[50px] w-full rounded-2xl border border-[#C45D4D] bg-[#FFF1EE] px-4 text-start font-semibold text-[#A74435]"
+                        : "min-h-[50px] w-full rounded-2xl border border-[#E4E1D9] px-4 text-start font-medium text-[#4E5651] transition hover:bg-[#FAFAF7]"
                     }
                   >
-                    {
-                      reason
-                    }
+                    {getCancellationReasonLabel(reason)}
                   </button>
                 )
               )}
@@ -2001,7 +1990,7 @@ export default function OrderClient({
                 disabled={
                   cancelling
                 }
-                placeholder="Précisez le motif..."
+                placeholder={t("cancellation.reasonPlaceholder")}
                 className="mt-3 min-h-24 w-full rounded-2xl border border-[#E4E1D9] bg-[#FAFAF7] p-3 text-[#1F2924] outline-none focus:border-[#C45D4D] focus:bg-white focus:ring-4 focus:ring-[#F5DEDA] disabled:opacity-50"
               />
             )}
@@ -2039,7 +2028,7 @@ export default function OrderClient({
                 }
                 className="min-h-[52px] flex-1 rounded-2xl border border-[#E3E0D8] font-semibold text-[#68706B] disabled:opacity-40"
               >
-                Retour
+                {t("actions.back")}
               </button>
 
               <button
@@ -2059,10 +2048,10 @@ export default function OrderClient({
                 {cancelling ? (
                   <>
                     <Spinner />
-                    Annulation...
+                    {t("cancellation.cancelling")}
                   </>
                 ) : (
-                  "Confirmer"
+                  t("actions.confirm")
                 )}
               </button>
             </div>
@@ -2077,20 +2066,19 @@ export default function OrderClient({
             <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-[#DDDAD3] sm:hidden" />
 
             <p className="text-sm font-semibold text-[#B24D3E]">
-              Annulation article
+              {t("itemCancellation.title")}
             </p>
 
             <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
               {getProduct(
                 itemToCancel
               )?.name ||
-                "Article"}
+                t("order.item")}
             </h2>
 
             <div className="mt-5 rounded-2xl bg-[#F7F7F3] p-4">
               <p className="text-sm font-semibold text-[#4E5651]">
-                Quantité à
-                annuler
+                {t("itemCancellation.quantity")}
               </p>
 
               <div className="mt-3 flex items-center gap-3">
@@ -2143,10 +2131,7 @@ export default function OrderClient({
                 </button>
 
                 <span className="text-sm text-[#7A817C]">
-                  sur{" "}
-                  {
-                    itemToCancel.quantity
-                  }
+                  {t("itemCancellation.outOf", { count: itemToCancel.quantity })}
                 </span>
               </div>
             </div>
@@ -2157,22 +2142,17 @@ export default function OrderClient({
             ) > 0 && (
               <div className="mt-4 rounded-2xl border border-[#EED3A8] bg-[#FFF6E9] p-4">
                 <p className="text-sm font-semibold text-[#8D5519]">
-                  Déjà envoyé en
-                  cuisine
+                  {t("itemCancellation.alreadySent")}
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-[#956D44]">
-                  L&apos;annulation
-                  sera conservée et
-                  transmise à la
-                  cuisine si
-                  nécessaire.
+                  {t("itemCancellation.kitchenInfo")}
                 </p>
               </div>
             )}
 
             <p className="mb-2 mt-5 text-sm font-semibold text-[#343D38]">
-              Motif
+              {t("cancellation.reason")}
             </p>
 
             <div className="space-y-2">
@@ -2198,13 +2178,11 @@ export default function OrderClient({
                     className={
                       itemCancellationReason ===
                       reason
-                        ? "min-h-[50px] w-full rounded-2xl border border-[#C45D4D] bg-[#FFF1EE] px-4 text-left font-semibold text-[#A74435]"
-                        : "min-h-[50px] w-full rounded-2xl border border-[#E4E1D9] px-4 text-left font-medium text-[#4E5651] transition hover:bg-[#FAFAF7]"
+                        ? "min-h-[50px] w-full rounded-2xl border border-[#C45D4D] bg-[#FFF1EE] px-4 text-start font-semibold text-[#A74435]"
+                        : "min-h-[50px] w-full rounded-2xl border border-[#E4E1D9] px-4 text-start font-medium text-[#4E5651] transition hover:bg-[#FAFAF7]"
                     }
                   >
-                    {
-                      reason
-                    }
+                    {getCancellationReasonLabel(reason)}
                   </button>
                 )
               )}
@@ -2231,7 +2209,7 @@ export default function OrderClient({
                 disabled={
                   cancellingItem
                 }
-                placeholder="Précisez le motif..."
+                placeholder={t("cancellation.reasonPlaceholder")}
                 className="mt-3 min-h-24 w-full rounded-2xl border border-[#E4E1D9] bg-[#FAFAF7] p-3 text-[#1F2924] outline-none focus:border-[#C45D4D] focus:bg-white focus:ring-4 focus:ring-[#F5DEDA] disabled:opacity-50"
               />
             )}
@@ -2255,7 +2233,7 @@ export default function OrderClient({
                 }
                 className="min-h-[52px] flex-1 rounded-2xl border border-[#E3E0D8] font-semibold text-[#68706B] disabled:opacity-40"
               >
-                Retour
+                {t("actions.back")}
               </button>
 
               <button
@@ -2275,10 +2253,10 @@ export default function OrderClient({
                 {cancellingItem ? (
                   <>
                     <Spinner />
-                    Annulation...
+                    {t("cancellation.cancelling")}
                   </>
                 ) : (
-                  "Confirmer"
+                  t("actions.confirm")
                 )}
               </button>
             </div>
