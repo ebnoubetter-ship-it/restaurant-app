@@ -5,7 +5,12 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
+import {
+  useLocale,
+  useTranslations,
+} from "next-intl";
 import { useRouter } from "next/navigation";
+
 import LogoutButton from "@/components/LogoutButton";
 
 type TableStatus =
@@ -70,17 +75,6 @@ const paymentMethods = [
   "BCI PAY",
 ];
 
-function formatMoney(
-  value: number
-) {
-  return new Intl.NumberFormat(
-    "fr-FR",
-    {
-      maximumFractionDigits: 0,
-    }
-  ).format(value);
-}
-
 function Spinner({
   dark = false,
 }: {
@@ -98,7 +92,16 @@ function Spinner({
 }
 
 export default function CashierPage() {
-  const router = useRouter();
+  const router =
+    useRouter();
+
+  const t =
+    useTranslations(
+      "Cashier"
+    );
+
+  const locale =
+    useLocale();
 
   const [
     tables,
@@ -177,11 +180,68 @@ export default function CashierPage() {
       null
     );
 
-  /*
-   * Notification non bloquante.
-   * Aucun clic supplémentaire
-   * demandé au caissier.
-   */
+  const formatMoney = (
+    value: number
+  ) => {
+    return new Intl.NumberFormat(
+      locale === "ar"
+        ? "ar-MR"
+        : "fr-FR",
+      {
+        maximumFractionDigits: 0,
+      }
+    ).format(value);
+  };
+
+  const formatShiftTime = (
+    value: string
+  ) => {
+    return new Date(
+      value
+    ).toLocaleTimeString(
+      locale === "ar"
+        ? "ar-MR"
+        : "fr-FR",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
+
+  const formatShiftDateTime = (
+    value: string
+  ) => {
+    return new Date(
+      value
+    ).toLocaleString(
+      locale === "ar"
+        ? "ar-MR"
+        : "fr-FR",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
+
+  const getPaymentLabel = (
+    method: string
+  ) => {
+    if (
+      method === "Cash"
+    ) {
+      return t(
+        "payments.cash"
+      );
+    }
+
+    return method;
+  };
+
   useEffect(() => {
     if (!feedback) {
       return;
@@ -278,14 +338,17 @@ export default function CashierPage() {
           } else {
             notify(
               "error",
-              data.error ||
-                "Impossible de charger les tables."
+              t(
+                "errors.loadTables"
+              )
             );
           }
         } catch {
           notify(
             "error",
-            "Impossible de charger les tables."
+            t(
+              "errors.loadTables"
+            )
           );
         } finally {
           setLoading(
@@ -326,7 +389,9 @@ export default function CashierPage() {
           notify(
             "error",
             data.error ||
-              "Impossible d'ouvrir le shift."
+              t(
+                "errors.openShift"
+              )
           );
           return;
         }
@@ -339,12 +404,16 @@ export default function CashierPage() {
 
         notify(
           "success",
-          "Shift ouvert."
+          t(
+            "feedback.shiftOpened"
+          )
         );
       } catch {
         notify(
           "error",
-          "Impossible d'ouvrir le shift."
+          t(
+            "errors.openShift"
+          )
         );
       } finally {
         setShiftActionLoading(
@@ -383,7 +452,9 @@ export default function CashierPage() {
       if (!success) {
         notify(
           "error",
-          "Impossible de préparer la clôture du shift."
+          t(
+            "errors.prepareShiftClose"
+          )
         );
         return;
       }
@@ -424,7 +495,9 @@ export default function CashierPage() {
         if (!response.ok) {
           setShiftCloseError(
             data.error ||
-              "Impossible de fermer le shift."
+              t(
+                "errors.closeShift"
+              )
           );
 
           setShiftLoading(
@@ -456,12 +529,16 @@ export default function CashierPage() {
         } else {
           notify(
             "success",
-            "Shift clôturé avec succès."
+            t(
+              "feedback.shiftClosed"
+            )
           );
         }
       } catch {
         setShiftCloseError(
-          "Impossible de fermer le shift."
+          t(
+            "errors.closeShift"
+          )
         );
       } finally {
         setShiftActionLoading(
@@ -512,7 +589,9 @@ export default function CashierPage() {
           notify(
             "error",
             data.error ||
-              "Impossible d'ouvrir la commande."
+              t(
+                "errors.openOrder"
+              )
           );
 
           setTableAction(
@@ -528,7 +607,9 @@ export default function CashierPage() {
       } catch {
         notify(
           "error",
-          "Impossible d'ouvrir la commande."
+          t(
+            "errors.openOrder"
+          )
         );
 
         setTableAction(
@@ -576,7 +657,9 @@ export default function CashierPage() {
           notify(
             "error",
             data.error ||
-              "Impossible de créer la commande à emporter."
+              t(
+                "errors.createTakeaway"
+              )
           );
 
           setTakeawayLoading(
@@ -592,7 +675,9 @@ export default function CashierPage() {
       } catch {
         notify(
           "error",
-          "Impossible de créer la commande à emporter."
+          t(
+            "errors.createTakeaway"
+          )
         );
 
         setTakeawayLoading(
@@ -628,7 +713,9 @@ export default function CashierPage() {
           notify(
             "error",
             data.error ||
-              "Commande introuvable."
+              t(
+                "errors.orderNotFound"
+              )
           );
 
           setTableAction(
@@ -644,7 +731,9 @@ export default function CashierPage() {
       } catch {
         notify(
           "error",
-          "Impossible d'ouvrir la commande."
+          t(
+            "errors.openOrder"
+          )
         );
 
         setTableAction(
@@ -702,7 +791,9 @@ export default function CashierPage() {
           notify(
             "error",
             data.error ||
-              "Impossible de modifier la table."
+              t(
+                "errors.updateTable"
+              )
           );
 
           return;
@@ -735,13 +826,19 @@ export default function CashierPage() {
           "success",
           status ===
             "reserved"
-            ? "Table réservée."
-            : "Réservation annulée."
+            ? t(
+                "feedback.tableReserved"
+              )
+            : t(
+                "feedback.reservationCancelled"
+              )
         );
       } catch {
         notify(
           "error",
-          "Impossible de modifier la table."
+          t(
+            "errors.updateTable"
+          )
         );
       } finally {
         setTableAction(
@@ -797,17 +894,23 @@ export default function CashierPage() {
       status ===
       "occupied"
     ) {
-      return "Occupée";
+      return t(
+        "statuses.occupied"
+      );
     }
 
     if (
       status ===
       "reserved"
     ) {
-      return "Réservée";
+      return t(
+        "statuses.reserved"
+      );
     }
 
-    return "Disponible";
+    return t(
+      "statuses.available"
+    );
   };
 
   const getTableNumber = (
@@ -855,20 +958,19 @@ export default function CashierPage() {
 
     return (
       <section className="mb-9">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-[#1F2924]">
             {title}
           </h2>
 
           <span className="text-sm text-[#8A918C]">
-            {
-              zoneTables.length
-            }{" "}
-            emplacement
-            {zoneTables.length >
-            1
-              ? "s"
-              : ""}
+            {t(
+              "locations",
+              {
+                count:
+                  zoneTables.length,
+              }
+            )}
           </span>
         </div>
 
@@ -885,7 +987,7 @@ export default function CashierPage() {
                     table
                   )
                 }
-                className={`min-h-[92px] rounded-[20px] border p-4 text-left transition active:scale-[0.98] hover:-translate-y-0.5 hover:shadow-sm ${getStatusStyle(
+                className={`min-h-[92px] rounded-[20px] border p-4 text-start transition active:scale-[0.98] hover:-translate-y-0.5 hover:shadow-sm ${getStatusStyle(
                   table.status
                 )}`}
               >
@@ -948,8 +1050,9 @@ export default function CashierPage() {
           <div className="mx-auto mt-6 h-7 w-7 animate-spin rounded-full border-[3px] border-[#D4DDD7] border-t-[#1E4D3A]" />
 
           <p className="mt-4 font-semibold text-[#343D38]">
-            Chargement de la
-            caisse...
+            {t(
+              "loadingCashier"
+            )}
           </p>
         </div>
       </main>
@@ -958,7 +1061,6 @@ export default function CashierPage() {
 
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
-      {/* FEEDBACK */}
       {feedback && (
         <div className="pointer-events-none fixed left-1/2 top-4 z-[100] w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
           <div
@@ -967,9 +1069,9 @@ export default function CashierPage() {
               "success"
                 ? "border-[#C7DACD] bg-[#EDF5EF] text-[#1E4D3A]"
                 : feedback.type ===
-                  "warning"
-                ? "border-[#EED3A8] bg-[#FFF6E9] text-[#8D5519]"
-                : "border-[#EDC7C0] bg-[#FFF1EE] text-[#A74435]"
+                    "warning"
+                  ? "border-[#EED3A8] bg-[#FFF6E9] text-[#8D5519]"
+                  : "border-[#EDC7C0] bg-[#FFF1EE] text-[#A74435]"
             }`}
           >
             <p className="text-sm font-semibold">
@@ -982,7 +1084,6 @@ export default function CashierPage() {
       )}
 
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
         <header className="mb-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -996,7 +1097,9 @@ export default function CashierPage() {
                 </p>
 
                 <p className="text-xs text-[#7A817C]">
-                  Caisse
+                  {t(
+                    "cashier"
+                  )}
                 </p>
               </div>
             </div>
@@ -1005,44 +1108,53 @@ export default function CashierPage() {
           </div>
         </header>
 
-        {/* NAVIGATION */}
         <nav className="mb-5 flex gap-1 rounded-2xl border border-[#E5E2DA] bg-white p-1 shadow-sm">
           <Link
             href="/cashier"
             className="flex-1 rounded-xl bg-[#1E4D3A] px-3 py-2.5 text-center text-sm font-semibold text-white"
           >
-            Tables
+            {t(
+              "navigation.tables"
+            )}
           </Link>
 
           <Link
             href="/cashier/orders"
             className="flex-1 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
           >
-            Commandes
+            {t(
+              "navigation.orders"
+            )}
           </Link>
 
           <Link
             href="/cashier/history"
             className="flex-1 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
           >
-            Historique
+            {t(
+              "navigation.history"
+            )}
           </Link>
         </nav>
 
-        {/* TITRE + À EMPORTER */}
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-[#2E6A50]">
-              Service en cours
+              {t(
+                "serviceInProgress"
+              )}
             </p>
 
             <h1 className="mt-1 text-3xl font-bold tracking-[-0.03em] text-[#1F2924]">
-              Tables
+              {t(
+                "navigation.tables"
+              )}
             </h1>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Touchez une table
-              pour agir.
+              {t(
+                "touchTable"
+              )}
             </p>
           </div>
 
@@ -1059,20 +1171,25 @@ export default function CashierPage() {
             {takeawayLoading ? (
               <>
                 <Spinner />
-                Création...
+
+                {t(
+                  "creating"
+                )}
               </>
             ) : (
               <>
                 <span className="text-xl leading-none">
                   +
                 </span>
-                À emporter
+
+                {t(
+                  "takeaway"
+                )}
               </>
             )}
           </button>
         </div>
 
-        {/* SHIFT */}
         <section className="mb-5">
           {shiftLoading ? (
             <div className="flex min-h-[76px] items-center gap-3 rounded-[20px] border border-[#E5E2DA] bg-white px-4 shadow-sm">
@@ -1081,8 +1198,9 @@ export default function CashierPage() {
               />
 
               <p className="text-sm font-medium text-[#68706B]">
-                Vérification du
-                shift...
+                {t(
+                  "shift.checking"
+                )}
               </p>
             </div>
           ) : currentShift ? (
@@ -1092,20 +1210,19 @@ export default function CashierPage() {
 
                 <div>
                   <p className="font-bold text-[#1E4D3A]">
-                    Shift ouvert
+                    {t(
+                      "shift.open"
+                    )}
                   </p>
 
                   <p className="mt-0.5 text-sm text-[#567362]">
-                    Depuis{" "}
-                    {new Date(
-                      currentShift.started_at
-                    ).toLocaleTimeString(
-                      "fr-FR",
+                    {t(
+                      "shift.since",
                       {
-                        hour:
-                          "2-digit",
-                        minute:
-                          "2-digit",
+                        time:
+                          formatShiftTime(
+                            currentShift.started_at
+                          ),
                       }
                     )}
                   </p>
@@ -1127,10 +1244,15 @@ export default function CashierPage() {
                     <Spinner
                       dark
                     />
-                    Préparation...
+
+                    {t(
+                      "shift.preparing"
+                    )}
                   </>
                 ) : (
-                  "Fermer mon shift"
+                  t(
+                    "shift.closeMine"
+                  )
                 )}
               </button>
             </div>
@@ -1141,13 +1263,15 @@ export default function CashierPage() {
 
                 <div>
                   <p className="font-bold text-[#8D5519]">
-                    Shift fermé
+                    {t(
+                      "shift.closed"
+                    )}
                   </p>
 
                   <p className="mt-0.5 text-sm text-[#96704B]">
-                    Ouvrez votre
-                    shift avant les
-                    encaissements.
+                    {t(
+                      "shift.openBeforePayments"
+                    )}
                   </p>
                 </div>
               </div>
@@ -1165,24 +1289,30 @@ export default function CashierPage() {
                 {shiftActionLoading ? (
                   <>
                     <Spinner />
-                    Ouverture...
+
+                    {t(
+                      "shift.opening"
+                    )}
                   </>
                 ) : (
-                  "Ouvrir mon shift"
+                  t(
+                    "shift.openMine"
+                  )
                 )}
               </button>
             </div>
           )}
         </section>
 
-        {/* ÉTAT DES TABLES */}
         <section className="mb-7 grid grid-cols-3 overflow-hidden rounded-[20px] border border-[#E5E2DA] bg-white shadow-sm">
-          <div className="border-r border-[#ECE9E2] px-3 py-3.5 text-center">
+          <div className="border-e border-[#ECE9E2] px-3 py-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#3D7D5E]" />
 
               <span className="text-xs font-medium text-[#737A75]">
-                Libres
+                {t(
+                  "tableCounters.free"
+                )}
               </span>
             </div>
 
@@ -1191,12 +1321,14 @@ export default function CashierPage() {
             </p>
           </div>
 
-          <div className="border-r border-[#ECE9E2] px-3 py-3.5 text-center">
+          <div className="border-e border-[#ECE9E2] px-3 py-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#D4862D]" />
 
               <span className="text-xs font-medium text-[#737A75]">
-                Réservées
+                {t(
+                  "tableCounters.reserved"
+                )}
               </span>
             </div>
 
@@ -1210,7 +1342,9 @@ export default function CashierPage() {
               <span className="h-2 w-2 rounded-full bg-[#C65343]" />
 
               <span className="text-xs font-medium text-[#737A75]">
-                Occupées
+                {t(
+                  "tableCounters.occupied"
+                )}
               </span>
             </div>
 
@@ -1220,45 +1354,53 @@ export default function CashierPage() {
           </div>
         </section>
 
-        {/* PLAN DE SALLE */}
         <section>
           <div className="mb-5">
             <h2 className="text-xl font-bold text-[#1F2924]">
-              Plan de salle
+              {t(
+                "floorPlan.title"
+              )}
             </h2>
 
             <p className="mt-1 text-sm text-[#7A817C]">
-              Les couleurs indiquent
-              immédiatement le statut
-              de chaque table.
+              {t(
+                "floorPlan.description"
+              )}
             </p>
           </div>
 
           {renderZone(
-            "VIP",
+            t(
+              "zones.vip"
+            ),
             "VIP"
           )}
 
           {renderZone(
-            "Box Terrasse",
+            t(
+              "zones.terrace"
+            ),
             "Terrasse"
           )}
 
           {renderZone(
-            "Salle",
+            t(
+              "zones.room"
+            ),
             "Salle"
           )}
         </section>
       </div>
 
-      {/* MODAL TABLE */}
       {selectedTable && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#17201B]/50 p-4 backdrop-blur-[2px]">
           <div className="w-full max-w-sm rounded-[28px] bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-[#7A817C]">
-                  Table
+                  {t(
+                    "tableModal.table"
+                  )}
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
@@ -1306,10 +1448,15 @@ export default function CashierPage() {
                   "open-order" ? (
                     <>
                       <Spinner />
-                      Ouverture...
+
+                      {t(
+                        "opening"
+                      )}
                     </>
                   ) : (
-                    "Ouvrir une commande"
+                    t(
+                      "tableModal.openOrder"
+                    )
                   )}
                 </button>
 
@@ -1334,10 +1481,15 @@ export default function CashierPage() {
                       <Spinner
                         dark
                       />
-                      Réservation...
+
+                      {t(
+                        "reserving"
+                      )}
                     </>
                   ) : (
-                    "Réserver la table"
+                    t(
+                      "tableModal.reserve"
+                    )
                   )}
                 </button>
               </div>
@@ -1364,10 +1516,15 @@ export default function CashierPage() {
                   "open-order" ? (
                     <>
                       <Spinner />
-                      Ouverture...
+
+                      {t(
+                        "opening"
+                      )}
                     </>
                   ) : (
-                    "Client arrivé"
+                    t(
+                      "tableModal.customerArrived"
+                    )
                   )}
                 </button>
 
@@ -1392,10 +1549,15 @@ export default function CashierPage() {
                       <Spinner
                         dark
                       />
-                      Annulation...
+
+                      {t(
+                        "cancelling"
+                      )}
                     </>
                   ) : (
-                    "Annuler la réservation"
+                    t(
+                      "tableModal.cancelReservation"
+                    )
                   )}
                 </button>
               </div>
@@ -1422,10 +1584,15 @@ export default function CashierPage() {
                   "view-order" ? (
                     <>
                       <Spinner />
-                      Ouverture...
+
+                      {t(
+                        "opening"
+                      )}
                     </>
                   ) : (
-                    "Voir la commande"
+                    t(
+                      "tableModal.viewOrder"
+                    )
                   )}
                 </button>
               </div>
@@ -1445,38 +1612,44 @@ export default function CashierPage() {
               }
               className="mt-4 min-h-11 w-full text-sm font-medium text-[#8A918C] disabled:opacity-40"
             >
-              Fermer
+              {t(
+                "close"
+              )}
             </button>
           </div>
         </div>
       )}
 
-      {/* MODAL CLÔTURE SHIFT */}
       {showCloseShift &&
         currentShift && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#17201B]/50 p-4 backdrop-blur-[2px]">
             <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl">
               <div>
                 <p className="text-sm font-semibold text-[#A74435]">
-                  Fin de service
+                  {t(
+                    "shiftClose.endService"
+                  )}
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
-                  Clôturer le shift
+                  {t(
+                    "shiftClose.title"
+                  )}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-[#737A75]">
-                  Vérifiez le
-                  récapitulatif avant
-                  de clôturer votre
-                  caisse.
+                  {t(
+                    "shiftClose.description"
+                  )}
                 </p>
               </div>
 
               <div className="mt-6 grid grid-cols-3 gap-2">
                 <div className="rounded-2xl bg-[#F6F6F2] p-3.5">
                   <p className="text-xs text-[#7A817C]">
-                    Payées
+                    {t(
+                      "shiftClose.paid"
+                    )}
                   </p>
 
                   <p className="mt-1 text-xl font-bold text-[#1F2924]">
@@ -1488,7 +1661,9 @@ export default function CashierPage() {
 
                 <div className="rounded-2xl bg-[#FFF4F1] p-3.5">
                   <p className="text-xs text-[#9A6A62]">
-                    Annulées
+                    {t(
+                      "shiftClose.cancelled"
+                    )}
                   </p>
 
                   <p className="mt-1 text-xl font-bold text-[#A74435]">
@@ -1500,7 +1675,9 @@ export default function CashierPage() {
 
                 <div className="rounded-2xl bg-[#EDF5EF] p-3.5">
                   <p className="text-xs text-[#567362]">
-                    CA
+                    {t(
+                      "shiftClose.revenue"
+                    )}
                   </p>
 
                   <p className="mt-1 text-lg font-bold text-[#1E4D3A]">
@@ -1519,33 +1696,23 @@ export default function CashierPage() {
 
               <div className="mt-5 rounded-2xl border border-[#E8E5DE] p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-[#9A9F9B]">
-                  Début du shift
+                  {t(
+                    "shiftClose.startedAt"
+                  )}
                 </p>
 
                 <p className="mt-1 font-semibold text-[#343D38]">
-                  {new Date(
+                  {formatShiftDateTime(
                     currentShift.started_at
-                  ).toLocaleString(
-                    "fr-FR",
-                    {
-                      day:
-                        "2-digit",
-                      month:
-                        "2-digit",
-                      year:
-                        "numeric",
-                      hour:
-                        "2-digit",
-                      minute:
-                        "2-digit",
-                    }
                   )}
                 </p>
               </div>
 
               <div className="mt-5">
                 <p className="mb-2 text-sm font-bold text-[#343D38]">
-                  Paiements
+                  {t(
+                    "shiftClose.payments"
+                  )}
                 </p>
 
                 <div className="overflow-hidden rounded-2xl border border-[#E8E5DE]">
@@ -1567,9 +1734,9 @@ export default function CashierPage() {
                         }`}
                       >
                         <span className="text-sm text-[#68706B]">
-                          {
+                          {getPaymentLabel(
                             method
-                          }
+                          )}
                         </span>
 
                         <span className="text-sm font-bold text-[#1F2924]">
@@ -1592,21 +1759,21 @@ export default function CashierPage() {
                 0) > 0 && (
                 <div className="mt-5 rounded-2xl border border-[#EDC7C0] bg-[#FFF1EE] p-4">
                   <p className="font-bold text-[#A74435]">
-                    Fermeture
-                    impossible
+                    {t(
+                      "shiftClose.cannotClose"
+                    )}
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-[#A35C51]">
-                    {
-                      shiftSummary
-                        ?.openOrderCount
-                    }{" "}
-                    commande
-                    {(shiftSummary
-                      ?.openOrderCount ||
-                      0) > 1
-                      ? "s sont encore ouvertes."
-                      : " est encore ouverte."}
+                    {t(
+                      "shiftClose.openOrders",
+                      {
+                        count:
+                          shiftSummary
+                            ?.openOrderCount ||
+                          0,
+                      }
+                    )}
                   </p>
 
                   <div className="mt-3 space-y-2">
@@ -1633,7 +1800,9 @@ export default function CashierPage() {
                             </span>
 
                             <span className="font-semibold text-[#1E4D3A]">
-                              Traiter →
+                              {t(
+                                "shiftClose.process"
+                              )}
                             </span>
                           </Link>
                         )
@@ -1655,16 +1824,15 @@ export default function CashierPage() {
                 0) === 0 && (
                 <div className="mt-5 rounded-2xl border border-[#C7DACD] bg-[#EDF5EF] px-4 py-3">
                   <p className="text-sm font-semibold text-[#1E4D3A]">
-                    Toutes les
-                    commandes sont
-                    traitées.
+                    {t(
+                      "shiftClose.allProcessed"
+                    )}
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-[#667D6D]">
-                    Les rapports de
-                    caisse et produits
-                    seront générés
-                    automatiquement.
+                    {t(
+                      "shiftClose.reportsGenerated"
+                    )}
                   </p>
                 </div>
               )}
@@ -1686,7 +1854,9 @@ export default function CashierPage() {
                   }
                   className="min-h-13 flex-1 rounded-2xl border border-[#E3E0D8] font-semibold text-[#68706B] disabled:opacity-50"
                 >
-                  Retour
+                  {t(
+                    "back"
+                  )}
                 </button>
 
                 <button
@@ -1705,10 +1875,15 @@ export default function CashierPage() {
                   {shiftActionLoading ? (
                     <>
                       <Spinner />
-                      Clôture...
+
+                      {t(
+                        "shiftClose.closing"
+                      )}
                     </>
                   ) : (
-                    "Confirmer"
+                    t(
+                      "shiftClose.confirm"
+                    )
                   )}
                 </button>
               </div>

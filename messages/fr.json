@@ -41,5 +41,98 @@
       "enterFourDigitPin": "Entrez votre PIN à 4 chiffres.",
       "incorrectPin": "PIN incorrect."
     }
+  },
+  "Cashier": {
+    "cashier": "Caisse",
+    "navigation": {
+      "tables": "Tables",
+      "orders": "Commandes",
+      "history": "Historique"
+    },
+    "serviceInProgress": "Service en cours",
+    "touchTable": "Touchez une table pour agir.",
+    "takeaway": "À emporter",
+    "creating": "Création...",
+    "opening": "Ouverture...",
+    "reserving": "Réservation...",
+    "cancelling": "Annulation...",
+    "loadingCashier": "Chargement de la caisse...",
+    "locations": "{count, plural, one {# emplacement} other {# emplacements}}",
+    "close": "Fermer",
+    "back": "Retour",
+    "statuses": {
+      "available": "Disponible",
+      "reserved": "Réservée",
+      "occupied": "Occupée"
+    },
+    "zones": {
+      "vip": "VIP",
+      "terrace": "Box Terrasse",
+      "room": "Salle"
+    },
+    "tableCounters": {
+      "free": "Libres",
+      "reserved": "Réservées",
+      "occupied": "Occupées"
+    },
+    "floorPlan": {
+      "title": "Plan de salle",
+      "description": "Les couleurs indiquent immédiatement le statut de chaque table."
+    },
+    "shift": {
+      "checking": "Vérification du shift...",
+      "open": "Shift ouvert",
+      "closed": "Shift fermé",
+      "since": "Depuis {time}",
+      "preparing": "Préparation...",
+      "opening": "Ouverture...",
+      "closeMine": "Fermer mon shift",
+      "openMine": "Ouvrir mon shift",
+      "openBeforePayments": "Ouvrez votre shift avant les encaissements."
+    },
+    "tableModal": {
+      "table": "Table",
+      "openOrder": "Ouvrir une commande",
+      "reserve": "Réserver la table",
+      "customerArrived": "Client arrivé",
+      "cancelReservation": "Annuler la réservation",
+      "viewOrder": "Voir la commande"
+    },
+    "shiftClose": {
+      "endService": "Fin de service",
+      "title": "Clôturer le shift",
+      "description": "Vérifiez le récapitulatif avant de clôturer votre caisse.",
+      "paid": "Payées",
+      "cancelled": "Annulées",
+      "revenue": "CA",
+      "startedAt": "Début du shift",
+      "payments": "Paiements",
+      "cannotClose": "Fermeture impossible",
+      "openOrders": "{count, plural, one {# commande est encore ouverte.} other {# commandes sont encore ouvertes.}}",
+      "process": "Traiter →",
+      "allProcessed": "Toutes les commandes sont traitées.",
+      "reportsGenerated": "Les rapports de caisse et produits seront générés automatiquement.",
+      "closing": "Clôture...",
+      "confirm": "Confirmer"
+    },
+    "payments": {
+      "cash": "Cash"
+    },
+    "feedback": {
+      "shiftOpened": "Shift ouvert.",
+      "shiftClosed": "Shift clôturé avec succès.",
+      "tableReserved": "Table réservée.",
+      "reservationCancelled": "Réservation annulée."
+    },
+    "errors": {
+      "loadTables": "Impossible de charger les tables.",
+      "openShift": "Impossible d'ouvrir le shift.",
+      "prepareShiftClose": "Impossible de préparer la clôture du shift.",
+      "closeShift": "Impossible de fermer le shift.",
+      "openOrder": "Impossible d'ouvrir la commande.",
+      "createTakeaway": "Impossible de créer la commande à emporter.",
+      "orderNotFound": "Commande introuvable.",
+      "updateTable": "Impossible de modifier la table."
+    }
   }
 }

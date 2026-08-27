@@ -41,5 +41,98 @@
       "enterFourDigitPin": "أدخل الرمز السري المكون من 4 أرقام.",
       "incorrectPin": "الرمز السري غير صحيح."
     }
+  },
+  "Cashier": {
+    "cashier": "الصندوق",
+    "navigation": {
+      "tables": "الطاولات",
+      "orders": "الطلبات",
+      "history": "السجل"
+    },
+    "serviceInProgress": "الخدمة جارية",
+    "touchTable": "اضغط على طاولة لتنفيذ إجراء.",
+    "takeaway": "طلب خارجي",
+    "creating": "جارٍ الإنشاء...",
+    "opening": "جارٍ الفتح...",
+    "reserving": "جارٍ الحجز...",
+    "cancelling": "جارٍ الإلغاء...",
+    "loadingCashier": "جارٍ تحميل الصندوق...",
+    "locations": "{count} مكان",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "statuses": {
+      "available": "متاحة",
+      "reserved": "محجوزة",
+      "occupied": "مشغولة"
+    },
+    "zones": {
+      "vip": "VIP",
+      "terrace": "تراس",
+      "room": "الصالة"
+    },
+    "tableCounters": {
+      "free": "متاحة",
+      "reserved": "محجوزة",
+      "occupied": "مشغولة"
+    },
+    "floorPlan": {
+      "title": "مخطط الطاولات",
+      "description": "توضح الألوان حالة كل طاولة بشكل مباشر."
+    },
+    "shift": {
+      "checking": "جارٍ التحقق من الوردية...",
+      "open": "الوردية مفتوحة",
+      "closed": "الوردية مغلقة",
+      "since": "منذ {time}",
+      "preparing": "جارٍ التحضير...",
+      "opening": "جارٍ الفتح...",
+      "closeMine": "إغلاق ورديتي",
+      "openMine": "فتح ورديتي",
+      "openBeforePayments": "افتح ورديتك قبل تسجيل المدفوعات."
+    },
+    "tableModal": {
+      "table": "الطاولة",
+      "openOrder": "فتح طلب",
+      "reserve": "حجز الطاولة",
+      "customerArrived": "وصل الزبون",
+      "cancelReservation": "إلغاء الحجز",
+      "viewOrder": "عرض الطلب"
+    },
+    "shiftClose": {
+      "endService": "نهاية الخدمة",
+      "title": "إغلاق الوردية",
+      "description": "راجع الملخص قبل إغلاق الصندوق.",
+      "paid": "مدفوعة",
+      "cancelled": "ملغاة",
+      "revenue": "المبيعات",
+      "startedAt": "بداية الوردية",
+      "payments": "وسائل الدفع",
+      "cannotClose": "لا يمكن إغلاق الوردية",
+      "openOrders": "لا تزال هناك {count} طلبات مفتوحة.",
+      "process": "معالجة ←",
+      "allProcessed": "تمت معالجة جميع الطلبات.",
+      "reportsGenerated": "سيتم إنشاء تقارير الصندوق والمنتجات تلقائياً.",
+      "closing": "جارٍ الإغلاق...",
+      "confirm": "تأكيد"
+    },
+    "payments": {
+      "cash": "نقداً"
+    },
+    "feedback": {
+      "shiftOpened": "تم فتح الوردية.",
+      "shiftClosed": "تم إغلاق الوردية بنجاح.",
+      "tableReserved": "تم حجز الطاولة.",
+      "reservationCancelled": "تم إلغاء الحجز."
+    },
+    "errors": {
+      "loadTables": "تعذر تحميل الطاولات.",
+      "openShift": "تعذر فتح الوردية.",
+      "prepareShiftClose": "تعذر تجهيز إغلاق الوردية.",
+      "closeShift": "تعذر إغلاق الوردية.",
+      "openOrder": "تعذر فتح الطلب.",
+      "createTakeaway": "تعذر إنشاء الطلب الخارجي.",
+      "orderNotFound": "الطلب غير موجود.",
+      "updateTable": "تعذر تعديل حالة الطاولة."
+    }
   }
 }
