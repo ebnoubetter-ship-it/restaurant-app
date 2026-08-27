@@ -4,5 +4,42 @@
     "administration": "Administration",
     "cashier": "Caisse",
     "stock": "Stock"
+  },
+  "Login": {
+    "tagline": "Votre restaurant. Plus simple.",
+    "connection": "Connexion",
+    "hello": "Bonjour",
+    "enterNameDescription": "Entrez votre nom pour accéder à votre espace.",
+    "name": "Nom",
+    "namePlaceholder": "Ex. Mohamed",
+    "checking": "Vérification...",
+    "continue": "Continuer",
+    "changeUser": "← Changer d'utilisateur",
+    "enterPinTitle": "Entrez votre PIN",
+    "enterPinDescription": "Utilisez votre code personnel à 4 chiffres.",
+    "pinCode": "Code PIN",
+    "loggingIn": "Connexion...",
+    "login": "Se connecter",
+    "back": "← Retour",
+    "firstLogin": "Première connexion",
+    "createPinTitle": "Créez votre PIN",
+    "createPinDescription": "Bonjour {name}. Choisissez un code personnel à 4 chiffres.",
+    "newPin": "Nouveau PIN",
+    "confirmPin": "Confirmer le PIN",
+    "creating": "Création...",
+    "createMyPin": "Créer mon PIN",
+    "pinSecurityInfo": "Ce PIN sera utilisé pour vos prochaines connexions. Ne le partagez pas.",
+    "footer": "MAIDA · Gestion de restaurant",
+    "errors": {
+      "noWorkspace": "Aucun espace n'est associé à ce compte.",
+      "nameRequired": "Entrez votre nom pour continuer.",
+      "userNotFound": "Utilisateur introuvable.",
+      "serverUnavailable": "Impossible de contacter le serveur. Réessayez.",
+      "pinFourDigits": "Votre PIN doit contenir exactement 4 chiffres.",
+      "pinMismatch": "Les deux PIN ne correspondent pas.",
+      "pinCreationFailed": "Impossible de créer le PIN.",
+      "enterFourDigitPin": "Entrez votre PIN à 4 chiffres.",
+      "incorrectPin": "PIN incorrect."
+    }
   }
 }

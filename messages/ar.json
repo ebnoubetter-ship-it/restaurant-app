@@ -4,5 +4,42 @@
     "administration": "الإدارة",
     "cashier": "الصندوق",
     "stock": "المخزون"
+  },
+  "Login": {
+    "tagline": "مطعمك. أبسط.",
+    "connection": "تسجيل الدخول",
+    "hello": "مرحباً",
+    "enterNameDescription": "أدخل اسمك للوصول إلى حسابك.",
+    "name": "الاسم",
+    "namePlaceholder": "مثال: محمد",
+    "checking": "جارٍ التحقق...",
+    "continue": "متابعة",
+    "changeUser": "تغيير المستخدم →",
+    "enterPinTitle": "أدخل الرمز السري",
+    "enterPinDescription": "استخدم رمزك الشخصي المكون من 4 أرقام.",
+    "pinCode": "الرمز السري",
+    "loggingIn": "جارٍ تسجيل الدخول...",
+    "login": "تسجيل الدخول",
+    "back": "رجوع →",
+    "firstLogin": "أول تسجيل دخول",
+    "createPinTitle": "أنشئ رمزك السري",
+    "createPinDescription": "مرحباً {name}. اختر رمزاً شخصياً مكوناً من 4 أرقام.",
+    "newPin": "الرمز السري الجديد",
+    "confirmPin": "تأكيد الرمز السري",
+    "creating": "جارٍ الإنشاء...",
+    "createMyPin": "إنشاء الرمز السري",
+    "pinSecurityInfo": "سيُستخدم هذا الرمز في تسجيلات الدخول القادمة. لا تشاركه مع أي شخص.",
+    "footer": "MAIDA · إدارة المطاعم",
+    "errors": {
+      "noWorkspace": "لا توجد مساحة مرتبطة بهذا الحساب.",
+      "nameRequired": "أدخل اسمك للمتابعة.",
+      "userNotFound": "المستخدم غير موجود.",
+      "serverUnavailable": "تعذر الاتصال بالخادم. حاول مرة أخرى.",
+      "pinFourDigits": "يجب أن يتكون الرمز السري من 4 أرقام بالضبط.",
+      "pinMismatch": "الرمزان غير متطابقين.",
+      "pinCreationFailed": "تعذر إنشاء الرمز السري.",
+      "enterFourDigitPin": "أدخل الرمز السري المكون من 4 أرقام.",
+      "incorrectPin": "الرمز السري غير صحيح."
+    }
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Step =
   | "name"
@@ -8,6 +9,9 @@ type Step =
   | "login-pin";
 
 export default function LoginPage() {
+  const t =
+    useTranslations("Login");
+
   const [name, setName] =
     useState("");
 
@@ -52,7 +56,7 @@ export default function LoginPage() {
     }
 
     setMessage(
-      "Aucun espace n'est associé à ce compte."
+      t("errors.noWorkspace")
     );
 
     setLoading(false);
@@ -72,7 +76,7 @@ export default function LoginPage() {
 
       if (!cleanName) {
         setMessage(
-          "Entrez votre nom pour continuer."
+          t("errors.nameRequired")
         );
         return;
       }
@@ -86,13 +90,16 @@ export default function LoginPage() {
             "/api/auth/lookup",
             {
               method: "POST",
+
               headers: {
                 "Content-Type":
                   "application/json",
               },
-              body: JSON.stringify({
-                name: cleanName,
-              }),
+
+              body:
+                JSON.stringify({
+                  name: cleanName,
+                }),
             }
           );
 
@@ -101,8 +108,9 @@ export default function LoginPage() {
 
         if (!response.ok) {
           setMessage(
-            data.error ||
-              "Utilisateur introuvable."
+            t(
+              "errors.userNotFound"
+            )
           );
           return;
         }
@@ -120,7 +128,9 @@ export default function LoginPage() {
         }
       } catch {
         setMessage(
-          "Impossible de contacter le serveur. Réessayez."
+          t(
+            "errors.serverUnavailable"
+          )
         );
       } finally {
         setLoading(false);
@@ -133,7 +143,9 @@ export default function LoginPage() {
         !/^\d{4}$/.test(pin)
       ) {
         setMessage(
-          "Votre PIN doit contenir exactement 4 chiffres."
+          t(
+            "errors.pinFourDigits"
+          )
         );
         return;
       }
@@ -142,7 +154,9 @@ export default function LoginPage() {
         pin !== confirmPin
       ) {
         setMessage(
-          "Les deux PIN ne correspondent pas."
+          t(
+            "errors.pinMismatch"
+          )
         );
 
         setConfirmPin("");
@@ -158,14 +172,17 @@ export default function LoginPage() {
             "/api/auth/set-pin",
             {
               method: "POST",
+
               headers: {
                 "Content-Type":
                   "application/json",
               },
-              body: JSON.stringify({
-                name,
-                pin,
-              }),
+
+              body:
+                JSON.stringify({
+                  name,
+                  pin,
+                }),
             }
           );
 
@@ -174,8 +191,9 @@ export default function LoginPage() {
 
         if (!response.ok) {
           setMessage(
-            data.error ||
-              "Impossible de créer le PIN."
+            t(
+              "errors.pinCreationFailed"
+            )
           );
 
           setPin("");
@@ -188,7 +206,9 @@ export default function LoginPage() {
         );
       } catch {
         setMessage(
-          "Impossible de contacter le serveur. Réessayez."
+          t(
+            "errors.serverUnavailable"
+          )
         );
       } finally {
         setLoading(false);
@@ -201,7 +221,9 @@ export default function LoginPage() {
         !/^\d{4}$/.test(pin)
       ) {
         setMessage(
-          "Entrez votre PIN à 4 chiffres."
+          t(
+            "errors.enterFourDigitPin"
+          )
         );
         return;
       }
@@ -215,14 +237,17 @@ export default function LoginPage() {
             "/api/auth/login",
             {
               method: "POST",
+
               headers: {
                 "Content-Type":
                   "application/json",
               },
-              body: JSON.stringify({
-                name,
-                pin,
-              }),
+
+              body:
+                JSON.stringify({
+                  name,
+                  pin,
+                }),
             }
           );
 
@@ -231,15 +256,11 @@ export default function LoginPage() {
 
         if (!response.ok) {
           setMessage(
-            data.error ||
-              "PIN incorrect."
+            t(
+              "errors.incorrectPin"
+            )
           );
 
-          /*
-           * Le mauvais PIN disparaît
-           * immédiatement pour permettre
-           * une nouvelle saisie.
-           */
           setPin("");
           return;
         }
@@ -249,15 +270,11 @@ export default function LoginPage() {
         );
       } catch {
         setMessage(
-          "Impossible de contacter le serveur. Réessayez."
+          t(
+            "errors.serverUnavailable"
+          )
         );
       } finally {
-        /*
-         * IMPORTANT :
-         * même si le PIN est incorrect,
-         * le bouton quitte l'état
-         * "Connexion..."
-         */
         setLoading(false);
       }
     };
@@ -294,8 +311,7 @@ export default function LoginPage() {
           </h1>
 
           <p className="mt-1 text-sm text-[#6E756F]">
-            Votre restaurant.
-            Plus simple.
+            {t("tagline")}
           </p>
         </div>
 
@@ -305,17 +321,19 @@ export default function LoginPage() {
             <>
               <div className="mb-7">
                 <p className="text-sm font-semibold text-[#2E6A50]">
-                  Connexion
+                  {t(
+                    "connection"
+                  )}
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
-                  Bonjour
+                  {t("hello")}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-[#737A75]">
-                  Entrez votre nom
-                  pour accéder à votre
-                  espace.
+                  {t(
+                    "enterNameDescription"
+                  )}
                 </p>
               </div>
 
@@ -323,7 +341,7 @@ export default function LoginPage() {
                 htmlFor="name"
                 className="mb-2 block text-sm font-semibold text-[#343D38]"
               >
-                Nom
+                {t("name")}
               </label>
 
               <input
@@ -333,7 +351,9 @@ export default function LoginPage() {
                 disabled={loading}
                 autoFocus
                 autoComplete="name"
-                placeholder="Ex. Mohamed"
+                placeholder={t(
+                  "namePlaceholder"
+                )}
                 onChange={(event) => {
                   setName(
                     event.target.value
@@ -368,8 +388,12 @@ export default function LoginPage() {
                 )}
 
                 {loading
-                  ? "Vérification..."
-                  : "Continuer"}
+                  ? t(
+                      "checking"
+                    )
+                  : t(
+                      "continue"
+                    )}
               </button>
             </>
           )}
@@ -384,8 +408,9 @@ export default function LoginPage() {
                   disabled={loading}
                   className="mb-5 text-sm font-medium text-[#8A918C] transition hover:text-[#1E4D3A] disabled:opacity-50"
                 >
-                  ← Changer
-                  d&apos;utilisateur
+                  {t(
+                    "changeUser"
+                  )}
                 </button>
 
                 <p className="text-sm font-semibold text-[#2E6A50]">
@@ -393,13 +418,15 @@ export default function LoginPage() {
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
-                  Entrez votre PIN
+                  {t(
+                    "enterPinTitle"
+                  )}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-[#737A75]">
-                  Utilisez votre code
-                  personnel à 4
-                  chiffres.
+                  {t(
+                    "enterPinDescription"
+                  )}
                 </p>
               </div>
 
@@ -407,7 +434,7 @@ export default function LoginPage() {
                 htmlFor="pin"
                 className="mb-2 block text-sm font-semibold text-[#343D38]"
               >
-                Code PIN
+                {t("pinCode")}
               </label>
 
               <input
@@ -419,6 +446,7 @@ export default function LoginPage() {
                 autoFocus
                 disabled={loading}
                 value={pin}
+                dir="ltr"
                 onChange={(event) => {
                   setPin(
                     cleanPinValue(
@@ -457,8 +485,12 @@ export default function LoginPage() {
                 )}
 
                 {loading
-                  ? "Connexion..."
-                  : "Se connecter"}
+                  ? t(
+                      "loggingIn"
+                    )
+                  : t(
+                      "login"
+                    )}
               </button>
             </>
           )}
@@ -473,25 +505,28 @@ export default function LoginPage() {
                   disabled={loading}
                   className="mb-5 text-sm font-medium text-[#8A918C] transition hover:text-[#1E4D3A] disabled:opacity-50"
                 >
-                  ← Retour
+                  {t("back")}
                 </button>
 
                 <p className="text-sm font-semibold text-[#2E6A50]">
-                  Première connexion
+                  {t(
+                    "firstLogin"
+                  )}
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#1F2924]">
-                  Créez votre PIN
+                  {t(
+                    "createPinTitle"
+                  )}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-[#737A75]">
-                  Bonjour{" "}
-                  <span className="font-semibold text-[#343D38]">
-                    {name}
-                  </span>
-                  . Choisissez un
-                  code personnel à 4
-                  chiffres.
+                  {t(
+                    "createPinDescription",
+                    {
+                      name,
+                    }
+                  )}
                 </p>
               </div>
 
@@ -501,7 +536,9 @@ export default function LoginPage() {
                     htmlFor="new-pin"
                     className="mb-2 block text-sm font-semibold text-[#343D38]"
                   >
-                    Nouveau PIN
+                    {t(
+                      "newPin"
+                    )}
                   </label>
 
                   <input
@@ -513,6 +550,7 @@ export default function LoginPage() {
                     autoFocus
                     disabled={loading}
                     value={pin}
+                    dir="ltr"
                     onChange={(
                       event
                     ) => {
@@ -537,7 +575,9 @@ export default function LoginPage() {
                     htmlFor="confirm-pin"
                     className="mb-2 block text-sm font-semibold text-[#343D38]"
                   >
-                    Confirmer le PIN
+                    {t(
+                      "confirmPin"
+                    )}
                   </label>
 
                   <input
@@ -548,6 +588,7 @@ export default function LoginPage() {
                     maxLength={4}
                     disabled={loading}
                     value={confirmPin}
+                    dir="ltr"
                     onChange={(
                       event
                     ) => {
@@ -592,16 +633,19 @@ export default function LoginPage() {
                 )}
 
                 {loading
-                  ? "Création..."
-                  : "Créer mon PIN"}
+                  ? t(
+                      "creating"
+                    )
+                  : t(
+                      "createMyPin"
+                    )}
               </button>
 
               <div className="mt-4 rounded-xl bg-[#F5F7F4] px-4 py-3">
                 <p className="text-xs leading-5 text-[#737A75]">
-                  Ce PIN sera utilisé
-                  pour vos prochaines
-                  connexions. Ne le
-                  partagez pas.
+                  {t(
+                    "pinSecurityInfo"
+                  )}
                 </p>
               </div>
             </>
@@ -620,8 +664,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-[#9A9F9B]">
-          MAIDA · Gestion de
-          restaurant
+          {t("footer")}
         </p>
       </div>
     </main>
