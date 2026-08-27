@@ -1,19 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-
-function formatMoney(
-  value: number
-) {
-  return new Intl.NumberFormat(
-    "fr-FR",
-    {
-      maximumFractionDigits: 0,
-    }
-  ).format(value);
-}
 
 export default async function CashierHistoryPage({
   searchParams,
@@ -22,6 +15,67 @@ export default async function CashierHistoryPage({
     period?: string;
   }>;
 }) {
+  const t =
+    await getTranslations(
+      "CashierHistory"
+    );
+
+  const locale =
+    await getLocale();
+
+  const formatMoney = (
+    value: number
+  ) => {
+    return new Intl.NumberFormat(
+      locale === "ar"
+        ? "ar-MR"
+        : "fr-FR",
+      {
+        maximumFractionDigits: 0,
+      }
+    ).format(value);
+  };
+
+  const formatPaidAt = (
+    value: string
+  ) => {
+    return new Date(
+      value
+    ).toLocaleString(
+      locale === "ar"
+        ? "ar-MR"
+        : "fr-FR",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
+
+  const getPaymentLabel = (
+    method:
+      | string
+      | null
+  ) => {
+    if (!method) {
+      return t(
+        "payment"
+      );
+    }
+
+    if (
+      method === "Cash"
+    ) {
+      return t(
+        "payments.cash"
+      );
+    }
+
+    return method;
+  };
+
   const access =
     await getSessionRestaurantAccess();
 
@@ -240,7 +294,9 @@ export default async function CashierHistoryPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Caisse
+                {t(
+                  "cashier"
+                )}
               </p>
             </div>
           </div>
@@ -251,20 +307,24 @@ export default async function CashierHistoryPage({
             </div>
 
             <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-              Historique
-              indisponible
+              {t(
+                "error.title"
+              )}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Impossible de charger
-              les encaissements.
+              {t(
+                "error.description"
+              )}
             </p>
 
             <a
               href="/cashier/history"
               className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
             >
-              Réessayer
+              {t(
+                "retry"
+              )}
             </a>
           </div>
         </div>
@@ -351,7 +411,9 @@ export default async function CashierHistoryPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Caisse
+                {t(
+                  "cashier"
+                )}
               </p>
             </div>
           </div>
@@ -362,37 +424,47 @@ export default async function CashierHistoryPage({
             href="/cashier"
             className="flex-1 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
           >
-            Tables
+            {t(
+              "navigation.tables"
+            )}
           </Link>
 
           <Link
             href="/cashier/orders"
             className="flex-1 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
           >
-            Commandes
+            {t(
+              "navigation.orders"
+            )}
           </Link>
 
           <Link
             href="/cashier/history"
             className="flex-1 rounded-xl bg-[#1E4D3A] px-3 py-2.5 text-center text-sm font-semibold text-white"
           >
-            Historique
+            {t(
+              "navigation.history"
+            )}
           </Link>
         </nav>
 
         <section>
           <p className="text-sm font-semibold text-[#2E6A50]">
-            Encaissements
+            {t(
+              "paymentsTitle"
+            )}
           </p>
 
           <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924]">
-            Historique
+            {t(
+              "title"
+            )}
           </h1>
 
           <p className="mt-2 text-sm text-[#737A75]">
-            Retrouvez rapidement
-            les commandes déjà
-            encaissées.
+            {t(
+              "description"
+            )}
           </p>
         </section>
 
@@ -406,7 +478,9 @@ export default async function CashierHistoryPage({
                 : "rounded-xl px-4 py-2.5 text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Mon shift
+            {t(
+              "period.myShift"
+            )}
           </Link>
 
           <Link
@@ -418,7 +492,9 @@ export default async function CashierHistoryPage({
                 : "rounded-xl px-4 py-2.5 text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Aujourd&apos;hui
+            {t(
+              "period.today"
+            )}
           </Link>
         </div>
 
@@ -431,16 +507,15 @@ export default async function CashierHistoryPage({
 
                 <div>
                   <p className="font-semibold text-[#8D5519]">
-                    Aucun shift
-                    ouvert
+                    {t(
+                      "noShift.title"
+                    )}
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-[#956D44]">
-                    Ouvrez un shift
-                    pour commencer
-                    un nouvel
-                    historique de
-                    caisse.
+                    {t(
+                      "noShift.description"
+                    )}
                   </p>
                 </div>
               </div>
@@ -448,9 +523,11 @@ export default async function CashierHistoryPage({
           )}
 
         <section className="mt-6 grid grid-cols-3 overflow-hidden rounded-[20px] border border-[#E5E2DA] bg-white shadow-sm">
-          <div className="border-r border-[#ECE9E2] p-3.5 sm:p-4">
+          <div className="border-e border-[#ECE9E2] p-3.5 sm:p-4">
             <p className="text-xs font-medium text-[#737A75]">
-              Commandes
+              {t(
+                "stats.orders"
+              )}
             </p>
 
             <p className="mt-2 text-xl font-black text-[#1F2924] sm:text-2xl">
@@ -460,12 +537,17 @@ export default async function CashierHistoryPage({
             </p>
           </div>
 
-          <div className="border-r border-[#ECE9E2] p-3.5 sm:p-4">
+          <div className="border-e border-[#ECE9E2] p-3.5 sm:p-4">
             <p className="text-xs font-medium text-[#737A75]">
-              Ticket moyen
+              {t(
+                "stats.averageTicket"
+              )}
             </p>
 
-            <p className="mt-2 text-lg font-black text-[#1F2924] sm:text-2xl">
+            <p
+              dir="ltr"
+              className="mt-2 text-lg font-black text-[#1F2924] sm:text-2xl"
+            >
               {formatMoney(
                 averageOrder
               )}
@@ -478,10 +560,15 @@ export default async function CashierHistoryPage({
 
           <div className="bg-[#EDF5EF] p-3.5 sm:p-4">
             <p className="text-xs font-medium text-[#567362]">
-              Total
+              {t(
+                "stats.total"
+              )}
             </p>
 
-            <p className="mt-2 text-lg font-black text-[#1E4D3A] sm:text-2xl">
+            <p
+              dir="ltr"
+              className="mt-2 text-lg font-black text-[#1E4D3A] sm:text-2xl"
+            >
               {formatMoney(
                 totalSales
               )}
@@ -497,7 +584,9 @@ export default async function CashierHistoryPage({
           0 && (
           <section className="mt-5 rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
             <p className="text-sm font-bold text-[#343D38]">
-              Paiements
+              {t(
+                "paymentsTitle"
+              )}
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -513,10 +602,15 @@ export default async function CashierHistoryPage({
                     className="rounded-xl bg-[#F6F6F2] px-3 py-2"
                   >
                     <p className="text-[11px] font-medium text-[#7A817C]">
-                      {method}
+                      {getPaymentLabel(
+                        method
+                      )}
                     </p>
 
-                    <p className="mt-0.5 text-sm font-bold text-[#1F2924]">
+                    <p
+                      dir="ltr"
+                      className="mt-0.5 text-sm font-bold text-[#1F2924]"
+                    >
                       {formatMoney(
                         amount
                       )}{" "}
@@ -530,20 +624,21 @@ export default async function CashierHistoryPage({
         )}
 
         <section className="mt-7">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-[#1F2924]">
-              Encaissements
+              {t(
+                "paymentsTitle"
+              )}
             </h2>
 
             <span className="text-xs font-medium text-[#8A918C]">
-              {
-                historyOrders.length
-              }{" "}
-              résultat
-              {historyOrders.length >
-              1
-                ? "s"
-                : ""}
+              {t(
+                "results",
+                {
+                  count:
+                    historyOrders.length,
+                }
+              )}
             </span>
           </div>
 
@@ -555,13 +650,15 @@ export default async function CashierHistoryPage({
               </div>
 
               <h3 className="mt-4 font-bold text-[#343D38]">
-                Aucun encaissement
+                {t(
+                  "emptyState.title"
+                )}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#8A918C]">
-                Les commandes
-                payées apparaîtront
-                ici.
+                {t(
+                  "emptyState.description"
+                )}
               </p>
             </div>
           ) : (
@@ -579,9 +676,13 @@ export default async function CashierHistoryPage({
                   const orderLabel =
                     order.order_type ===
                     "takeaway"
-                      ? "À emporter"
+                      ? t(
+                          "takeaway"
+                        )
                       : table?.name ||
-                        "Table";
+                        t(
+                          "table"
+                        );
 
                   return (
                     <article
@@ -598,7 +699,10 @@ export default async function CashierHistoryPage({
                             </h3>
 
                             {order.order_number && (
-                              <span className="text-xs font-semibold text-[#9A9F9B]">
+                              <span
+                                dir="ltr"
+                                className="text-xs font-semibold text-[#9A9F9B]"
+                              >
                                 #
                                 {
                                   order.order_number
@@ -609,41 +713,35 @@ export default async function CashierHistoryPage({
                             {order.order_type ===
                               "takeaway" && (
                               <span className="rounded-full bg-[#F3EFE8] px-2.5 py-1 text-[11px] font-semibold text-[#7D6755]">
-                                À emporter
+                                {t(
+                                  "takeaway"
+                                )}
                               </span>
                             )}
                           </div>
 
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#7A817C]">
                             <span className="rounded-full bg-[#F3F4F1] px-2.5 py-1 font-semibold text-[#5F6862]">
-                              {order.payment_method ||
-                                "Paiement"}
+                              {getPaymentLabel(
+                                order.payment_method
+                              )}
                             </span>
 
                             {order.paid_at && (
                               <span>
-                                {new Date(
+                                {formatPaidAt(
                                   order.paid_at
-                                ).toLocaleString(
-                                  "fr-FR",
-                                  {
-                                    day:
-                                      "2-digit",
-                                    month:
-                                      "2-digit",
-                                    hour:
-                                      "2-digit",
-                                    minute:
-                                      "2-digit",
-                                  }
                                 )}
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="shrink-0 text-right">
-                          <p className="text-lg font-black text-[#1F2924] sm:text-xl">
+                        <div className="shrink-0 text-end">
+                          <p
+                            dir="ltr"
+                            className="text-lg font-black text-[#1F2924] sm:text-xl"
+                          >
                             {formatMoney(
                               Number(
                                 order.total ||
@@ -667,7 +765,10 @@ export default async function CashierHistoryPage({
 
         <footer className="mt-9 border-t border-[#E3E0D8] py-5">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Caisse
+            MAIDA ·{" "}
+            {t(
+              "cashier"
+            )}
           </p>
         </footer>
       </div>

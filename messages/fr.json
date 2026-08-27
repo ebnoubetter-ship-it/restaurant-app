@@ -172,6 +172,46 @@
       "title": "Commandes indisponibles",
       "description": "Impossible de charger les commandes ouvertes."
     }
+  },
+    "CashierHistory": {
+    "cashier": "Caisse",
+    "navigation": {
+      "tables": "Tables",
+      "orders": "Commandes",
+      "history": "Historique"
+    },
+    "paymentsTitle": "Encaissements",
+    "title": "Historique",
+    "description": "Retrouvez rapidement les commandes déjà encaissées.",
+    "retry": "Réessayer",
+    "table": "Table",
+    "takeaway": "À emporter",
+    "payment": "Paiement",
+    "period": {
+      "myShift": "Mon shift",
+      "today": "Aujourd'hui"
+    },
+    "noShift": {
+      "title": "Aucun shift ouvert",
+      "description": "Ouvrez un shift pour commencer un nouvel historique de caisse."
+    },
+    "stats": {
+      "orders": "Commandes",
+      "averageTicket": "Ticket moyen",
+      "total": "Total"
+    },
+    "payments": {
+      "cash": "Cash"
+    },
+    "results": "{count, plural, one {# résultat} other {# résultats}}",
+    "emptyState": {
+      "title": "Aucun encaissement",
+      "description": "Les commandes payées apparaîtront ici."
+    },
+    "error": {
+      "title": "Historique indisponible",
+      "description": "Impossible de charger les encaissements."
+    }
   }
   
 }

@@ -172,5 +172,45 @@
       "title": "الطلبات غير متاحة",
       "description": "تعذر تحميل الطلبات المفتوحة."
     }
+  },
+    "CashierHistory": {
+    "cashier": "الصندوق",
+    "navigation": {
+      "tables": "الطاولات",
+      "orders": "الطلبات",
+      "history": "السجل"
+    },
+    "paymentsTitle": "المدفوعات",
+    "title": "السجل",
+    "description": "اعرض بسرعة الطلبات التي تم دفعها.",
+    "retry": "إعادة المحاولة",
+    "table": "طاولة",
+    "takeaway": "طلب خارجي",
+    "payment": "الدفع",
+    "period": {
+      "myShift": "ورديتي",
+      "today": "اليوم"
+    },
+    "noShift": {
+      "title": "لا توجد وردية مفتوحة",
+      "description": "افتح وردية لبدء سجل جديد للصندوق."
+    },
+    "stats": {
+      "orders": "الطلبات",
+      "averageTicket": "متوسط الفاتورة",
+      "total": "الإجمالي"
+    },
+    "payments": {
+      "cash": "نقداً"
+    },
+    "results": "{count} نتيجة",
+    "emptyState": {
+      "title": "لا توجد مدفوعات",
+      "description": "ستظهر هنا الطلبات التي تم دفعها."
+    },
+    "error": {
+      "title": "السجل غير متاح",
+      "description": "تعذر تحميل المدفوعات."
+    }
   }
 }
