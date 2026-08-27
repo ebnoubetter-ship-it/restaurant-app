@@ -134,5 +134,44 @@
       "orderNotFound": "Commande introuvable.",
       "updateTable": "Impossible de modifier la table."
     }
+  },
+  "CashierOrders": {
+    "cashier": "Caisse",
+    "navigation": {
+      "tables": "Tables",
+      "orders": "Commandes",
+      "history": "Historique"
+    },
+    "serviceInProgress": "Service en cours",
+    "title": "Commandes ouvertes",
+    "description": "Les commandes qui nécessitent encore une action.",
+    "takeaway": "À emporter",
+    "table": "Table",
+    "retry": "Réessayer",
+    "open": "Ouvrir →",
+    "items": "{count, plural, one {# article} other {# articles}}",
+    "openedAt": "Ouverte à {time}",
+    "emptyOrders": "{count, plural, one {# commande ouverte est encore vide.} other {# commandes ouvertes sont encore vides.}}",
+    "counters": {
+      "open": "Ouvertes",
+      "pending": "À envoyer",
+      "kitchenReady": "Cuisine OK"
+    },
+    "kitchen": {
+      "ready": "Cuisine OK",
+      "pending": "À envoyer",
+      "additions": "{count, plural, one {# ajout à envoyer} other {# ajouts à envoyer}}",
+      "empty": "Vide"
+    },
+    "emptyState": {
+      "title": "Aucune commande ouverte",
+      "description": "Toutes les commandes sont actuellement traitées.",
+      "backToTables": "Retour aux tables"
+    },
+    "error": {
+      "title": "Commandes indisponibles",
+      "description": "Impossible de charger les commandes ouvertes."
+    }
   }
+  
 }

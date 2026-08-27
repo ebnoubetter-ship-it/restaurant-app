@@ -134,5 +134,43 @@
       "orderNotFound": "الطلب غير موجود.",
       "updateTable": "تعذر تعديل حالة الطاولة."
     }
+  },
+  "CashierOrders": {
+    "cashier": "الصندوق",
+    "navigation": {
+      "tables": "الطاولات",
+      "orders": "الطلبات",
+      "history": "السجل"
+    },
+    "serviceInProgress": "الخدمة جارية",
+    "title": "الطلبات المفتوحة",
+    "description": "الطلبات التي لا تزال تحتاج إلى إجراء.",
+    "takeaway": "طلب خارجي",
+    "table": "طاولة",
+    "retry": "إعادة المحاولة",
+    "open": "فتح ←",
+    "items": "{count} عنصر",
+    "openedAt": "فُتح في {time}",
+    "emptyOrders": "هناك {count} طلبات مفتوحة لا تزال فارغة.",
+    "counters": {
+      "open": "مفتوحة",
+      "pending": "بانتظار الإرسال",
+      "kitchenReady": "تم الإرسال للمطبخ"
+    },
+    "kitchen": {
+      "ready": "تم الإرسال للمطبخ",
+      "pending": "بانتظار الإرسال",
+      "additions": "{count} إضافات بانتظار الإرسال",
+      "empty": "فارغ"
+    },
+    "emptyState": {
+      "title": "لا توجد طلبات مفتوحة",
+      "description": "تمت معالجة جميع الطلبات حالياً.",
+      "backToTables": "العودة إلى الطاولات"
+    },
+    "error": {
+      "title": "الطلبات غير متاحة",
+      "description": "تعذر تحميل الطلبات المفتوحة."
+    }
   }
 }

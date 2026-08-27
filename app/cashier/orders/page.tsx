@@ -1,21 +1,51 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-function formatMoney(
-  value: number
-) {
-  return new Intl.NumberFormat(
-    "fr-FR",
-    {
-      maximumFractionDigits: 0,
-    }
-  ).format(value);
-}
-
 export default async function CashierOrdersPage() {
+  const t =
+    await getTranslations(
+      "CashierOrders"
+    );
+
+  const locale =
+    await getLocale();
+
+  const formatMoney = (
+    value: number
+  ) => {
+    return new Intl.NumberFormat(
+      locale === "ar"
+        ? "ar-MR"
+        : "fr-FR",
+      {
+        maximumFractionDigits: 0,
+      }
+    ).format(value);
+  };
+
+  const formatTime = (
+    value: string
+  ) => {
+    return new Date(
+      value
+    ).toLocaleTimeString(
+      locale === "ar"
+        ? "ar-MR"
+        : "fr-FR",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
+
   const access =
     await getSessionRestaurantAccess();
 
@@ -105,7 +135,7 @@ export default async function CashierOrdersPage() {
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Caisse
+                {t("cashier")}
               </p>
             </div>
           </div>
@@ -116,19 +146,22 @@ export default async function CashierOrdersPage() {
             </div>
 
             <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-              Commandes indisponibles
+              {t(
+                "error.title"
+              )}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Impossible de charger
-              les commandes ouvertes.
+              {t(
+                "error.description"
+              )}
             </p>
 
             <a
               href="/cashier/orders"
               className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
             >
-              Réessayer
+              {t("retry")}
             </a>
           </div>
         </div>
@@ -209,9 +242,9 @@ export default async function CashierOrdersPage() {
     const orderLabel =
       order.order_type ===
       "takeaway"
-        ? "À emporter"
+        ? t("takeaway")
         : table?.name ||
-          "Table";
+          t("table");
 
     let kitchenState:
       | "empty"
@@ -303,7 +336,10 @@ export default async function CashierOrdersPage() {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EDF5EF] px-2.5 py-1 text-xs font-semibold text-[#2E6A50]">
           <span className="h-2 w-2 rounded-full bg-[#3D7D5E]" />
-          Cuisine OK
+
+          {t(
+            "kitchen.ready"
+          )}
         </span>
       );
     }
@@ -314,11 +350,14 @@ export default async function CashierOrdersPage() {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF6E9] px-2.5 py-1 text-xs font-semibold text-[#9A5A18]">
           <span className="h-2 w-2 rounded-full bg-[#D4862D]" />
-          {pendingQuantity} ajout
-          {pendingQuantity > 1
-            ? "s"
-            : ""}{" "}
-          à envoyer
+
+          {t(
+            "kitchen.additions",
+            {
+              count:
+                pendingQuantity,
+            }
+          )}
         </span>
       );
     }
@@ -329,7 +368,10 @@ export default async function CashierOrdersPage() {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF6E9] px-2.5 py-1 text-xs font-semibold text-[#9A5A18]">
           <span className="h-2 w-2 rounded-full bg-[#D4862D]" />
-          À envoyer
+
+          {t(
+            "kitchen.pending"
+          )}
         </span>
       );
     }
@@ -337,7 +379,10 @@ export default async function CashierOrdersPage() {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F1F2EF] px-2.5 py-1 text-xs font-semibold text-[#7A817C]">
         <span className="h-2 w-2 rounded-full bg-[#AAB0AC]" />
-        Vide
+
+        {t(
+          "kitchen.empty"
+        )}
       </span>
     );
   };
@@ -357,7 +402,7 @@ export default async function CashierOrdersPage() {
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Caisse
+                {t("cashier")}
               </p>
             </div>
           </div>
@@ -368,44 +413,56 @@ export default async function CashierOrdersPage() {
             href="/cashier"
             className="flex-1 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
           >
-            Tables
+            {t(
+              "navigation.tables"
+            )}
           </Link>
 
           <Link
             href="/cashier/orders"
             className="flex-1 rounded-xl bg-[#1E4D3A] px-3 py-2.5 text-center text-sm font-semibold text-white"
           >
-            Commandes
+            {t(
+              "navigation.orders"
+            )}
           </Link>
 
           <Link
             href="/cashier/history"
             className="flex-1 rounded-xl px-3 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
           >
-            Historique
+            {t(
+              "navigation.history"
+            )}
           </Link>
         </nav>
 
         <section className="mb-5">
           <p className="text-sm font-semibold text-[#2E6A50]">
-            Service en cours
+            {t(
+              "serviceInProgress"
+            )}
           </p>
 
           <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924]">
-            Commandes ouvertes
+            {t(
+              "title"
+            )}
           </h1>
 
           <p className="mt-2 text-sm text-[#737A75]">
-            Les commandes qui
-            nécessitent encore une
-            action.
+            {t(
+              "description"
+            )}
           </p>
         </section>
 
         <section className="mb-6 grid grid-cols-3 overflow-hidden rounded-[20px] border border-[#E5E2DA] bg-white shadow-sm">
-          <div className="border-r border-[#ECE9E2] px-2 py-3.5 text-center">
+          <div className="border-e border-[#ECE9E2] px-2 py-3.5 text-center">
             <p className="text-xs font-medium text-[#737A75]">
-              Ouvertes
+              {t(
+                "counters.open"
+              )}
             </p>
 
             <p className="mt-1 text-xl font-black text-[#1F2924]">
@@ -415,12 +472,14 @@ export default async function CashierOrdersPage() {
             </p>
           </div>
 
-          <div className="border-r border-[#ECE9E2] px-2 py-3.5 text-center">
+          <div className="border-e border-[#ECE9E2] px-2 py-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#D4862D]" />
 
               <p className="text-xs font-medium text-[#737A75]">
-                À envoyer
+                {t(
+                  "counters.pending"
+                )}
               </p>
             </div>
 
@@ -434,7 +493,9 @@ export default async function CashierOrdersPage() {
               <span className="h-2 w-2 rounded-full bg-[#3D7D5E]" />
 
               <p className="text-xs font-medium text-[#737A75]">
-                Cuisine OK
+                {t(
+                  "counters.kitchenReady"
+                )}
               </p>
             </div>
 
@@ -452,20 +513,24 @@ export default async function CashierOrdersPage() {
             </div>
 
             <h2 className="mt-4 text-lg font-bold text-[#1F2924]">
-              Aucune commande ouverte
+              {t(
+                "emptyState.title"
+              )}
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-[#7A817C]">
-              Toutes les commandes
-              sont actuellement
-              traitées.
+              {t(
+                "emptyState.description"
+              )}
             </p>
 
             <Link
               href="/cashier"
               className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
             >
-              Retour aux tables
+              {t(
+                "emptyState.backToTables"
+              )}
             </Link>
           </section>
         ) : (
@@ -487,7 +552,10 @@ export default async function CashierOrdersPage() {
                         </h2>
 
                         {order.orderNumber && (
-                          <span className="text-xs font-semibold text-[#9A9F9B]">
+                          <span
+                            dir="ltr"
+                            className="text-xs font-semibold text-[#9A9F9B]"
+                          >
                             #
                             {
                               order.orderNumber
@@ -498,7 +566,9 @@ export default async function CashierOrdersPage() {
                         {order.orderType ===
                           "takeaway" && (
                           <span className="rounded-full bg-[#F3EFE8] px-2.5 py-1 text-[11px] font-semibold text-[#7D6755]">
-                            À emporter
+                            {t(
+                              "takeaway"
+                            )}
                           </span>
                         )}
                       </div>
@@ -512,35 +582,38 @@ export default async function CashierOrdersPage() {
 
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[#8A918C]">
                         <span>
-                          {order.totalUnits}{" "}
-                          article
-                          {order.totalUnits >
-                          1
-                            ? "s"
-                            : ""}
+                          {t(
+                            "items",
+                            {
+                              count:
+                                order.totalUnits,
+                            }
+                          )}
                         </span>
 
-                        <span>·</span>
+                        <span>
+                          ·
+                        </span>
 
                         <span>
-                          Ouverte à{" "}
-                          {new Date(
-                            order.createdAt
-                          ).toLocaleTimeString(
-                            "fr-FR",
+                          {t(
+                            "openedAt",
                             {
-                              hour:
-                                "2-digit",
-                              minute:
-                                "2-digit",
+                              time:
+                                formatTime(
+                                  order.createdAt
+                                ),
                             }
                           )}
                         </span>
                       </div>
                     </div>
 
-                    <div className="shrink-0 text-right">
-                      <p className="text-lg font-black text-[#1F2924] sm:text-xl">
+                    <div className="shrink-0 text-end">
+                      <p
+                        dir="ltr"
+                        className="text-lg font-black text-[#1F2924] sm:text-xl"
+                      >
                         {formatMoney(
                           order.total
                         )}{" "}
@@ -550,7 +623,9 @@ export default async function CashierOrdersPage() {
                       </p>
 
                       <p className="mt-3 text-sm font-semibold text-[#2E6A50] transition group-hover:translate-x-0.5">
-                        Ouvrir →
+                        {t(
+                          "open"
+                        )}
                       </p>
                     </div>
                   </div>
@@ -562,15 +637,13 @@ export default async function CashierOrdersPage() {
 
         {emptyCount > 0 && (
           <p className="mt-5 text-center text-xs text-[#9A9F9B]">
-            {emptyCount} commande
-            {emptyCount > 1
-              ? "s ouvertes sont"
-              : " ouverte est"}{" "}
-            encore vide
-            {emptyCount > 1
-              ? "s"
-              : ""}
-            .
+            {t(
+              "emptyOrders",
+              {
+                count:
+                  emptyCount,
+              }
+            )}
           </p>
         )}
       </div>
