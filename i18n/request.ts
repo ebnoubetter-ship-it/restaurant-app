@@ -1,24 +1,33 @@
-import { getRequestConfig } from "next-intl/server";
+import {
+  getRequestConfig,
+} from "next-intl/server";
+import {
+  cookies,
+} from "next/headers";
 
-export default getRequestConfig(async () => {
-  /*
-   * Étape 1 :
-   * français par défaut.
-   *
-   * À l'étape suivante,
-   * cette valeur viendra
-   * du choix utilisateur.
-   */
-  const locale = "fr";
+export default getRequestConfig(
+  async () => {
+    const cookieStore =
+      await cookies();
 
-  return {
-    locale,
+    const cookieLocale =
+      cookieStore.get(
+        "maida_locale"
+      )?.value;
 
-    messages:
-      (
-        await import(
-          `../messages/${locale}.json`
-        )
-      ).default,
-  };
-});
+    const locale =
+      cookieLocale === "ar"
+        ? "ar"
+        : "fr";
+
+    return {
+      locale,
+      messages:
+        (
+          await import(
+            `../messages/${locale}.json`
+          )
+        ).default,
+    };
+  }
+);

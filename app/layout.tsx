@@ -1,6 +1,4 @@
-import type {
-  Metadata,
-} from "next";
+import type { Metadata } from "next";
 import {
   Geist,
   Geist_Mono,
@@ -9,6 +7,9 @@ import {
   NextIntlClientProvider,
 } from "next-intl";
 import {
+  getMessages,
+} from "next-intl/server";
+import {
   cookies,
 } from "next/headers";
 
@@ -16,33 +17,24 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 import "./globals.css";
 
-const geistSans =
-  Geist({
-    variable:
-      "--font-geist-sans",
-
-    subsets: [
-      "latin",
-    ],
-  });
+const geistSans = Geist({
+  variable:
+    "--font-geist-sans",
+  subsets: ["latin"],
+});
 
 const geistMono =
   Geist_Mono({
     variable:
       "--font-geist-mono",
-
-    subsets: [
-      "latin",
-    ],
+    subsets: ["latin"],
   });
 
-export const metadata: Metadata =
-  {
-    title: "MAIDA",
-
-    description:
-      "Gestion de restaurant",
-  };
+export const metadata: Metadata = {
+  title: "MAIDA",
+  description:
+    "Gestion de restaurant",
+};
 
 export default async function RootLayout({
   children,
@@ -65,6 +57,11 @@ export default async function RootLayout({
       ? "rtl"
       : "ltr";
 
+  const messages =
+    await getMessages({
+      locale,
+    });
+
   return (
     <html
       lang={locale}
@@ -78,7 +75,10 @@ export default async function RootLayout({
           />
         </div>
 
-        <NextIntlClientProvider>
+        <NextIntlClientProvider
+          locale={locale}
+          messages={messages}
+        >
           {children}
         </NextIntlClientProvider>
       </body>
