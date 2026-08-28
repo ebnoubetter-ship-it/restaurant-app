@@ -101,7 +101,7 @@ export default function OrderClient({
 
   const formatMoney = (value: number) => {
     return new Intl.NumberFormat(
-      locale === "ar" ? "ar-MR" : "fr-FR",
+      locale === "ar" ? "ar-MR-u-nu-latn" : "fr-FR",
       {
         maximumFractionDigits: 0,
       }

@@ -185,7 +185,7 @@ export default function CashierPage() {
   ) => {
     return new Intl.NumberFormat(
       locale === "ar"
-        ? "ar-MR"
+        ? "ar-MR-u-nu-latn"
         : "fr-FR",
       {
         maximumFractionDigits: 0,
@@ -200,7 +200,7 @@ export default function CashierPage() {
       value
     ).toLocaleTimeString(
       locale === "ar"
-        ? "ar-MR"
+        ? "ar-MR-u-nu-latn"
         : "fr-FR",
       {
         hour: "2-digit",
@@ -216,7 +216,7 @@ export default function CashierPage() {
       value
     ).toLocaleString(
       locale === "ar"
-        ? "ar-MR"
+        ? "ar-MR-u-nu-latn"
         : "fr-FR",
       {
         day: "2-digit",

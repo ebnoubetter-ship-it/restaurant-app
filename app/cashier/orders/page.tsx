@@ -22,7 +22,7 @@ export default async function CashierOrdersPage() {
   ) => {
     return new Intl.NumberFormat(
       locale === "ar"
-        ? "ar-MR"
+        ? "ar-MR-u-nu-latn"
         : "fr-FR",
       {
         maximumFractionDigits: 0,
@@ -37,7 +37,7 @@ export default async function CashierOrdersPage() {
       value
     ).toLocaleTimeString(
       locale === "ar"
-        ? "ar-MR"
+        ? "ar-MR-u-nu-latn"
         : "fr-FR",
       {
         hour: "2-digit",

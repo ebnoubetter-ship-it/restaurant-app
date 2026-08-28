@@ -28,7 +28,7 @@ export default async function CashierHistoryPage({
   ) => {
     return new Intl.NumberFormat(
       locale === "ar"
-        ? "ar-MR"
+        ? "ar-MR-u-nu-latn"
         : "fr-FR",
       {
         maximumFractionDigits: 0,
@@ -43,7 +43,7 @@ export default async function CashierHistoryPage({
       value
     ).toLocaleString(
       locale === "ar"
-        ? "ar-MR"
+        ? "ar-MR-u-nu-latn"
         : "fr-FR",
       {
         day: "2-digit",
