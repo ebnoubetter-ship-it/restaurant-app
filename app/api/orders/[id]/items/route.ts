@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -13,11 +14,12 @@ type ItemCancelResult = {
   printJobId?: string | null;
 };
 
-function changedResponse() {
+function changedResponse(
+  message: string
+) {
   return NextResponse.json(
     {
-      error:
-        "La commande a changé entre-temps. Actualisez puis réessayez.",
+      error: message,
     },
     {
       status: 409,
@@ -33,6 +35,11 @@ export async function GET(
     }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiOrderItems"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -71,7 +78,7 @@ export async function GET(
     return NextResponse.json(
       {
         error:
-          "Commande introuvable.",
+          t("errors.orderNotFound"),
       },
       {
         status: 404,
@@ -116,7 +123,7 @@ export async function GET(
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer la commande.",
+          t("errors.getOrderFailed"),
       },
       {
         status: 500,
@@ -179,7 +186,7 @@ export async function GET(
       return NextResponse.json(
         {
           error:
-            "Impossible de récupérer les produits.",
+            t("errors.getProductsFailed"),
         },
         {
           status: 500,
@@ -222,6 +229,11 @@ export async function POST(
     }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiOrderItems"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -248,7 +260,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t("errors.invalidRequest"),
       },
       {
         status: 400,
@@ -266,7 +278,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Produit invalide.",
+          t("errors.invalidProduct"),
       },
       {
         status: 400,
@@ -300,7 +312,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Commande introuvable.",
+          t("errors.orderNotFound"),
       },
       {
         status: 404,
@@ -315,7 +327,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Cette commande ne peut plus être modifiée.",
+          t("errors.orderNotEditable"),
       },
       {
         status: 409,
@@ -353,7 +365,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Produit introuvable.",
+          t("errors.productNotFound"),
       },
       {
         status: 404,
@@ -389,7 +401,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier la commande.",
+          t("errors.orderCheckFailed"),
       },
       {
         status: 500,
@@ -446,7 +458,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Impossible de modifier la quantité.",
+            t("errors.updateQuantityFailed"),
         },
         {
           status: 500,
@@ -455,7 +467,9 @@ export async function POST(
     }
 
     if (!updatedItem) {
-      return changedResponse();
+      return changedResponse(
+        t("errors.orderChanged")
+      );
     }
   } else {
     const {
@@ -492,7 +506,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Impossible d'ajouter le produit.",
+            t("errors.addProductFailed"),
         },
         {
           status: 500,
@@ -514,6 +528,11 @@ export async function PATCH(
     }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiOrderItems"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -546,7 +565,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t("errors.invalidRequest"),
       },
       {
         status: 400,
@@ -570,7 +589,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          "Élément invalide.",
+          t("errors.invalidItem"),
       },
       {
         status: 400,
@@ -604,7 +623,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          "Commande introuvable.",
+          t("errors.orderNotFound"),
       },
       {
         status: 404,
@@ -619,7 +638,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          "Cette commande ne peut plus être modifiée.",
+          t("errors.orderNotEditable"),
       },
       {
         status: 409,
@@ -661,7 +680,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          "Élément introuvable.",
+          t("errors.itemNotFound"),
       },
       {
         status: 404,
@@ -734,7 +753,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Impossible d'augmenter la quantité.",
+            t("errors.increaseQuantityFailed"),
         },
         {
           status: 500,
@@ -743,7 +762,9 @@ export async function PATCH(
     }
 
     if (!updatedItem) {
-      return changedResponse();
+      return changedResponse(
+        t("errors.orderChanged")
+      );
     }
 
     return NextResponse.json({
@@ -761,7 +782,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Aucune quantité à diminuer.",
+            t("errors.noQuantityToDecrease"),
         },
         {
           status: 400,
@@ -783,7 +804,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Cet article a déjà été envoyé en cuisine. Utilisez l'annulation de l'article.",
+            t("errors.sentToKitchenUseCancellation"),
 
           requiresCancellation:
             true,
@@ -835,7 +856,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Impossible de supprimer l'article.",
+              t("errors.deleteItemFailed"),
           },
           {
             status: 500,
@@ -844,7 +865,9 @@ export async function PATCH(
       }
 
       if (!deletedItem) {
-        return changedResponse();
+        return changedResponse(
+        t("errors.orderChanged")
+      );
       }
     } else {
       const {
@@ -883,7 +906,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Impossible de modifier la quantité.",
+              t("errors.updateQuantityFailed"),
           },
           {
             status: 500,
@@ -892,7 +915,9 @@ export async function PATCH(
       }
 
       if (!updatedItem) {
-        return changedResponse();
+        return changedResponse(
+        t("errors.orderChanged")
+      );
       }
     }
 
@@ -913,7 +938,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Cet article a déjà été envoyé en cuisine. Utilisez l'annulation de l'article.",
+            t("errors.sentToKitchenUseCancellation"),
 
           requiresCancellation:
             true,
@@ -963,7 +988,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Impossible de supprimer l'article.",
+              t("errors.deleteItemFailed"),
           },
           {
             status: 500,
@@ -972,7 +997,9 @@ export async function PATCH(
       }
 
       if (!updatedItem) {
-        return changedResponse();
+        return changedResponse(
+        t("errors.orderChanged")
+      );
       }
     } else {
       const {
@@ -1008,7 +1035,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Impossible de supprimer l'article.",
+              t("errors.deleteItemFailed"),
           },
           {
             status: 500,
@@ -1017,7 +1044,9 @@ export async function PATCH(
       }
 
       if (!deletedItem) {
-        return changedResponse();
+        return changedResponse(
+        t("errors.orderChanged")
+      );
       }
     }
 
@@ -1042,7 +1071,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Le motif d'annulation est obligatoire.",
+            t("errors.reasonRequired"),
         },
         {
           status: 400,
@@ -1057,7 +1086,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Le motif d'annulation est trop long.",
+            t("errors.reasonTooLong"),
         },
         {
           status: 400,
@@ -1081,7 +1110,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Quantité à annuler invalide.",
+            t("errors.invalidCancelQuantity"),
         },
         {
           status: 400,
@@ -1096,7 +1125,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "La quantité à annuler dépasse la quantité de la commande.",
+            t("errors.cancelQuantityTooHigh"),
         },
         {
           status: 400,
@@ -1166,7 +1195,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Votre accès est restreint. Contactez le support MAIDA.",
+              t("errors.restricted"),
 
             restricted:
               true,
@@ -1185,7 +1214,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Accès non autorisé.",
+              t("errors.unauthorized"),
           },
           {
             status: 403,
@@ -1201,7 +1230,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Commande introuvable.",
+              t("errors.orderNotFound"),
           },
           {
             status: 404,
@@ -1217,7 +1246,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Cette commande vient d'être clôturée.",
+              t("errors.orderJustClosed"),
           },
           {
             status: 409,
@@ -1233,7 +1262,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "Élément introuvable.",
+              t("errors.itemNotFound"),
           },
           {
             status: 404,
@@ -1246,7 +1275,9 @@ export async function PATCH(
           "ITEM_CHANGED"
         )
       ) {
-        return changedResponse();
+        return changedResponse(
+        t("errors.orderChanged")
+      );
       }
 
       if (
@@ -1257,7 +1288,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "La quantité disponible a changé. Actualisez puis réessayez.",
+              t("errors.availableQuantityChanged"),
           },
           {
             status: 409,
@@ -1268,7 +1299,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "Impossible d'annuler l'article.",
+            t("errors.cancelItemFailed"),
         },
         {
           status: 500,
@@ -1285,7 +1316,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error:
-            "L'annulation a retourné un résultat invalide.",
+            t("errors.invalidCancellationResult"),
         },
         {
           status: 500,
@@ -1335,7 +1366,7 @@ export async function PATCH(
         cancelledAfterKitchen >
           0 &&
         !printJobCreated
-          ? "L'article a été annulé, mais le ticket d'annulation cuisine n'a pas pu être préparé."
+          ? t("warnings.kitchenCancellationTicketFailed")
           : null,
     });
   }
@@ -1343,7 +1374,7 @@ export async function PATCH(
   return NextResponse.json(
     {
       error:
-        "Action invalide.",
+        t("errors.invalidAction"),
     },
     {
       status: 400,

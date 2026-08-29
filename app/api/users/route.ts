@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -10,6 +11,11 @@ const allowedRoles = [
 ] as const;
 
 export async function GET() {
+  const t =
+    await getTranslations(
+      "ApiUsers"
+    );
+
   /*
    * ============================
    * ADMIN DU RESTAURANT
@@ -64,7 +70,9 @@ export async function GET() {
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer les utilisateurs.",
+          t(
+            "errors.getUsersFailed"
+          ),
       },
       {
         status: 500,
@@ -80,6 +88,11 @@ export async function GET() {
 export async function POST(
   request: Request
 ) {
+  const t =
+    await getTranslations(
+      "ApiUsers"
+    );
+
   /*
    * ============================
    * ADMIN DU RESTAURANT
@@ -114,7 +127,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -144,7 +159,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Nom ou rôle invalide.",
+          t(
+            "errors.invalidNameOrRole"
+          ),
       },
       {
         status: 400,
@@ -158,7 +175,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Le nom est trop long.",
+          t(
+            "errors.nameTooLong"
+          ),
       },
       {
         status: 400,
@@ -197,7 +216,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier l'utilisateur.",
+          t(
+            "errors.checkUserFailed"
+          ),
       },
       {
         status: 500,
@@ -209,7 +230,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Un utilisateur avec ce nom existe déjà.",
+          t(
+            "errors.userAlreadyExists"
+          ),
       },
       {
         status: 409,
@@ -261,7 +284,9 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Un utilisateur avec ce nom existe déjà.",
+            t(
+              "errors.userAlreadyExists"
+            ),
         },
         {
           status: 409,
@@ -272,7 +297,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de créer l'utilisateur.",
+          t(
+            "errors.createUserFailed"
+          ),
       },
       {
         status: 500,
@@ -291,6 +318,11 @@ export async function POST(
 export async function DELETE(
   request: Request
 ) {
+  const t =
+    await getTranslations(
+      "ApiUsers"
+    );
+
   /*
    * ============================
    * ADMIN DU RESTAURANT
@@ -324,7 +356,9 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -342,7 +376,9 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Utilisateur invalide.",
+          t(
+            "errors.invalidUser"
+          ),
       },
       {
         status: 400,
@@ -354,12 +390,6 @@ export async function DELETE(
    * ============================
    * UTILISATEUR CIBLE
    * ============================
-   *
-   * Le restaurant_id fait partie
-   * de la recherche : un admin
-   * Appetizer ne peut jamais
-   * supprimer un utilisateur
-   * MAIDA TEST.
    */
   const {
     data: targetUser,
@@ -390,7 +420,9 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier l'utilisateur.",
+          t(
+            "errors.checkUserFailed"
+          ),
       },
       {
         status: 500,
@@ -402,7 +434,9 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Utilisateur introuvable.",
+          t(
+            "errors.userNotFound"
+          ),
       },
       {
         status: 404,
@@ -449,7 +483,9 @@ export async function DELETE(
       return NextResponse.json(
         {
           error:
-            "Impossible de vérifier les administrateurs.",
+            t(
+              "errors.checkAdminsFailed"
+            ),
         },
         {
           status: 500,
@@ -463,7 +499,9 @@ export async function DELETE(
       return NextResponse.json(
         {
           error:
-            "Impossible de supprimer le dernier administrateur du restaurant.",
+            t(
+              "errors.lastAdminCannotBeDeleted"
+            ),
         },
         {
           status: 409,
@@ -500,14 +538,6 @@ export async function DELETE(
       deleteError
     );
 
-    /*
-     * PostgreSQL FK violation.
-     *
-     * On préfère protéger
-     * commandes, shifts et
-     * historique plutôt que
-     * casser la traçabilité.
-     */
     if (
       deleteError.code ===
       "23503"
@@ -515,7 +545,9 @@ export async function DELETE(
       return NextResponse.json(
         {
           error:
-            "Cet utilisateur est lié à l'historique du restaurant et ne peut pas être supprimé.",
+            t(
+              "errors.userLinkedToHistory"
+            ),
         },
         {
           status: 409,
@@ -526,7 +558,9 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Impossible de supprimer l'utilisateur.",
+          t(
+            "errors.deleteUserFailed"
+          ),
       },
       {
         status: 500,
@@ -538,7 +572,9 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "Utilisateur introuvable.",
+          t(
+            "errors.userNotFound"
+          ),
       },
       {
         status: 404,

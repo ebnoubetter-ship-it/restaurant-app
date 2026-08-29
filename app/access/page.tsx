@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+import { useTranslations } from "next-intl";
 
 export default function RestaurantAccessPage() {
+  const t =
+    useTranslations("Access");
+
   const [
     error,
     setError,
@@ -31,7 +38,7 @@ export default function RestaurantAccessPage() {
 
       if (!token) {
         setError(
-          "Lien d'accès invalide."
+          t("errors.invalidLink")
         );
 
         setLoading(false);
@@ -64,7 +71,9 @@ export default function RestaurantAccessPage() {
         if (!response.ok) {
           setError(
             data.error ||
-              "Impossible de vérifier l'accès."
+              t(
+                "errors.verifyAccess"
+              )
           );
 
           /*
@@ -93,7 +102,9 @@ export default function RestaurantAccessPage() {
         );
       } catch {
         setError(
-          "Impossible de vérifier l'accès."
+          t(
+            "errors.verifyAccess"
+          )
         );
 
         window.history.replaceState(
@@ -107,7 +118,7 @@ export default function RestaurantAccessPage() {
     }
 
     verifyAccess();
-  }, []);
+  }, [t]);
 
   return (
     <main className="min-h-screen bg-[#F5F2EB] px-6 py-12 text-[#1F2924]">
@@ -119,7 +130,7 @@ export default function RestaurantAccessPage() {
             </div>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Votre restaurant. Plus simple.
+              {t("tagline")}
             </p>
           </div>
 
@@ -128,7 +139,9 @@ export default function RestaurantAccessPage() {
               <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[#E4E1DA] border-t-[#1E4D3A]" />
 
               <p className="mt-4 text-sm text-[#737A75]">
-                Vérification de votre accès...
+                {t(
+                  "verifyingAccess"
+                )}
               </p>
             </div>
           ) : error ? (

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
+import { getTranslations } from "next-intl/server";
 
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createRestaurantContext } from "@/lib/restaurant-context";
@@ -8,6 +9,11 @@ import { deleteSession } from "@/lib/session";
 export async function POST(
   request: Request
 ) {
+  const t =
+    await getTranslations(
+      "ApiRestaurantAccess"
+    );
+
   let body: {
     token?: unknown;
   };
@@ -19,7 +25,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -37,7 +45,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Lien d'accès invalide.",
+          t(
+            "errors.invalidLink"
+          ),
       },
       {
         status: 400,
@@ -79,7 +89,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier l'accès.",
+          t(
+            "errors.verifyAccess"
+          ),
       },
       {
         status: 500,
@@ -95,7 +107,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Lien d'accès invalide.",
+          t(
+            "errors.invalidLink"
+          ),
       },
       {
         status: 404,
@@ -110,7 +124,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Votre accès est restreint. Contactez le support MAIDA.",
+          t(
+            "errors.restricted"
+          ),
         restricted: true,
       },
       {

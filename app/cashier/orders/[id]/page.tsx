@@ -2,6 +2,9 @@ import {
   notFound,
   redirect,
 } from "next/navigation";
+import {
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -15,6 +18,11 @@ export default async function OrderPage({
     id: string;
   }>;
 }) {
+  const t =
+    await getTranslations(
+      "CashierOrder"
+    );
+
   const access =
     await getSessionRestaurantAccess();
 
@@ -90,9 +98,9 @@ export default async function OrderPage({
   const orderLabel =
     order.order_type ===
     "takeaway"
-      ? "À emporter"
+      ? t("order.takeaway")
       : table?.name ||
-        "Table";
+        t("order.table");
 
   return (
     <OrderClient

@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -236,8 +240,17 @@ function capitalizeFirst(
   );
 }
 
+function getNumberLocale(
+  locale: string
+) {
+  return locale === "ar"
+    ? "ar-MR-u-nu-latn"
+    : "fr-FR";
+}
+
 function formatMonthLabel(
-  value: string
+  value: string,
+  locale: string
 ) {
   const {
     year,
@@ -258,35 +271,44 @@ function formatMonthLabel(
       )
     );
 
-  return capitalizeFirst(
+  const formatted =
     new Intl.DateTimeFormat(
-      "fr-FR",
+      getNumberLocale(locale),
       {
         month: "long",
         year: "numeric",
         timeZone: "UTC",
+        numberingSystem: "latn",
       }
-    ).format(date)
-  );
+    ).format(date);
+
+  return locale === "ar"
+    ? formatted
+    : capitalizeFirst(
+        formatted
+      );
 }
 
 function formatDateLabel(
-  date: Date
+  date: Date,
+  locale: string
 ) {
   return new Intl.DateTimeFormat(
-    "fr-FR",
+    getNumberLocale(locale),
     {
       day: "numeric",
       month: "long",
       year: "numeric",
       timeZone: "UTC",
+      numberingSystem: "latn",
     }
   ).format(date);
 }
 
 function buildMonthOptions(
   firstMonthKey: string,
-  currentMonthKey: string
+  currentMonthKey: string,
+  locale: string
 ): MonthOption[] {
   const first =
     parseMonthKey(
@@ -341,7 +363,8 @@ function buildMonthOptions(
       value,
       label:
         formatMonthLabel(
-          value
+          value,
+          locale
         ),
     });
 
@@ -361,7 +384,8 @@ function buildMonthOptions(
 
       label:
         formatMonthLabel(
-          currentMonthKey
+          currentMonthKey,
+          locale
         ),
     });
   }
@@ -478,19 +502,25 @@ function getPeriodLabel(
   period: Period,
   selectedMonth: string,
   selectedFromMonth: string,
-  selectedToMonth: string
+  selectedToMonth: string,
+  locale: string,
+  labels: {
+    today: string;
+    week: string;
+  }
 ) {
   if (
     period === "week"
   ) {
-    return "Cette semaine";
+    return labels.week;
   }
 
   if (
     period === "month"
   ) {
     return formatMonthLabel(
-      selectedMonth
+      selectedMonth,
+      locale
     );
   }
 
@@ -502,18 +532,25 @@ function getPeriodLabel(
       selectedToMonth
     ) {
       return formatMonthLabel(
-        selectedFromMonth
+        selectedFromMonth,
+        locale
       );
     }
 
     return `${formatMonthLabel(
-      selectedFromMonth
-    )} → ${formatMonthLabel(
-      selectedToMonth
+      selectedFromMonth,
+      locale
+    )} ${
+      locale === "ar"
+        ? "←"
+        : "→"
+    } ${formatMonthLabel(
+      selectedToMonth,
+      locale
     )}`;
   }
 
-  return "Aujourd’hui";
+  return labels.today;
 }
 
 function getExactRangeLabel(
@@ -521,7 +558,15 @@ function getExactRangeLabel(
   selectedMonth: string,
   selectedFromMonth: string,
   selectedToMonth: string,
-  currentMonthKey: string
+  currentMonthKey: string,
+  locale: string,
+  labels: {
+    untilToday: (start: string) => string;
+    between: (
+      start: string,
+      end: string
+    ) => string;
+  }
 ) {
   if (
     period !== "month" &&
@@ -550,9 +595,12 @@ function getExactRangeLabel(
     toMonth ===
     currentMonthKey
   ) {
-    return `Du ${formatDateLabel(
-      startRange.start
-    )} à aujourd’hui`;
+    return labels.untilToday(
+      formatDateLabel(
+        startRange.start,
+        locale
+      )
+    );
   }
 
   const endRange =
@@ -570,35 +618,41 @@ function getExactRangeLabel(
           1000
     );
 
-  return `Du ${formatDateLabel(
-    startRange.start
-  )} au ${formatDateLabel(
-    lastDay
-  )}`;
+  return labels.between(
+    formatDateLabel(
+      startRange.start,
+      locale
+    ),
+    formatDateLabel(
+      lastDay,
+      locale
+    )
+  );
 }
 
-function formatMoney(
-  value: number
+function formatMoneyLocalized(
+  value: number,
+  locale: string
 ) {
   return new Intl.NumberFormat(
-    "fr-FR",
+    getNumberLocale(locale),
     {
       maximumFractionDigits: 0,
+      numberingSystem: "latn",
     }
   ).format(value);
 }
 
-function formatDateTime(
-  value?: string | null
+function formatDateTimeLocalized(
+  value: string | null | undefined,
+  locale: string
 ) {
   if (!value) {
     return "—";
   }
 
-  return new Date(
-    value
-  ).toLocaleString(
-    "fr-FR",
+  return new Intl.DateTimeFormat(
+    getNumberLocale(locale),
     {
       timeZone:
         "Africa/Nouakchott",
@@ -607,27 +661,32 @@ function formatDateTime(
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      numberingSystem: "latn",
     }
+  ).format(
+    new Date(value)
   );
 }
 
-function formatTime(
-  value?: string | null
+function formatTimeLocalized(
+  value: string | null | undefined,
+  locale: string
 ) {
   if (!value) {
     return "—";
   }
 
-  return new Date(
-    value
-  ).toLocaleTimeString(
-    "fr-FR",
+  return new Intl.DateTimeFormat(
+    getNumberLocale(locale),
     {
       timeZone:
         "Africa/Nouakchott",
       hour: "2-digit",
       minute: "2-digit",
+      numberingSystem: "latn",
     }
+  ).format(
+    new Date(value)
   );
 }
 
@@ -668,6 +727,90 @@ export default async function AdminReportsPage({
     to?: string;
   }>;
 }) {
+  const t =
+    await getTranslations(
+      "AdminReports"
+    );
+
+  const locale =
+    await getLocale();
+
+  const formatMoney = (
+    value: number
+  ) =>
+    formatMoneyLocalized(
+      value,
+      locale
+    );
+
+  const formatDateTime = (
+    value?: string | null
+  ) =>
+    formatDateTimeLocalized(
+      value,
+      locale
+    );
+
+  const formatTime = (
+    value?: string | null
+  ) =>
+    formatTimeLocalized(
+      value,
+      locale
+    );
+
+  const paymentLabel = (
+    method: string
+  ) =>
+    method === "Cash"
+      ? t("payments.cash")
+      : method;
+
+  const cancellationReasonLabel = (
+    reason?: string | null
+  ) => {
+    const value =
+      reason?.trim() ||
+      "Autre";
+
+    if (
+      value ===
+      "Client a annulé"
+    ) {
+      return t(
+        "cancellationReasons.customerCancelled"
+      );
+    }
+
+    if (
+      value ===
+      "Erreur de saisie"
+    ) {
+      return t(
+        "cancellationReasons.inputError"
+      );
+    }
+
+    if (
+      value ===
+      "Produit indisponible"
+    ) {
+      return t(
+        "cancellationReasons.unavailable"
+      );
+    }
+
+    if (
+      value === "Autre"
+    ) {
+      return t(
+        "cancellationReasons.other"
+      );
+    }
+
+    return value;
+  };
+
   /*
    * ============================
    * RESTAURANT + ADMIN
@@ -765,7 +908,8 @@ export default async function AdminReportsPage({
   const monthOptions =
     buildMonthOptions(
       firstMonthKey,
-      currentMonthKey
+      currentMonthKey,
+      locale
     );
 
   const availableMonthKeys =
@@ -1070,7 +1214,7 @@ export default async function AdminReportsPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </header>
@@ -1081,21 +1225,18 @@ export default async function AdminReportsPage({
             </div>
 
             <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-              Rapports
-              indisponibles
+              {t("error.title")}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Impossible de
-              récupérer les données
-              pour le moment.
+              {t("error.description")}
             </p>
 
             <a
               href="/admin/reports"
               className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
             >
-              Réessayer
+              {t("actions.retry")}
             </a>
 
             <div>
@@ -1103,8 +1244,7 @@ export default async function AdminReportsPage({
                 href="/admin"
                 className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[#68706B]"
               >
-                Retour à
-                l&apos;administration
+                {t("actions.backAdmin")}
               </Link>
             </div>
           </div>
@@ -1492,21 +1632,21 @@ export default async function AdminReportsPage({
       );
 
     if (!order) {
-      return "Commande";
+      return t("order.order");
     }
 
     if (
       order.order_type ===
       "takeaway"
     ) {
-      return "À emporter";
+      return t("order.takeaway");
     }
 
     return (
       tablesMap.get(
         order.table_id
       ) ||
-      "Table"
+      t("order.table")
     );
   };
 
@@ -1603,7 +1743,7 @@ export default async function AdminReportsPage({
           usersMap.get(
             cashierId
           ) ||
-          "Caissier",
+          t("order.cashier"),
 
         orders: 0,
 
@@ -1668,7 +1808,7 @@ export default async function AdminReportsPage({
 
         name:
           menuItem?.name ||
-          "Produit",
+          t("product.fallback"),
 
         category:
           menuItem?.category ||
@@ -2137,7 +2277,9 @@ export default async function AdminReportsPage({
         "order",
 
       label:
-        "Commande complète",
+        t(
+          "cancellations.fullOrder"
+        ),
 
       reason:
         order.cancellation_reason ||
@@ -2147,7 +2289,7 @@ export default async function AdminReportsPage({
         usersMap.get(
           order.cancelled_by
         ) ||
-        "Caissier",
+        t("order.cashier"),
 
       quantity,
 
@@ -2205,7 +2347,7 @@ export default async function AdminReportsPage({
 
       label:
         menuItem?.name ||
-        "Article",
+        t("product.item"),
 
       reason:
         cancellation.reason,
@@ -2214,7 +2356,7 @@ export default async function AdminReportsPage({
         usersMap.get(
           cancellation.cashierId
         ) ||
-        "Caissier",
+        t("order.cashier"),
 
       quantity:
         cancellation.beforeKitchen +
@@ -2316,7 +2458,14 @@ export default async function AdminReportsPage({
       selectedPeriod,
       selectedMonth,
       selectedFromMonth,
-      selectedToMonth
+      selectedToMonth,
+      locale,
+      {
+        today:
+          t("periodLabels.today"),
+        week:
+          t("periodLabels.week"),
+      }
     );
 
   const exactRangeLabel =
@@ -2325,7 +2474,26 @@ export default async function AdminReportsPage({
       selectedMonth,
       selectedFromMonth,
       selectedToMonth,
-      currentMonthKey
+      currentMonthKey,
+      locale,
+      {
+        untilToday: (start) =>
+          t(
+            "exactRange.untilToday",
+            { start }
+          ),
+        between: (
+          start,
+          end
+        ) =>
+          t(
+            "exactRange.between",
+            {
+              start,
+              end,
+            }
+          ),
+      }
     );
 
   return (
@@ -2343,7 +2511,7 @@ export default async function AdminReportsPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </div>
@@ -2353,23 +2521,19 @@ export default async function AdminReportsPage({
               href="/admin"
               className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
             >
-              ← Administration
+              {t("actions.backAdmin")}
             </Link>
 
             <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
-              Analyse de
-              l&apos;activité
+              {t("eyebrow")}
             </p>
 
             <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924] md:text-4xl">
-              Rapports
+              {t("title")}
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#737A75]">
-              Ventes, produits,
-              caissiers et
-              annulations en une
-              seule vue.
+              {t("description")}
             </p>
           </div>
         </header>
@@ -2385,7 +2549,7 @@ export default async function AdminReportsPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Aujourd&apos;hui
+            {t("filters.today")}
           </Link>
 
           <Link
@@ -2397,7 +2561,7 @@ export default async function AdminReportsPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Semaine
+            {t("filters.week")}
           </Link>
 
           <Link
@@ -2409,7 +2573,7 @@ export default async function AdminReportsPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Mois
+            {t("filters.month")}
           </Link>
 
           <Link
@@ -2421,7 +2585,7 @@ export default async function AdminReportsPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Période
+            {t("filters.range")}
           </Link>
         </nav>
 
@@ -2445,7 +2609,7 @@ export default async function AdminReportsPage({
                   htmlFor="month"
                   className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
                 >
-                  Mois
+                  {t("filters.month")}
                 </label>
 
                 <select
@@ -2479,7 +2643,7 @@ export default async function AdminReportsPage({
                 type="submit"
                 className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
               >
-                Afficher
+                {t("actions.show")}
               </button>
             </div>
           </form>
@@ -2505,7 +2669,7 @@ export default async function AdminReportsPage({
                   htmlFor="from"
                   className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
                 >
-                  De
+                  {t("filters.from")}
                 </label>
 
                 <select
@@ -2540,7 +2704,7 @@ export default async function AdminReportsPage({
                   htmlFor="to"
                   className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
                 >
-                  À
+                  {t("filters.to")}
                 </label>
 
                 <select
@@ -2574,7 +2738,7 @@ export default async function AdminReportsPage({
                 type="submit"
                 className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
               >
-                Afficher
+                {t("actions.show")}
               </button>
             </div>
           </form>
@@ -2594,16 +2758,14 @@ export default async function AdminReportsPage({
           </div>
 
           <p className="text-xs text-[#8A918C]">
-            Journée commerciale :
-            07h00 → 07h00
+            {t("businessDay")}
           </p>
         </div>
 
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
-              Chiffre
-              d&apos;affaires
+              {t("stats.revenue")}
             </p>
 
             <p className="mt-3 text-3xl font-black tracking-tight">
@@ -2616,25 +2778,20 @@ export default async function AdminReportsPage({
             </p>
 
             <p className="mt-4 text-xs text-white/60">
-              {
-                paidOrderCount
-              }{" "}
-              commande
-              {paidOrderCount >
-              1
-                ? "s"
-                : ""}{" "}
-              encaissée
-              {paidOrderCount >
-              1
-                ? "s"
-                : ""}
+              <span dir="ltr">
+                {
+                  paidOrderCount
+                }
+              </span>{" "}
+              {paidOrderCount === 1
+                ? t("stats.paidOrder")
+                : t("stats.paidOrders")}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Ticket moyen
+              {t("stats.averageTicket")}
             </p>
 
             <p className="mt-3 text-3xl font-black text-[#1F2924]">
@@ -2647,13 +2804,13 @@ export default async function AdminReportsPage({
             </p>
 
             <p className="mt-4 text-xs text-[#9A9F9B]">
-              Par commande payée
+              {t("stats.perPaidOrder")}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Produits vendus
+              {t("stats.productsSold")}
             </p>
 
             <p className="mt-3 text-3xl font-black text-[#1F2924]">
@@ -2663,7 +2820,7 @@ export default async function AdminReportsPage({
             </p>
 
             <p className="mt-4 text-xs text-[#9A9F9B]">
-              Unités encaissées
+              {t("stats.unitsSold")}
             </p>
           </div>
 
@@ -2680,7 +2837,7 @@ export default async function AdminReportsPage({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-[#737A75]">
-                  Annulations
+                  {t("stats.cancellations")}
                 </p>
 
                 <p
@@ -2714,7 +2871,8 @@ export default async function AdminReportsPage({
               {formatMoney(
                 cancelledValue
               )}{" "}
-              MRU de valeur annulée
+              MRU{" "}
+              {t("stats.cancelledValue")}
             </p>
           </div>
         </section>
@@ -2722,12 +2880,11 @@ export default async function AdminReportsPage({
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <section className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm md:p-6">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-              Moyens de paiement
+              {t("paymentsSection.title")}
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Répartition du chiffre
-              d&apos;affaires
+              {t("paymentsSection.description")}
             </p>
 
             <div className="mt-6 space-y-5">
@@ -2753,15 +2910,20 @@ export default async function AdminReportsPage({
                         <div>
                           <p className="text-sm font-semibold text-[#343D38]">
                             {
-                              method
+                              paymentLabel(
+                                method
+                              )
                             }
                           </p>
 
                           <p className="mt-0.5 text-xs text-[#9A9F9B]">
-                            {
-                              percentage
-                            }
-                            % du CA
+                            <span dir="ltr">
+                              {
+                                percentage
+                              }
+                              %
+                            </span>{" "}
+                            {t("paymentsSection.ofRevenue")}
                           </p>
                         </div>
 
@@ -2790,20 +2952,18 @@ export default async function AdminReportsPage({
 
           <section className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm md:p-6">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-              Par caissier
+              {t("cashiers.title")}
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Encaissements par
-              utilisateur
+              {t("cashiers.description")}
             </p>
 
             {cashierRows.length ===
             0 ? (
               <div className="mt-6 rounded-2xl bg-[#F6F6F2] p-6 text-center">
                 <p className="text-sm text-[#8A918C]">
-                  Aucune vente sur
-                  cette période.
+                  {t("cashiers.empty")}
                 </p>
               </div>
             ) : (
@@ -2855,19 +3015,21 @@ export default async function AdminReportsPage({
                               </p>
 
                               <p className="mt-0.5 text-xs text-[#8A918C]">
-                                {
-                                  cashier.orders
-                                }{" "}
-                                commande
-                                {cashier.orders >
-                                1
-                                  ? "s"
-                                  : ""}{" "}
-                                · Ticket{" "}
-                                {formatMoney(
-                                  average
-                                )}{" "}
-                                MRU
+                                <span dir="ltr">
+                                  {
+                                    cashier.orders
+                                  }
+                                </span>{" "}
+                                {cashier.orders === 1
+                                  ? t("cashiers.order")
+                                  : t("cashiers.orders")}{" "}
+                                · {t("cashiers.ticket")}{" "}
+                                <span dir="ltr">
+                                  {formatMoney(
+                                    average
+                                  )}{" "}
+                                  MRU
+                                </span>
                               </p>
                             </div>
                           </div>
@@ -2880,7 +3042,7 @@ export default async function AdminReportsPage({
                           </p>
                         </div>
 
-                        <div className="ml-12 mt-2 h-2 overflow-hidden rounded-full bg-[#EEF0EC]">
+                        <div className="ms-12 mt-2 h-2 overflow-hidden rounded-full bg-[#EEF0EC]">
                           <div
                             className="h-full rounded-full bg-[#2E6A50]"
                             style={{
@@ -2902,19 +3064,18 @@ export default async function AdminReportsPage({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-                  Produits
+                  {t("products.title")}
                 </h2>
 
                 <p className="mt-1 text-sm text-[#737A75]">
-                  Ce qui a été vendu
-                  et annulé
+                  {t("products.description")}
                 </p>
               </div>
 
               <div className="flex gap-2">
                 <div className="rounded-xl bg-[#EDF5EF] px-3 py-2">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-[#66806E]">
-                    Vendus
+                    {t("products.sold")}
                   </p>
 
                   <p className="mt-0.5 text-lg font-black text-[#1E4D3A]">
@@ -2926,7 +3087,7 @@ export default async function AdminReportsPage({
 
                 <div className="rounded-xl bg-[#FFF1EE] px-3 py-2">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-[#A16A61]">
-                    Annulés
+                    {t("products.cancelled")}
                   </p>
 
                   <p className="mt-0.5 text-lg font-black text-[#A74435]">
@@ -2943,13 +3104,11 @@ export default async function AdminReportsPage({
           0 ? (
             <div className="p-8 text-center">
               <p className="font-semibold text-[#4E5651]">
-                Aucun produit
+                {t("products.emptyTitle")}
               </p>
 
               <p className="mt-1 text-sm text-[#8A918C]">
-                Aucun mouvement de
-                produit sur cette
-                période.
+                {t("products.emptyDescription")}
               </p>
             </div>
           ) : (
@@ -2991,9 +3150,9 @@ export default async function AdminReportsPage({
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between sm:block sm:text-right">
+                      <div className="flex items-center justify-between sm:block sm:text-end">
                         <span className="text-xs text-[#8A918C] sm:hidden">
-                          Vendus
+                          {t("products.sold")}
                         </span>
 
                         <span className="font-bold text-[#1E4D3A]">
@@ -3003,9 +3162,9 @@ export default async function AdminReportsPage({
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between sm:block sm:text-right">
+                      <div className="flex items-center justify-between sm:block sm:text-end">
                         <span className="text-xs text-[#8A918C] sm:hidden">
-                          Annulés
+                          {t("products.cancelled")}
                         </span>
 
                         <div>
@@ -3024,7 +3183,7 @@ export default async function AdminReportsPage({
 
                           {product.cancelled >
                             0 && (
-                            <span className="ml-2 text-[10px] font-semibold text-[#B8786E]">
+                            <span className="ms-2 text-[10px] font-semibold text-[#B8786E]">
                               {
                                 cancellationPercentage
                               }
@@ -3044,24 +3203,22 @@ export default async function AdminReportsPage({
         <section className="mt-6">
           <div className="mb-4">
             <p className="text-sm font-semibold text-[#A74435]">
-              Contrôle
+              {t("control.eyebrow")}
             </p>
 
             <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
-              Annulations
+              {t("control.title")}
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Identifiez rapidement
-              où et pourquoi les
-              annulations ont lieu.
+              {t("control.description")}
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
               <p className="text-sm text-[#737A75]">
-                Commandes
+                {t("control.orders")}
               </p>
 
               <p className="mt-2 text-2xl font-black text-[#A74435]">
@@ -3071,17 +3228,19 @@ export default async function AdminReportsPage({
               </p>
 
               <p className="mt-2 text-xs text-[#9A9F9B]">
-                {
-                  cancellationRate
-                }
-                % des décisions de
-                commande
+                <span dir="ltr">
+                  {
+                    cancellationRate
+                  }
+                  %
+                </span>{" "}
+                {t("control.orderDecisionRate")}
               </p>
             </div>
 
             <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
               <p className="text-sm text-[#737A75]">
-                Articles
+                {t("control.items")}
               </p>
 
               <p className="mt-2 text-2xl font-black text-[#A74435]">
@@ -3091,13 +3250,13 @@ export default async function AdminReportsPage({
               </p>
 
               <p className="mt-2 text-xs text-[#9A9F9B]">
-                Unités annulées
+                {t("control.cancelledUnits")}
               </p>
             </div>
 
             <div className="rounded-[22px] border border-[#EED3A8] bg-[#FFF9F0] p-5">
               <p className="text-sm text-[#8F6C43]">
-                Avant cuisine
+                {t("control.beforeKitchen")}
               </p>
 
               <p className="mt-2 text-2xl font-black text-[#9A5A18]">
@@ -3107,13 +3266,13 @@ export default async function AdminReportsPage({
               </p>
 
               <p className="mt-2 text-xs text-[#9B7B57]">
-                Avant préparation
+                {t("control.beforePreparation")}
               </p>
             </div>
 
             <div className="rounded-[22px] border border-[#EDC7C0] bg-[#FFF7F5] p-5">
               <p className="text-sm text-[#9A6A62]">
-                Après cuisine
+                {t("control.afterKitchen")}
               </p>
 
               <p className="mt-2 text-2xl font-black text-[#A74435]">
@@ -3123,10 +3282,13 @@ export default async function AdminReportsPage({
               </p>
 
               <p className="mt-2 text-xs text-[#AD746A]">
-                {
-                  afterKitchenRate
-                }
-                % des unités annulées
+                <span dir="ltr">
+                  {
+                    afterKitchenRate
+                  }
+                  %
+                </span>{" "}
+                {t("control.cancelledUnitsRate")}
               </p>
             </div>
           </div>
@@ -3134,20 +3296,18 @@ export default async function AdminReportsPage({
           <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <aside className="h-fit rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6">
               <h3 className="text-lg font-bold text-[#1F2924]">
-                Principaux motifs
+                {t("reasons.title")}
               </h3>
 
               <p className="mt-1 text-sm text-[#737A75]">
-                Nombre
-                d&apos;événements
+                {t("reasons.description")}
               </p>
 
               {reasonRows.length ===
               0 ? (
                 <div className="mt-5 rounded-2xl bg-[#F6F6F2] p-5 text-center">
                   <p className="text-sm text-[#8A918C]">
-                    Aucune
-                    annulation.
+                    {t("reasons.empty")}
                   </p>
                 </div>
               ) : (
@@ -3172,7 +3332,9 @@ export default async function AdminReportsPage({
 
                         <span className="min-w-0 flex-1 text-sm font-medium text-[#4E5651]">
                           {
-                            reason.reason
+                            cancellationReasonLabel(
+                              reason.reason
+                            )
                           }
                         </span>
 
@@ -3191,18 +3353,18 @@ export default async function AdminReportsPage({
             <div className="overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
               <div className="border-b border-[#EEECE6] p-5">
                 <h3 className="text-lg font-bold text-[#1F2924]">
-                  Historique
+                  {t("history.title")}
                 </h3>
 
                 <p className="mt-1 text-sm text-[#737A75]">
-                  {
-                    cancellationHistory.length
-                  }{" "}
-                  événement
-                  {cancellationHistory.length >
-                  1
-                    ? "s"
-                    : ""}
+                  <span dir="ltr">
+                    {
+                      cancellationHistory.length
+                    }
+                  </span>{" "}
+                  {cancellationHistory.length === 1
+                    ? t("history.event")
+                    : t("history.events")}
                 </p>
               </div>
 
@@ -3210,12 +3372,11 @@ export default async function AdminReportsPage({
               0 ? (
                 <div className="p-8 text-center">
                   <p className="font-semibold text-[#4E5651]">
-                    Aucune annulation
+                    {t("history.emptyTitle")}
                   </p>
 
                   <p className="mt-1 text-sm text-[#8A918C]">
-                    Aucun événement
-                    sur cette période.
+                    {t("history.emptyDescription")}
                   </p>
                 </div>
               ) : (
@@ -3250,8 +3411,8 @@ export default async function AdminReportsPage({
                               >
                                 {cancellation.type ===
                                 "order"
-                                  ? "Commande"
-                                  : "Article"}
+                                  ? t("history.orderType")
+                                  : t("history.itemType")}
                               </span>
                             </div>
 
@@ -3266,12 +3427,14 @@ export default async function AdminReportsPage({
 
                             <div className="mt-3 rounded-xl bg-[#F7F7F3] px-3 py-2">
                               <p className="text-xs text-[#8A918C]">
-                                Motif
+                                {t("history.reason")}
                               </p>
 
                               <p className="mt-0.5 text-sm font-semibold text-[#4E5651]">
                                 {
-                                  cancellation.reason
+                                  cancellationReasonLabel(
+                                    cancellation.reason
+                                  )
                                 }
                               </p>
                             </div>
@@ -3280,7 +3443,7 @@ export default async function AdminReportsPage({
                               {cancellation.quantity >
                                 0 && (
                                 <span className="rounded-full bg-[#F1F2EF] px-2.5 py-1 text-xs font-semibold text-[#68706B]">
-                                  Qté{" "}
+                                  {t("history.quantity")}{" "}
                                   {
                                     cancellation.quantity
                                   }
@@ -3290,7 +3453,7 @@ export default async function AdminReportsPage({
                               {cancellation.beforeKitchen >
                                 0 && (
                                 <span className="rounded-full bg-[#FFF6E9] px-2.5 py-1 text-xs font-semibold text-[#9A5A18]">
-                                  Avant cuisine{" "}
+                                  {t("control.beforeKitchen")}{" "}
                                   {
                                     cancellation.beforeKitchen
                                   }
@@ -3300,7 +3463,7 @@ export default async function AdminReportsPage({
                               {cancellation.afterKitchen >
                                 0 && (
                                 <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-xs font-semibold text-[#A74435]">
-                                  Après cuisine{" "}
+                                  {t("control.afterKitchen")}{" "}
                                   {
                                     cancellation.afterKitchen
                                   }
@@ -3309,7 +3472,7 @@ export default async function AdminReportsPage({
                             </div>
                           </div>
 
-                          <div className="shrink-0 sm:text-right">
+                          <div className="shrink-0 sm:text-end">
                             <p className="text-sm font-semibold text-[#4E5651]">
                               {
                                 cancellation.cashier
@@ -3323,7 +3486,7 @@ export default async function AdminReportsPage({
                             </p>
 
                             <p className="mt-3 text-xs font-semibold text-[#2E6A50] transition group-hover:translate-x-0.5">
-                              Voir →
+                              {t("actions.view")}
                             </p>
                           </div>
                         </div>
@@ -3340,12 +3503,11 @@ export default async function AdminReportsPage({
           <div className="flex flex-col gap-3 border-b border-[#EEECE6] p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
             <div>
               <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-                Rapports de shifts
+                {t("shifts.title")}
               </h2>
 
               <p className="mt-1 text-sm text-[#737A75]">
-                Récapitulatifs
-                générés à la clôture
+                {t("shifts.description")}
               </p>
             </div>
 
@@ -3353,7 +3515,7 @@ export default async function AdminReportsPage({
               href="/admin/shifts"
               className="text-sm font-semibold text-[#2E6A50]"
             >
-              Voir tous les shifts →
+              {t("shifts.viewAll")}
             </Link>
           </div>
 
@@ -3361,12 +3523,11 @@ export default async function AdminReportsPage({
           0 ? (
             <div className="p-8 text-center">
               <p className="font-semibold text-[#4E5651]">
-                Aucun rapport
+                {t("shifts.emptyTitle")}
               </p>
 
               <p className="mt-1 text-sm text-[#8A918C]">
-                Aucun shift clôturé
-                sur cette période.
+                {t("shifts.emptyDescription")}
               </p>
             </div>
           ) : (
@@ -3413,11 +3574,11 @@ export default async function AdminReportsPage({
                               {payload
                                 .cashier
                                 ?.name ||
-                                "Caissier"}
+                                t("order.cashier")}
                             </h3>
 
                             <span className="rounded-full bg-[#EDF5EF] px-2.5 py-1 text-[11px] font-semibold text-[#2E6A50]">
-                              Clôturé
+                              {t("shifts.closed")}
                             </span>
                           </div>
 
@@ -3425,7 +3586,11 @@ export default async function AdminReportsPage({
                             {formatDateTime(
                               payload.startedAt
                             )}
-                            {" → "}
+                            {
+                              locale === "ar"
+                                ? " ← "
+                                : " → "
+                            }
                             {formatTime(
                               payload.endedAt
                             )}
@@ -3433,24 +3598,25 @@ export default async function AdminReportsPage({
 
                           <div className="mt-3 flex flex-wrap gap-2">
                             <span className="rounded-full bg-[#F1F2EF] px-2.5 py-1 text-xs font-semibold text-[#68706B]">
-                              {paid} payée
-                              {paid >
-                              1
-                                ? "s"
-                                : ""}
+                              <span dir="ltr">
+                                {paid}
+                              </span>{" "}
+                              {paid === 1
+                                ? t("shifts.paidOrder")
+                                : t("shifts.paidOrders")}
                             </span>
 
                             {cancelled >
                               0 && (
                               <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-xs font-semibold text-[#A74435]">
-                                {
-                                  cancelled
-                                }{" "}
-                                annulée
-                                {cancelled >
-                                1
-                                  ? "s"
-                                  : ""}
+                                <span dir="ltr">
+                                  {
+                                    cancelled
+                                  }
+                                </span>{" "}
+                                {cancelled === 1
+                                  ? t("shifts.cancelledOrder")
+                                  : t("shifts.cancelledOrders")}
                               </span>
                             )}
                           </div>
@@ -3470,16 +3636,20 @@ export default async function AdminReportsPage({
                                   >
                                     <span className="text-xs text-[#7A817C]">
                                       {
-                                        method
+                                        paymentLabel(
+                                          method
+                                        )
                                       }
                                     </span>
 
-                                    <span className="ml-2 text-sm font-bold text-[#1F2924]">
+                                    <span className="ms-2 text-sm font-bold text-[#1F2924]">
                                       {formatMoney(
                                         Number(
                                           payload
                                             .payments?.[
-                                            method
+                                            paymentLabel(
+                                          method
+                                        )
                                           ] ||
                                             0
                                         )
@@ -3493,9 +3663,9 @@ export default async function AdminReportsPage({
                           )}
                         </div>
 
-                        <div className="rounded-2xl bg-[#EDF5EF] px-5 py-4 lg:min-w-[180px] lg:text-right">
+                        <div className="rounded-2xl bg-[#EDF5EF] px-5 py-4 lg:min-w-[180px] lg:text-end">
                           <p className="text-xs font-medium text-[#667D6D]">
-                            CA du shift
+                            {t("shifts.revenue")}
                           </p>
 
                           <p className="mt-1 text-2xl font-black text-[#1E4D3A]">
@@ -3522,7 +3692,7 @@ export default async function AdminReportsPage({
 
         <footer className="mt-9 border-t border-[#E3E0D8] py-5">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Administration
+            {t("footer")}
           </p>
         </footer>
       </div>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -9,6 +10,11 @@ export async function POST(
     params: Promise<{ id: string }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiOrderPay"
+    );
+
   /*
    * ============================
    * ACCÈS RESTAURANT + CAISSIER
@@ -47,7 +53,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t("errors.invalidRequest"),
       },
       {
         status: 400,
@@ -65,7 +71,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Mode de paiement invalide.",
+          t("errors.invalidPaymentMethod"),
       },
       {
         status: 400,
@@ -110,7 +116,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier le mode de paiement.",
+          t("errors.paymentMethodCheckFailed"),
       },
       {
         status: 500,
@@ -122,7 +128,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Mode de paiement invalide.",
+          t("errors.invalidPaymentMethod"),
       },
       {
         status: 400,
@@ -169,7 +175,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Commande introuvable.",
+          t("errors.orderNotFound"),
       },
       {
         status: 404,
@@ -183,7 +189,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Cette commande est déjà clôturée.",
+          t("errors.orderAlreadyClosed"),
       },
       {
         status: 409,
@@ -236,7 +242,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Impossible de vérifier la table.",
+            t("errors.tableCheckFailed"),
         },
         {
           status: 500,
@@ -248,7 +254,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "La table associée à cette commande est invalide.",
+            t("errors.invalidAssociatedTable"),
         },
         {
           status: 409,
@@ -305,7 +311,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer le shift.",
+          t("errors.getShiftFailed"),
       },
       {
         status: 500,
@@ -317,7 +323,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Vous devez ouvrir votre shift avant d'encaisser.",
+          t("errors.openShiftRequired"),
       },
       {
         status: 400,
@@ -370,7 +376,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer les articles de la commande.",
+          t("errors.getOrderItemsFailed"),
       },
       {
         status: 500,
@@ -445,7 +451,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Impossible de récupérer les produits de la commande.",
+            t("errors.getOrderProductsFailed"),
         },
         {
           status: 500,
@@ -482,7 +488,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "La commande contient un produit invalide.",
+            t("errors.invalidProductInOrder"),
         },
         {
           status: 409,
@@ -527,7 +533,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Envoyez tous les articles en cuisine avant d'encaisser.",
+          t("errors.sendAllToKitchenFirst"),
       },
       {
         status: 400,
@@ -562,7 +568,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "La commande est vide.",
+          t("errors.emptyOrder"),
       },
       {
         status: 400,
@@ -634,7 +640,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible d'enregistrer le paiement.",
+          t("errors.savePaymentFailed"),
       },
       {
         status: 500,
@@ -650,7 +656,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Cette commande vient déjà d'être clôturée. Aucun second paiement n'a été enregistré.",
+          t("errors.concurrentClosure"),
       },
       {
         status: 409,
@@ -854,21 +860,27 @@ export async function POST(
 
   if (!tableReleased) {
     warnings.push(
-      "La table n'a pas pu être libérée."
+      t("warnings.tableNotReleased")
     );
   }
 
   if (!printJobCreated) {
     warnings.push(
-      "Le ticket client n'a pas pu être préparé."
+      t("warnings.receiptNotPrepared")
     );
   }
 
   const warning =
     warnings.length > 0
-      ? `Le paiement est enregistré, mais ${warnings.join(
-          " "
-        )}`
+      ? t(
+          "warnings.paymentSavedWithWarnings",
+          {
+            warnings:
+              warnings.join(
+                " "
+              ),
+          }
+        )
       : null;
 
   return NextResponse.json({

@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST() {
+  const t =
+    await getTranslations(
+      "ApiShiftOpen"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -54,7 +60,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier le shift actuel.",
+          t(
+            "errors.checkCurrentShiftFailed"
+          ),
       },
       {
         status: 500,
@@ -66,7 +74,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Un shift est déjà ouvert.",
+          t(
+            "errors.shiftAlreadyOpen"
+          ),
       },
       {
         status: 409,
@@ -110,7 +120,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Impossible d'ouvrir le shift.",
+          t(
+            "errors.openShiftFailed"
+          ),
       },
       {
         status: 500,

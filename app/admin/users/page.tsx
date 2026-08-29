@@ -5,6 +5,7 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 type UserRole =
   | "admin"
@@ -44,6 +45,11 @@ function Spinner({
 }
 
 export default function UsersPage() {
+  const t =
+    useTranslations(
+      "AdminUsers"
+    );
+
   const [
     users,
     setUsers,
@@ -158,7 +164,7 @@ export default function UsersPage() {
           notify(
             "error",
             data.error ||
-              "Impossible de charger les utilisateurs."
+              t("errors.loadUsers")
           );
 
           return false;
@@ -170,7 +176,7 @@ export default function UsersPage() {
       } catch {
         notify(
           "error",
-          "Impossible de charger les utilisateurs."
+          t("errors.loadUsers")
         );
 
         return false;
@@ -197,7 +203,7 @@ export default function UsersPage() {
       if (!cleanName) {
         notify(
           "error",
-          "Saisissez le nom de l'employé."
+          t("errors.employeeNameRequired")
         );
 
         return;
@@ -235,7 +241,7 @@ export default function UsersPage() {
           notify(
             "error",
             data.error ||
-              "Impossible de créer l'utilisateur."
+              t("errors.createUser")
           );
 
           return;
@@ -250,12 +256,18 @@ export default function UsersPage() {
 
         notify(
           "success",
-          `${cleanName} a été ajouté à l'équipe.`
+          t(
+            "feedback.userAdded",
+            {
+              name:
+                cleanName,
+            }
+          )
         );
       } catch {
         notify(
           "error",
-          "Impossible de créer l'utilisateur."
+          t("errors.createUser")
         );
       } finally {
         setCreating(false);
@@ -291,7 +303,7 @@ export default function UsersPage() {
           notify(
             "error",
             data.error ||
-              "Impossible de réinitialiser le PIN."
+              t("errors.resetPin")
           );
 
           return;
@@ -308,12 +320,18 @@ export default function UsersPage() {
 
         notify(
           "success",
-          `PIN de ${userName} réinitialisé.`
+          t(
+            "feedback.pinReset",
+            {
+              name:
+                userName,
+            }
+          )
         );
       } catch {
         notify(
           "error",
-          "Impossible de réinitialiser le PIN."
+          t("errors.resetPin")
         );
       } finally {
         setResettingUserId(
@@ -371,7 +389,7 @@ export default function UsersPage() {
           notify(
             "error",
             data.error ||
-              "Impossible de supprimer l'utilisateur."
+              t("errors.deleteUser")
           );
 
           return;
@@ -385,12 +403,18 @@ export default function UsersPage() {
 
         notify(
           "success",
-          `${userName} a été supprimé de l'équipe.`
+          t(
+            "feedback.userDeleted",
+            {
+              name:
+                userName,
+            }
+          )
         );
       } catch {
         notify(
           "error",
-          "Impossible de supprimer l'utilisateur."
+          t("errors.deleteUser")
         );
       } finally {
         setDeletingUserId(
@@ -405,17 +429,17 @@ export default function UsersPage() {
     if (
       userRole === "admin"
     ) {
-      return "Admin";
+      return t("roles.admin.label");
     }
 
     if (
       userRole ===
       "cashier"
     ) {
-      return "Caissier";
+      return t("roles.cashier.label");
     }
 
-    return "Gérant de stock";
+    return t("roles.stockManager.label");
   };
 
   const roleDescription = (
@@ -424,17 +448,17 @@ export default function UsersPage() {
     if (
       userRole === "admin"
     ) {
-      return "Accès à l'administration";
+      return t("roles.admin.access");
     }
 
     if (
       userRole ===
       "cashier"
     ) {
-      return "Accès à la caisse";
+      return t("roles.cashier.access");
     }
 
-    return "Accès à la gestion du stock";
+    return t("roles.stockManager.access");
   };
 
   const getRoleStyle = (
@@ -514,7 +538,7 @@ export default function UsersPage() {
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </div>
@@ -524,22 +548,19 @@ export default function UsersPage() {
               href="/admin"
               className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
             >
-              ← Administration
+              {t("actions.backAdmin")}
             </Link>
 
             <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
-              Équipe
+              {t("eyebrow")}
             </p>
 
             <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924] md:text-4xl">
-              Utilisateurs
+              {t("title")}
             </h1>
 
             <p className="mt-2 max-w-xl text-sm leading-6 text-[#737A75]">
-              Créez les accès des
-              employés et gérez
-              leurs PIN de
-              connexion.
+              {t("description")}
             </p>
           </div>
         </header>
@@ -549,26 +570,32 @@ export default function UsersPage() {
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-[22px] bg-[#1E4D3A] p-4 text-white shadow-sm">
               <p className="text-xs font-medium text-white/70">
-                Équipe
+                {t("eyebrow")}
               </p>
 
-              <p className="mt-2 text-2xl font-black">
+              <p
+                className="mt-2 text-2xl font-black"
+                dir="ltr"
+              >
                 {
                   users.length
                 }
               </p>
 
               <p className="mt-2 text-[11px] text-white/60">
-                Utilisateurs
+                {t("title")}
               </p>
             </div>
 
             <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
               <p className="text-xs text-[#7A817C]">
-                Caissiers
+                {t("stats.cashiers")}
               </p>
 
-              <p className="mt-2 text-2xl font-black text-[#1F2924]">
+              <p
+                className="mt-2 text-2xl font-black text-[#1F2924]"
+                dir="ltr"
+              >
                 {
                   cashierCount
                 }
@@ -577,10 +604,13 @@ export default function UsersPage() {
 
             <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
               <p className="text-xs text-[#7A817C]">
-                Admins
+                {t("stats.admins")}
               </p>
 
-              <p className="mt-2 text-2xl font-black text-[#1F2924]">
+              <p
+                className="mt-2 text-2xl font-black text-[#1F2924]"
+                dir="ltr"
+              >
                 {
                   adminCount
                 }
@@ -589,10 +619,13 @@ export default function UsersPage() {
 
             <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
               <p className="text-xs text-[#7A817C]">
-                Stock
+                {t("stats.stock")}
               </p>
 
-              <p className="mt-2 text-2xl font-black text-[#1F2924]">
+              <p
+                className="mt-2 text-2xl font-black text-[#1F2924]"
+                dir="ltr"
+              >
                 {
                   stockCount
                 }
@@ -606,19 +639,15 @@ export default function UsersPage() {
           <section className="h-fit rounded-[26px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6 md:p-6">
             <div>
               <p className="text-sm font-semibold text-[#2E6A50]">
-                Nouvel accès
+                {t("create.eyebrow")}
               </p>
 
               <h2 className="mt-1 text-xl font-black tracking-tight text-[#1F2924]">
-                Ajouter un
-                utilisateur
+                {t("create.title")}
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-[#7A817C]">
-                L&apos;employé
-                créera lui-même
-                son PIN lors de sa
-                première connexion.
+                {t("create.description")}
               </p>
             </div>
 
@@ -627,7 +656,7 @@ export default function UsersPage() {
                 htmlFor="employee-name"
                 className="text-sm font-semibold text-[#343D38]"
               >
-                Nom
+                {t("create.name")}
               </label>
 
               <input
@@ -655,14 +684,16 @@ export default function UsersPage() {
                 disabled={
                   creating
                 }
-                placeholder="Nom de l'employé"
+                placeholder={t(
+                  "create.namePlaceholder"
+                )}
                 className="mt-2 h-12 w-full rounded-2xl border border-[#E0DED7] bg-[#FAFAF7] px-4 text-[#1F2924] outline-none transition placeholder:text-[#A0A6A2] focus:border-[#8EB19A] focus:bg-white focus:ring-4 focus:ring-[#DDE8DF] disabled:opacity-60"
               />
             </div>
 
             <div className="mt-5">
               <p className="text-sm font-semibold text-[#343D38]">
-                Rôle
+                {t("create.role")}
               </p>
 
               <div className="mt-2 space-y-2">
@@ -671,25 +702,25 @@ export default function UsersPage() {
                     value:
                       "cashier" as UserRole,
                     label:
-                      "Caissier",
+                      t("roles.cashier.label"),
                     description:
-                      "Tables, commandes et encaissements",
+                      t("roles.cashier.description"),
                   },
                   {
                     value:
                       "stock_manager" as UserRole,
                     label:
-                      "Gérant de stock",
+                      t("roles.stockManager.label"),
                     description:
-                      "Gestion des stocks",
+                      t("roles.stockManager.description"),
                   },
                   {
                     value:
                       "admin" as UserRole,
                     label:
-                      "Admin",
+                      t("roles.admin.label"),
                     description:
-                      "Accès à l'administration",
+                      t("roles.admin.access"),
                   },
                 ].map(
                   (item) => {
@@ -713,8 +744,8 @@ export default function UsersPage() {
                         }
                         className={
                           selected
-                            ? "flex min-h-[62px] w-full items-center justify-between rounded-2xl border border-[#8EB19A] bg-[#EDF5EF] px-4 text-left transition"
-                            : "flex min-h-[62px] w-full items-center justify-between rounded-2xl border border-[#E5E2DA] bg-white px-4 text-left transition hover:bg-[#FAFAF7]"
+                            ? "flex min-h-[62px] w-full items-center justify-between rounded-2xl border border-[#8EB19A] bg-[#EDF5EF] px-4 text-start transition"
+                            : "flex min-h-[62px] w-full items-center justify-between rounded-2xl border border-[#E5E2DA] bg-white px-4 text-start transition hover:bg-[#FAFAF7]"
                         }
                       >
                         <div>
@@ -765,10 +796,10 @@ export default function UsersPage() {
               {creating ? (
                 <>
                   <Spinner />
-                  Création...
+                  {t("create.creating")}
                 </>
               ) : (
-                "Créer l'utilisateur"
+                t("create.submit")
               )}
             </button>
           </section>
@@ -779,26 +810,24 @@ export default function UsersPage() {
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-black tracking-tight text-[#1F2924]">
-                    Équipe
+                    {t("eyebrow")}
                   </h2>
 
                   <p className="mt-1 text-sm text-[#7A817C]">
-                    Comptes
-                    actuellement
-                    configurés.
+                    {t("team.description")}
                   </p>
                 </div>
 
                 {!usersLoading && (
                   <span className="rounded-full bg-[#F1F2EF] px-3 py-1.5 text-xs font-semibold text-[#68706B]">
-                    {
-                      users.length
-                    }{" "}
-                    compte
-                    {users.length >
-                    1
-                      ? "s"
-                      : ""}
+                    <span dir="ltr">
+                      {
+                        users.length
+                      }
+                    </span>{" "}
+                    {users.length === 1
+                      ? t("team.account")
+                      : t("team.accounts")}
                   </span>
                 )}
               </div>
@@ -811,8 +840,7 @@ export default function UsersPage() {
                 />
 
                 <p className="mt-3 text-sm font-medium text-[#7A817C]">
-                  Chargement de
-                  l&apos;équipe...
+                  {t("team.loading")}
                 </p>
               </div>
             ) : users.length ===
@@ -823,14 +851,11 @@ export default function UsersPage() {
                 </div>
 
                 <h3 className="mt-4 font-bold text-[#343D38]">
-                  Aucun
-                  utilisateur
+                  {t("team.emptyTitle")}
                 </h3>
 
                 <p className="mt-1 text-sm text-[#8A918C]">
-                  Créez le premier
-                  accès depuis le
-                  formulaire.
+                  {t("team.emptyDescription")}
                 </p>
               </div>
             ) : (
@@ -926,10 +951,10 @@ export default function UsersPage() {
                                     <Spinner
                                       dark
                                     />
-                                    Réinitialisation...
+                                    {t("pin.resetting")}
                                   </>
                                 ) : (
-                                  "Réinitialiser le PIN"
+                                  t("pin.reset")
                                 )}
                               </button>
                             )}
@@ -950,8 +975,16 @@ export default function UsersPage() {
                               }
                               title={
                                 isLastAdmin
-                                  ? "Le dernier administrateur ne peut pas être supprimé."
-                                  : `Supprimer ${user.name}`
+                                  ? t(
+                                      "delete.lastAdminTitle"
+                                    )
+                                  : t(
+                                      "delete.userTitle",
+                                      {
+                                        name:
+                                          user.name,
+                                      }
+                                    )
                               }
                               className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#E8C7C1] bg-[#FFF8F6] px-3 text-sm font-semibold text-[#B24D3E] transition hover:bg-[#FFF1EE] disabled:cursor-not-allowed disabled:border-[#E5E2DA] disabled:bg-[#F7F7F3] disabled:text-[#A4A8A5] disabled:opacity-70"
                             >
@@ -960,12 +993,12 @@ export default function UsersPage() {
                                   <Spinner
                                     dark
                                   />
-                                  Suppression...
+                                  {t("delete.deleting")}
                                 </>
                               ) : isLastAdmin ? (
-                                "Dernier admin"
+                                t("delete.lastAdmin")
                               ) : (
-                                "Supprimer"
+                                t("delete.action")
                               )}
                             </button>
                           </div>
@@ -981,7 +1014,7 @@ export default function UsersPage() {
 
         <footer className="mt-9 border-t border-[#E3E0D8] py-5">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Administration
+            {t("footer")}
           </p>
         </footer>
       </div>
@@ -993,32 +1026,33 @@ export default function UsersPage() {
             <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-[#DDDAD3] sm:hidden" />
 
             <p className="text-sm font-semibold text-[#B24D3E]">
-              Sécurité
+              {t("resetModal.eyebrow")}
             </p>
 
             <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
-              Réinitialiser le PIN ?
+              {t("resetModal.title")}
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-[#737A75]">
-              Le PIN actuel de{" "}
-              <strong className="text-[#343D38]">
+              {t.rich(
+                "resetModal.description",
                 {
-                  userToReset.name
+                  name:
+                    userToReset.name,
+                  strong: (
+                    chunks
+                  ) => (
+                    <strong className="text-[#343D38]">
+                      {chunks}
+                    </strong>
+                  ),
                 }
-              </strong>{" "}
-              sera supprimé.
-              L&apos;utilisateur
-              devra en créer un
-              nouveau lors de sa
-              prochaine connexion.
+              )}
             </p>
 
             <div className="mt-5 rounded-2xl bg-[#FFF6E9] p-4">
               <p className="text-sm font-semibold text-[#8D5519]">
-                L&apos;admin ne
-                verra jamais le
-                nouveau PIN.
+                {t("resetModal.notice")}
               </p>
             </div>
 
@@ -1036,7 +1070,7 @@ export default function UsersPage() {
                 }
                 className="min-h-[52px] flex-1 rounded-2xl border border-[#E3E0D8] font-semibold text-[#68706B] disabled:opacity-40"
               >
-                Retour
+                {t("actions.back")}
               </button>
 
               <button
@@ -1053,10 +1087,10 @@ export default function UsersPage() {
                 {resettingUserId ? (
                   <>
                     <Spinner />
-                    Réinitialisation...
+                    {t("pin.resetting")}
                   </>
                 ) : (
-                  "Réinitialiser"
+                  t("resetModal.confirm")
                 )}
               </button>
             </div>
@@ -1071,38 +1105,37 @@ export default function UsersPage() {
             <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-[#DDDAD3] sm:hidden" />
 
             <p className="text-sm font-semibold text-[#B24D3E]">
-              Suppression
+              {t("deleteModal.eyebrow")}
             </p>
 
             <h2 className="mt-1 text-2xl font-black tracking-tight text-[#1F2924]">
-              Supprimer cet utilisateur ?
+              {t("deleteModal.title")}
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-[#737A75]">
-              <strong className="text-[#343D38]">
+              {t.rich(
+                "deleteModal.description",
                 {
-                  userToDelete.name
+                  name:
+                    userToDelete.name,
+                  strong: (
+                    chunks
+                  ) => (
+                    <strong className="text-[#343D38]">
+                      {chunks}
+                    </strong>
+                  ),
                 }
-              </strong>{" "}
-              n&apos;aura plus
-              accès à MAIDA.
+              )}
             </p>
 
             <div className="mt-5 rounded-2xl bg-[#FFF1EE] p-4">
               <p className="text-sm font-semibold text-[#A74435]">
-                Cette action est
-                définitive.
+                {t("deleteModal.warningTitle")}
               </p>
 
               <p className="mt-1 text-xs leading-5 text-[#9B665D]">
-                Si cet utilisateur
-                est déjà lié à
-                l&apos;historique
-                du restaurant,
-                MAIDA bloquera la
-                suppression afin
-                de préserver la
-                traçabilité.
+                {t("deleteModal.warningDescription")}
               </p>
             </div>
 
@@ -1120,7 +1153,7 @@ export default function UsersPage() {
                 }
                 className="min-h-[52px] flex-1 rounded-2xl border border-[#E3E0D8] font-semibold text-[#68706B] disabled:opacity-40"
               >
-                Annuler
+                {t("actions.cancel")}
               </button>
 
               <button
@@ -1137,10 +1170,10 @@ export default function UsersPage() {
                 {deletingUserId ? (
                   <>
                     <Spinner />
-                    Suppression...
+                    {t("deleteModal.eyebrow")}...
                   </>
                 ) : (
-                  "Supprimer"
+                  t("delete.action")
                 )}
               </button>
             </div>

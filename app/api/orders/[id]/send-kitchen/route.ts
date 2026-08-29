@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -17,6 +18,11 @@ export async function POST(
     }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiOrderSendKitchen"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -68,7 +74,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Commande introuvable.",
+          t("errors.orderNotFound"),
       },
       {
         status: 404,
@@ -83,7 +89,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Cette commande ne peut plus être envoyée en cuisine.",
+          t("errors.orderNotSendable"),
       },
       {
         status: 409,
@@ -125,7 +131,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Impossible de récupérer la table.",
+            t("errors.getTableFailed"),
         },
         {
           status: 500,
@@ -137,7 +143,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Table invalide.",
+            t("errors.invalidTable"),
         },
         {
           status: 409,
@@ -191,7 +197,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer les articles.",
+          t("errors.getItemsFailed"),
       },
       {
         status: 500,
@@ -257,7 +263,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Impossible de récupérer les produits.",
+            t("errors.getProductsFailed"),
         },
         {
           status: 500,
@@ -348,7 +354,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Aucun nouvel article à envoyer en cuisine.",
+          t("errors.noPendingItems"),
       },
       {
         status: 400,
@@ -370,7 +376,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "La commande contient un produit invalide.",
+          t("errors.invalidProduct"),
       },
       {
         status: 409,
@@ -476,7 +482,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Votre accès est restreint. Contactez le support MAIDA.",
+            t("errors.restricted"),
 
           restricted:
             true,
@@ -495,7 +501,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Accès non autorisé.",
+            t("errors.unauthorized"),
         },
         {
           status: 403,
@@ -511,7 +517,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Commande introuvable.",
+            t("errors.orderNotFound"),
         },
         {
           status: 404,
@@ -527,7 +533,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Cette commande vient d'être clôturée.",
+            t("errors.orderJustClosed"),
         },
         {
           status: 409,
@@ -543,7 +549,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Les articles ont déjà été envoyés en cuisine.",
+            t("errors.itemsAlreadySent"),
         },
         {
           status: 409,
@@ -559,7 +565,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "La commande a changé pendant l'envoi. Actualisez-la puis réessayez.",
+            t("errors.orderChanged"),
         },
         {
           status: 409,
@@ -570,7 +576,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible d'enregistrer l'envoi en cuisine.",
+          t("errors.sendFailed"),
       },
       {
         status: 500,
@@ -590,7 +596,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "L'envoi cuisine a retourné un résultat invalide.",
+          t("errors.invalidResult"),
       },
       {
         status: 500,

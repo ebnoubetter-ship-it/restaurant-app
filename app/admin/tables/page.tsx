@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -27,30 +31,42 @@ type OpenOrder = {
   }[];
 };
 
+function getNumberLocale(
+  locale: string
+) {
+  return locale === "ar"
+    ? "ar-MR-u-nu-latn"
+    : "fr-FR";
+}
+
 function formatMoney(
-  value: number
+  value: number,
+  locale: string
 ) {
   return new Intl.NumberFormat(
-    "fr-FR",
+    getNumberLocale(locale),
     {
       maximumFractionDigits: 0,
+      numberingSystem: "latn",
     }
   ).format(value);
 }
 
 function formatTime(
-  value: string
+  value: string,
+  locale: string
 ) {
-  return new Date(
-    value
-  ).toLocaleTimeString(
-    "fr-FR",
+  return new Intl.DateTimeFormat(
+    getNumberLocale(locale),
     {
       timeZone:
         "Africa/Nouakchott",
       hour: "2-digit",
       minute: "2-digit",
+      numberingSystem: "latn",
     }
+  ).format(
+    new Date(value)
   );
 }
 
@@ -66,21 +82,26 @@ function getTableNumber(
 }
 
 function getStatusLabel(
-  status: TableStatus
+  status: TableStatus,
+  labels: {
+    occupied: string;
+    reserved: string;
+    available: string;
+  }
 ) {
   if (
     status === "occupied"
   ) {
-    return "Occupée";
+    return labels.occupied;
   }
 
   if (
     status === "reserved"
   ) {
-    return "Réservée";
+    return labels.reserved;
   }
 
-  return "Disponible";
+  return labels.available;
 }
 
 function getStatusCardStyle(
@@ -138,6 +159,14 @@ function getStatusDotStyle(
 }
 
 export default async function AdminTablesPage() {
+  const t =
+    await getTranslations(
+      "AdminTables"
+    );
+
+  const locale =
+    await getLocale();
+
   const access =
     await getSessionRestaurantAccess();
 
@@ -200,7 +229,7 @@ export default async function AdminTablesPage() {
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </header>
@@ -211,19 +240,18 @@ export default async function AdminTablesPage() {
             </div>
 
             <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-              Tables indisponibles
+              {t("error.title")}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Impossible de récupérer
-              l&apos;état des tables.
+              {t("error.description")}
             </p>
 
             <a
               href="/admin/tables"
               className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
             >
-              Réessayer
+              {t("actions.retry")}
             </a>
 
             <div>
@@ -231,8 +259,7 @@ export default async function AdminTablesPage() {
                 href="/admin"
                 className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[#68706B]"
               >
-                Retour à
-                l&apos;administration
+                {t("actions.backAdmin")}
               </Link>
             </div>
           </div>
@@ -470,42 +497,42 @@ export default async function AdminTablesPage() {
             </h2>
 
             <p className="mt-1 text-sm text-[#7A817C]">
-              {
-                zoneTables.length
-              }{" "}
-              emplacement
-              {zoneTables.length >
-              1
-                ? "s"
-                : ""}
+              <span dir="ltr">
+                {
+                  zoneTables.length
+                }
+              </span>{" "}
+              {zoneTables.length === 1
+                ? t("zone.location")
+                : t("zone.locations")}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EDF5EF] px-2.5 py-1.5 font-semibold text-[#2E6A50]">
               <span className="h-2 w-2 rounded-full bg-[#3D7D5E]" />
-              {
-                zoneAvailable
-              }{" "}
-              libre
-              {zoneAvailable >
-              1
-                ? "s"
-                : ""}
+              <span dir="ltr">
+                {
+                  zoneAvailable
+                }
+              </span>{" "}
+              {zoneAvailable === 1
+                ? t("zone.available")
+                : t("zone.availablePlural")}
             </span>
 
             {zoneReserved >
               0 && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF6E9] px-2.5 py-1.5 font-semibold text-[#946021]">
                 <span className="h-2 w-2 rounded-full bg-[#D4862D]" />
-                {
-                  zoneReserved
-                }{" "}
-                réservée
-                {zoneReserved >
-                1
-                  ? "s"
-                  : ""}
+                <span dir="ltr">
+                  {
+                    zoneReserved
+                  }
+                </span>{" "}
+                {zoneReserved === 1
+                  ? t("zone.reserved")
+                  : t("zone.reservedPlural")}
               </span>
             )}
 
@@ -513,14 +540,14 @@ export default async function AdminTablesPage() {
               0 && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF1EE] px-2.5 py-1.5 font-semibold text-[#A74435]">
                 <span className="h-2 w-2 rounded-full bg-[#C65343]" />
-                {
-                  zoneOccupied
-                }{" "}
-                occupée
-                {zoneOccupied >
-                1
-                  ? "s"
-                  : ""}
+                <span dir="ltr">
+                  {
+                    zoneOccupied
+                  }
+                </span>{" "}
+                {zoneOccupied === 1
+                  ? t("zone.occupied")
+                  : t("zone.occupiedPlural")}
               </span>
             )}
           </div>
@@ -560,7 +587,7 @@ export default async function AdminTablesPage() {
                           </h3>
                         </div>
 
-                        <p className="ml-[18px] mt-1 text-xs text-[#8A918C]">
+                        <p className="ms-[18px] mt-1 text-xs text-[#8A918C]">
                           {
                             title
                           }
@@ -573,7 +600,15 @@ export default async function AdminTablesPage() {
                         )}`}
                       >
                         {getStatusLabel(
-                          table.status
+                          table.status,
+                          {
+                            occupied:
+                              t("status.occupied"),
+                            reserved:
+                              t("status.reserved"),
+                            available:
+                              t("status.available"),
+                          }
                         )}
                       </span>
                     </div>
@@ -582,8 +617,7 @@ export default async function AdminTablesPage() {
                       "available" && (
                       <div className="mt-5">
                         <p className="text-sm font-semibold text-[#2E6A50]">
-                          Prête à recevoir
-                          un client
+                          {t("table.ready")}
                         </p>
                       </div>
                     )}
@@ -592,8 +626,7 @@ export default async function AdminTablesPage() {
                       "reserved" && (
                       <div className="mt-5">
                         <p className="text-sm font-semibold text-[#946021]">
-                          Réservation en
-                          attente
+                          {t("table.reservationPending")}
                         </p>
                       </div>
                     )}
@@ -606,13 +639,17 @@ export default async function AdminTablesPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9A6A62]">
-                              Commande
+                              {t("table.order")}
                             </p>
 
                             <div className="mt-1 flex items-center gap-2">
-                              <p className="text-xl font-black text-[#1F2924]">
+                              <p
+                                className="text-xl font-black text-[#1F2924]"
+                                dir="ltr"
+                              >
                                 {formatMoney(
-                                  order.total
+                                  order.total,
+                                  locale
                                 )}{" "}
                                 <span className="text-xs font-semibold text-[#737A75]">
                                   MRU
@@ -620,7 +657,10 @@ export default async function AdminTablesPage() {
                               </p>
 
                               {order.orderNumber && (
-                                <span className="text-xs font-semibold text-[#9A9F9B]">
+                                <span
+                                  className="text-xs font-semibold text-[#9A9F9B]"
+                                  dir="ltr"
+                                >
                                   #
                                   {
                                     order.orderNumber
@@ -633,14 +673,14 @@ export default async function AdminTablesPage() {
 
                         <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#7A817C]">
                           <span>
-                            {
-                              order.itemCount
-                            }{" "}
-                            article
-                            {order.itemCount >
-                            1
-                              ? "s"
-                              : ""}
+                            <span dir="ltr">
+                              {
+                                order.itemCount
+                              }
+                            </span>{" "}
+                            {order.itemCount === 1
+                              ? t("table.item")
+                              : t("table.items")}
                           </span>
 
                           <span>
@@ -648,9 +688,10 @@ export default async function AdminTablesPage() {
                           </span>
 
                           <span>
-                            Depuis{" "}
+                            {t("table.since")}{" "}
                             {formatTime(
-                              order.createdAt
+                              order.createdAt,
+                              locale
                             )}
                           </span>
                         </div>
@@ -660,12 +701,13 @@ export default async function AdminTablesPage() {
                           className="mt-4 flex min-h-11 w-full items-center justify-between rounded-xl bg-[#1E4D3A] px-4 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
                         >
                           <span>
-                            Voir la
-                            commande
+                            {t("table.viewOrder")}
                           </span>
 
                           <span>
-                            →
+                            {locale === "ar"
+                              ? "←"
+                              : "→"}
                           </span>
                         </Link>
                       </div>
@@ -676,16 +718,11 @@ export default async function AdminTablesPage() {
                     !order && (
                       <div className="border-t border-[#F0D8D3] bg-[#FFF1EE] p-4">
                         <p className="text-xs font-bold text-[#A74435]">
-                          État incohérent
+                          {t("table.inconsistentTitle")}
                         </p>
 
                         <p className="mt-1 text-xs leading-5 text-[#A66C62]">
-                          La table est
-                          occupée mais
-                          aucune commande
-                          ouverte
-                          n&apos;a été
-                          trouvée.
+                          {t("table.inconsistentDescription")}
                         </p>
                       </div>
                     )}
@@ -713,7 +750,7 @@ export default async function AdminTablesPage() {
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </div>
@@ -723,53 +760,57 @@ export default async function AdminTablesPage() {
               href="/admin"
               className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
             >
-              ← Administration
+              {t("actions.backAdmin")}
             </Link>
 
             <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
-              Salle
+              {t("eyebrow")}
             </p>
 
             <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924] md:text-4xl">
-              Tables
+              {t("title")}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              État actuel du
-              restaurant et
-              commandes en cours.
+              {t("description")}
             </p>
           </div>
         </header>
 
         <section className="mb-8">
           <div className="grid grid-cols-3 overflow-hidden rounded-[22px] border border-[#E5E2DA] bg-white shadow-sm">
-            <div className="border-r border-[#ECE9E2] p-4 text-center">
+            <div className="border-e border-[#ECE9E2] p-4 text-center">
               <div className="flex items-center justify-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#3D7D5E]" />
 
                 <p className="text-xs font-medium text-[#737A75]">
-                  Libres
+                  {t("summary.available")}
                 </p>
               </div>
 
-              <p className="mt-2 text-2xl font-black text-[#1E4D3A]">
+              <p
+                className="mt-2 text-2xl font-black text-[#1E4D3A]"
+                dir="ltr"
+              >
                 {
                   available
                 }
               </p>
             </div>
 
-            <div className="border-r border-[#ECE9E2] p-4 text-center">
+            <div className="border-e border-[#ECE9E2] p-4 text-center">
               <div className="flex items-center justify-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#D4862D]" />
 
                 <p className="text-xs font-medium text-[#737A75]">
-                  Réservées
+                  {t("summary.reserved")}
                 </p>
               </div>
 
-              <p className="mt-2 text-2xl font-black text-[#946021]">
+              <p
+                className="mt-2 text-2xl font-black text-[#946021]"
+                dir="ltr"
+              >
                 {
                   reserved
                 }
@@ -781,11 +822,14 @@ export default async function AdminTablesPage() {
                 <span className="h-2 w-2 rounded-full bg-[#C65343]" />
 
                 <p className="text-xs font-medium text-[#737A75]">
-                  Occupées
+                  {t("summary.occupied")}
                 </p>
               </div>
 
-              <p className="mt-2 text-2xl font-black text-[#A74435]">
+              <p
+                className="mt-2 text-2xl font-black text-[#A74435]"
+                dir="ltr"
+              >
                 {
                   occupied
                 }
@@ -795,21 +839,22 @@ export default async function AdminTablesPage() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-[#8A918C]">
-              {
-                tables.length
-              }{" "}
-              emplacement
-              {tables.length >
-              1
-                ? "s"
-                : ""}{" "}
-              au total
+              <span dir="ltr">
+                {
+                  tables.length
+                }
+              </span>{" "}
+              {tables.length === 1
+                ? t("summary.locationTotal")
+                : t("summary.locationsTotal")}
             </p>
 
             <p className="text-xs font-semibold text-[#68706B]">
-              Taux
-              d&apos;occupation :{" "}
-              <span className="text-[#A74435]">
+              {t("summary.occupancyRate")}{" "}
+              <span
+                className="text-[#A74435]"
+                dir="ltr"
+              >
                 {
                   occupancyRate
                 }
@@ -820,23 +865,23 @@ export default async function AdminTablesPage() {
         </section>
 
         {renderZone(
-          "VIP",
+          t("zones.vip"),
           "VIP"
         )}
 
         {renderZone(
-          "Box Terrasse",
+          t("zones.terraceBoxes"),
           "Terrasse"
         )}
 
         {renderZone(
-          "Salle",
+          t("zones.room"),
           "Salle"
         )}
 
         <footer className="mt-9 border-t border-[#E3E0D8] py-5">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Administration
+            {t("footer")}
           </p>
         </footer>
       </div>

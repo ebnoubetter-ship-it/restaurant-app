@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -11,6 +12,11 @@ export async function POST(
     }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiUserResetPin"
+    );
+
   /*
    * ============================
    * ADMIN DU RESTAURANT
@@ -35,7 +41,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Utilisateur invalide.",
+          t(
+            "errors.invalidUser"
+          ),
       },
       {
         status: 400,
@@ -79,7 +87,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier l'utilisateur.",
+          t(
+            "errors.checkUserFailed"
+          ),
       },
       {
         status: 500,
@@ -91,7 +101,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Utilisateur introuvable.",
+          t(
+            "errors.userNotFound"
+          ),
       },
       {
         status: 404,
@@ -140,7 +152,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de réinitialiser le PIN.",
+          t(
+            "errors.resetPinFailed"
+          ),
       },
       {
         status: 500,
@@ -152,7 +166,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Utilisateur introuvable.",
+          t(
+            "errors.userNotFound"
+          ),
       },
       {
         status: 404,

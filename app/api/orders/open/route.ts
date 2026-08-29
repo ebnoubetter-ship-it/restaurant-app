@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(request: Request) {
+  const t =
+    await getTranslations(
+      "ApiOrdersOpen"
+    );
+
   /*
    * ============================
    * ACCÈS RESTAURANT + CAISSIER
@@ -37,7 +43,10 @@ export async function GET(request: Request) {
   if (!tableId) {
     return NextResponse.json(
       {
-        error: "Table requise.",
+        error:
+          t(
+            "errors.tableRequired"
+          ),
       },
       {
         status: 400,
@@ -87,7 +96,9 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Impossible de rechercher la commande.",
+          t(
+            "errors.lookupFailed"
+          ),
       },
       {
         status: 500,
@@ -99,7 +110,9 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Aucune commande ouverte pour cette table.",
+          t(
+            "errors.noOpenOrder"
+          ),
       },
       {
         status: 404,
@@ -108,6 +121,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    orderId: order.id,
+    orderId:
+      order.id,
   });
 }

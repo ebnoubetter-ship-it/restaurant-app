@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -23,13 +27,23 @@ const paymentMethods = [
   "BCI PAY",
 ];
 
+function getNumberLocale(
+  locale: string
+) {
+  return locale === "ar"
+    ? "ar-MR-u-nu-latn"
+    : "fr-FR";
+}
+
 function formatMoney(
-  value: number
+  value: number,
+  locale: string
 ) {
   return new Intl.NumberFormat(
-    "fr-FR",
+    getNumberLocale(locale),
     {
       maximumFractionDigits: 0,
+      numberingSystem: "latn",
     }
   ).format(value);
 }
@@ -115,7 +129,8 @@ function capitalizeFirst(
 }
 
 function formatMonthLabel(
-  value: string
+  value: string,
+  locale: string
 ) {
   const {
     year,
@@ -135,35 +150,65 @@ function formatMonthLabel(
       )
     );
 
-  return capitalizeFirst(
+  const formatted =
     new Intl.DateTimeFormat(
-      "fr-FR",
+      getNumberLocale(locale),
       {
         month: "long",
         year: "numeric",
         timeZone: "UTC",
+        numberingSystem: "latn",
       }
-    ).format(date)
-  );
+    ).format(date);
+
+  return locale === "ar"
+    ? formatted
+    : capitalizeFirst(
+        formatted
+      );
 }
 
 function formatDateLabel(
-  date: Date
+  date: Date,
+  locale: string
 ) {
   return new Intl.DateTimeFormat(
-    "fr-FR",
+    getNumberLocale(locale),
     {
       day: "numeric",
       month: "long",
       year: "numeric",
       timeZone: "UTC",
+      numberingSystem: "latn",
     }
   ).format(date);
 }
 
+function formatPaidAt(
+  value: string,
+  locale: string
+) {
+  return new Intl.DateTimeFormat(
+    getNumberLocale(locale),
+    {
+      timeZone:
+        "Africa/Nouakchott",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      numberingSystem: "latn",
+    }
+  ).format(
+    new Date(value)
+  );
+}
+
 function buildMonthOptions(
   firstMonthKey: string,
-  currentMonthKey: string
+  currentMonthKey: string,
+  locale: string
 ): MonthOption[] {
   const first =
     parseMonthKey(
@@ -202,10 +247,6 @@ function buildMonthOptions(
   const result:
     MonthOption[] = [];
 
-  /*
-   * Garde-fou très large :
-   * 100 ans maximum.
-   */
   let safety = 0;
 
   while (
@@ -222,7 +263,8 @@ function buildMonthOptions(
       value,
       label:
         formatMonthLabel(
-          value
+          value,
+          locale
         ),
     });
 
@@ -243,7 +285,8 @@ function buildMonthOptions(
 
       label:
         formatMonthLabel(
-          currentMonthKey
+          currentMonthKey,
+          locale
         ),
     });
   }
@@ -367,11 +410,6 @@ function getMonthRange(
       )
     );
 
-  /*
-   * Si le mois sélectionné
-   * est le mois en cours,
-   * on s'arrête maintenant.
-   */
   const end =
     monthKey ===
     currentMonthKey
@@ -414,19 +452,26 @@ function getPeriodLabel(
   period: Period,
   selectedMonth: string,
   selectedFromMonth: string,
-  selectedToMonth: string
+  selectedToMonth: string,
+  locale: string,
+  t: (
+    key: string
+  ) => string
 ) {
   if (
     period === "week"
   ) {
-    return "Cette semaine";
+    return t(
+      "periodLabels.week"
+    );
   }
 
   if (
     period === "month"
   ) {
     return formatMonthLabel(
-      selectedMonth
+      selectedMonth,
+      locale
     );
   }
 
@@ -438,18 +483,27 @@ function getPeriodLabel(
       selectedToMonth
     ) {
       return formatMonthLabel(
-        selectedFromMonth
+        selectedFromMonth,
+        locale
       );
     }
 
     return `${formatMonthLabel(
-      selectedFromMonth
-    )} → ${formatMonthLabel(
-      selectedToMonth
+      selectedFromMonth,
+      locale
+    )} ${
+      locale === "ar"
+        ? "←"
+        : "→"
+    } ${formatMonthLabel(
+      selectedToMonth,
+      locale
     )}`;
   }
 
-  return "Aujourd’hui";
+  return t(
+    "periodLabels.today"
+  );
 }
 
 function getExactRangeLabel(
@@ -457,7 +511,15 @@ function getExactRangeLabel(
   selectedMonth: string,
   selectedFromMonth: string,
   selectedToMonth: string,
-  currentMonthKey: string
+  currentMonthKey: string,
+  locale: string,
+  t: (
+    key: string,
+    values?: Record<
+      string,
+      string
+    >
+  ) => string
 ) {
   if (
     period !== "month" &&
@@ -486,9 +548,16 @@ function getExactRangeLabel(
     toMonth ===
     currentMonthKey
   ) {
-    return `Du ${formatDateLabel(
-      startRange.start
-    )} à aujourd’hui`;
+    return t(
+      "exactRange.untilToday",
+      {
+        start:
+          formatDateLabel(
+            startRange.start,
+            locale
+          ),
+      }
+    );
   }
 
   const endRange =
@@ -506,11 +575,22 @@ function getExactRangeLabel(
           1000
     );
 
-  return `Du ${formatDateLabel(
-    startRange.start
-  )} au ${formatDateLabel(
-    lastDay
-  )}`;
+  return t(
+    "exactRange.between",
+    {
+      start:
+        formatDateLabel(
+          startRange.start,
+          locale
+        ),
+
+      end:
+        formatDateLabel(
+          lastDay,
+          locale
+        ),
+    }
+  );
 }
 
 export default async function AdminSalesPage({
@@ -523,6 +603,14 @@ export default async function AdminSalesPage({
     to?: string;
   }>;
 }) {
+  const t =
+    await getTranslations(
+      "AdminSales"
+    );
+
+  const locale =
+    await getLocale();
+
   /*
    * ============================
    * RESTAURANT + ADMIN
@@ -622,7 +710,8 @@ export default async function AdminSalesPage({
   const monthOptions =
     buildMonthOptions(
       firstMonthKey,
-      currentMonthKey
+      currentMonthKey,
+      locale
     );
 
   const availableMonthKeys =
@@ -681,15 +770,6 @@ export default async function AdminSalesPage({
       ? params.to!
       : currentMonthKey;
 
-  /*
-   * Si l'utilisateur inverse
-   * les deux mois, MAIDA les
-   * remet automatiquement
-   * dans le bon ordre.
-   *
-   * YYYY-MM est comparable
-   * directement.
-   */
   if (
     selectedFromMonth >
     selectedToMonth
@@ -857,7 +937,9 @@ export default async function AdminSalesPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t(
+                  "administration"
+                )}
               </p>
             </div>
           </header>
@@ -868,20 +950,24 @@ export default async function AdminSalesPage({
             </div>
 
             <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-              Ventes indisponibles
+              {t(
+                "error.title"
+              )}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Impossible de
-              récupérer les ventes
-              pour le moment.
+              {t(
+                "error.description"
+              )}
             </p>
 
             <a
               href="/admin/sales"
               className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
             >
-              Réessayer
+              {t(
+                "actions.retry"
+              )}
             </a>
 
             <div>
@@ -889,8 +975,9 @@ export default async function AdminSalesPage({
                 href="/admin"
                 className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[#68706B]"
               >
-                Retour à
-                l&apos;administration
+                {t(
+                  "actions.backAdmin"
+                )}
               </Link>
             </div>
           </div>
@@ -1117,12 +1204,28 @@ export default async function AdminSalesPage({
     );
   };
 
+  const getPaymentLabel = (
+    method: string
+  ) => {
+    if (
+      method === "Cash"
+    ) {
+      return t(
+        "payments.cash"
+      );
+    }
+
+    return method;
+  };
+
   const periodLabel =
     getPeriodLabel(
       selectedPeriod,
       selectedMonth,
       selectedFromMonth,
-      selectedToMonth
+      selectedToMonth,
+      locale,
+      t
     );
 
   const exactRangeLabel =
@@ -1131,7 +1234,9 @@ export default async function AdminSalesPage({
       selectedMonth,
       selectedFromMonth,
       selectedToMonth,
-      currentMonthKey
+      currentMonthKey,
+      locale,
+      t
     );
 
   return (
@@ -1149,7 +1254,9 @@ export default async function AdminSalesPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t(
+                  "administration"
+                )}
               </p>
             </div>
           </div>
@@ -1159,25 +1266,31 @@ export default async function AdminSalesPage({
               href="/admin"
               className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
             >
-              ← Administration
+              {t(
+                "actions.backAdmin"
+              )}
             </Link>
 
             <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
-              Encaissements
+              {t(
+                "paymentsTitle"
+              )}
             </p>
 
             <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924] md:text-4xl">
-              Ventes
+              {t(
+                "title"
+              )}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Consultez chaque vente
-              et son mode de paiement.
+              {t(
+                "description"
+              )}
             </p>
           </div>
         </header>
 
-        {/* FILTRES PRINCIPAUX */}
         <nav className="mb-4 flex gap-1 overflow-x-auto rounded-2xl border border-[#E3E0D8] bg-white p-1 shadow-sm">
           <Link
             href="/admin/sales?period=today"
@@ -1188,7 +1301,9 @@ export default async function AdminSalesPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Aujourd&apos;hui
+            {t(
+              "filters.today"
+            )}
           </Link>
 
           <Link
@@ -1200,7 +1315,9 @@ export default async function AdminSalesPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Semaine
+            {t(
+              "filters.week"
+            )}
           </Link>
 
           <Link
@@ -1212,7 +1329,9 @@ export default async function AdminSalesPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Mois
+            {t(
+              "filters.month"
+            )}
           </Link>
 
           <Link
@@ -1224,11 +1343,12 @@ export default async function AdminSalesPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Période
+            {t(
+              "filters.range"
+            )}
           </Link>
         </nav>
 
-        {/* CHOIX DU MOIS */}
         {selectedPeriod ===
           "month" && (
           <form
@@ -1248,7 +1368,9 @@ export default async function AdminSalesPage({
                   htmlFor="month"
                   className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
                 >
-                  Mois
+                  {t(
+                    "filters.month"
+                  )}
                 </label>
 
                 <select
@@ -1282,13 +1404,14 @@ export default async function AdminSalesPage({
                 type="submit"
                 className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
               >
-                Afficher
+                {t(
+                  "actions.show"
+                )}
               </button>
             </div>
           </form>
         )}
 
-        {/* CHOIX DE LA PÉRIODE */}
         {selectedPeriod ===
           "range" && (
           <form
@@ -1308,7 +1431,9 @@ export default async function AdminSalesPage({
                   htmlFor="from"
                   className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
                 >
-                  De
+                  {t(
+                    "filters.from"
+                  )}
                 </label>
 
                 <select
@@ -1343,7 +1468,9 @@ export default async function AdminSalesPage({
                   htmlFor="to"
                   className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
                 >
-                  À
+                  {t(
+                    "filters.to"
+                  )}
                 </label>
 
                 <select
@@ -1377,13 +1504,14 @@ export default async function AdminSalesPage({
                 type="submit"
                 className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
               >
-                Afficher
+                {t(
+                  "actions.show"
+                )}
               </button>
             </div>
           </form>
         )}
 
-        {/* PÉRIODE ACTIVE */}
         <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
           <div>
             <p className="text-sm font-semibold text-[#343D38]">
@@ -1392,28 +1520,42 @@ export default async function AdminSalesPage({
 
             {exactRangeLabel && (
               <p className="mt-1 text-xs font-medium text-[#7A817C]">
-                {exactRangeLabel}
+                {
+                  exactRangeLabel
+                }
               </p>
             )}
           </div>
 
-          <p className="text-xs text-[#8A918C]">
-            Journée commerciale :
-            07h00 → 07h00
+          <p
+            className="text-xs text-[#8A918C]"
+            dir={
+              locale === "ar"
+                ? "rtl"
+                : "ltr"
+            }
+          >
+            {t(
+              "businessDay"
+            )}
           </p>
         </div>
 
-        {/* KPI */}
         <section className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
-              Chiffre
-              d&apos;affaires
+              {t(
+                "stats.revenue"
+              )}
             </p>
 
-            <p className="mt-3 text-3xl font-black tracking-tight">
+            <p
+              className="mt-3 text-3xl font-black tracking-tight"
+              dir="ltr"
+            >
               {formatMoney(
-                totalSales
+                totalSales,
+                locale
               )}{" "}
               <span className="text-base font-semibold text-white/70">
                 MRU
@@ -1423,26 +1565,39 @@ export default async function AdminSalesPage({
 
           <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Commandes
+              {t(
+                "stats.orders"
+              )}
             </p>
 
-            <p className="mt-3 text-3xl font-black text-[#1F2924]">
+            <p
+              className="mt-3 text-3xl font-black text-[#1F2924]"
+              dir="ltr"
+            >
               {orderCount}
             </p>
 
             <p className="mt-3 text-xs text-[#9A9F9B]">
-              Ventes encaissées
+              {t(
+                "stats.paidSales"
+              )}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Ticket moyen
+              {t(
+                "stats.averageTicket"
+              )}
             </p>
 
-            <p className="mt-3 text-3xl font-black text-[#1F2924]">
+            <p
+              className="mt-3 text-3xl font-black text-[#1F2924]"
+              dir="ltr"
+            >
               {formatMoney(
-                averageOrder
+                averageOrder,
+                locale
               )}{" "}
               <span className="text-base font-semibold text-[#737A75]">
                 MRU
@@ -1450,20 +1605,25 @@ export default async function AdminSalesPage({
             </p>
 
             <p className="mt-3 text-xs text-[#9A9F9B]">
-              Moyenne par vente
+              {t(
+                "stats.averageSale"
+              )}
             </p>
           </div>
         </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          {/* PAIEMENTS */}
           <section className="h-fit rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm lg:sticky lg:top-6">
             <h2 className="text-lg font-bold text-[#1F2924]">
-              Paiements
+              {t(
+                "paymentSection.title"
+              )}
             </h2>
 
             <p className="mt-1 text-sm text-[#7A817C]">
-              Répartition du CA
+              {t(
+                "paymentSection.description"
+              )}
             </p>
 
             <div className="mt-5 space-y-5">
@@ -1484,10 +1644,15 @@ export default async function AdminSalesPage({
                       <div className="mb-2 flex items-end justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-[#343D38]">
-                            {method}
+                            {getPaymentLabel(
+                              method
+                            )}
                           </p>
 
-                          <p className="mt-0.5 text-xs text-[#9A9F9B]">
+                          <p
+                            className="mt-0.5 text-xs text-[#9A9F9B]"
+                            dir="ltr"
+                          >
                             {
                               percentage
                             }
@@ -1495,9 +1660,13 @@ export default async function AdminSalesPage({
                           </p>
                         </div>
 
-                        <p className="text-sm font-bold text-[#1F2924]">
+                        <p
+                          className="text-sm font-bold text-[#1F2924]"
+                          dir="ltr"
+                        >
                           {formatMoney(
-                            amount
+                            amount,
+                            locale
                           )}{" "}
                           MRU
                         </p>
@@ -1518,29 +1687,38 @@ export default async function AdminSalesPage({
             </div>
           </section>
 
-          {/* DÉTAIL DES VENTES */}
           <section className="overflow-hidden rounded-[24px] border border-[#E8E5DE] bg-white shadow-sm">
             <div className="border-b border-[#EEECE6] p-5 sm:p-6">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-                    Détail des ventes
+                    {t(
+                      "salesDetails.title"
+                    )}
                   </h2>
 
                   <p className="mt-1 text-sm text-[#7A817C]">
-                    {orderCount}{" "}
-                    commande
-                    {orderCount >
-                    1
-                      ? "s"
-                      : ""}
+                    <span dir="ltr">
+                      {
+                        orderCount
+                      }
+                    </span>{" "}
+                    {orderCount === 1
+                      ? t(
+                          "salesDetails.order"
+                        )
+                      : t(
+                          "salesDetails.orders"
+                        )}
                   </p>
                 </div>
 
                 {orderCount >
                   0 && (
                   <span className="hidden rounded-full bg-[#EDF5EF] px-3 py-1.5 text-xs font-semibold text-[#2E6A50] sm:inline-flex">
-                    {periodLabel}
+                    {
+                      periodLabel
+                    }
                   </span>
                 )}
               </div>
@@ -1554,14 +1732,15 @@ export default async function AdminSalesPage({
                 </div>
 
                 <h3 className="mt-4 font-bold text-[#343D38]">
-                  Aucune vente
+                  {t(
+                    "empty.title"
+                  )}
                 </h3>
 
                 <p className="mt-1 max-w-xs text-sm leading-6 text-[#8A918C]">
-                  Aucun encaissement
-                  n&apos;a été
-                  enregistré sur
-                  cette période.
+                  {t(
+                    "empty.description"
+                  )}
                 </p>
               </div>
             ) : (
@@ -1571,13 +1750,19 @@ export default async function AdminSalesPage({
                     const orderLabel =
                       order.order_type ===
                       "takeaway"
-                        ? "À emporter"
+                        ? t(
+                            "order.takeaway"
+                          )
                         : order.table_id
                           ? tablesMap.get(
                               order.table_id
                             ) ||
-                            "Table"
-                          : "Table";
+                            t(
+                              "order.table"
+                            )
+                          : t(
+                              "order.table"
+                            );
 
                     const cashierName =
                       order.cashier_id
@@ -1603,7 +1788,10 @@ export default async function AdminSalesPage({
                               </h3>
 
                               {order.order_number && (
-                                <span className="text-xs font-semibold text-[#9A9F9B]">
+                                <span
+                                  className="text-xs font-semibold text-[#9A9F9B]"
+                                  dir="ltr"
+                                >
                                   #
                                   {
                                     order.order_number
@@ -1614,19 +1802,29 @@ export default async function AdminSalesPage({
                               {order.order_type ===
                                 "takeaway" && (
                                 <span className="rounded-full bg-[#F3EFE8] px-2.5 py-1 text-[11px] font-semibold text-[#7D6755]">
-                                  À emporter
+                                  {t(
+                                    "order.takeaway"
+                                  )}
                                 </span>
                               )}
                             </div>
 
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <span className="rounded-full bg-[#F3F4F1] px-2.5 py-1 text-xs font-semibold text-[#5F6862]">
-                                {order.payment_method ||
-                                  "Paiement"}
+                                {order.payment_method
+                                  ? getPaymentLabel(
+                                      order.payment_method
+                                    )
+                                  : t(
+                                      "order.payment"
+                                    )}
                               </span>
 
                               <span className="text-xs text-[#7A817C]">
-                                Caissier :{" "}
+                                {t(
+                                  "order.cashier"
+                                )}
+                                :{" "}
                                 <span className="font-semibold text-[#565E59]">
                                   {
                                     cashierName
@@ -1636,46 +1834,43 @@ export default async function AdminSalesPage({
                             </div>
 
                             {order.paid_at && (
-                              <p className="mt-2 text-xs text-[#9A9F9B]">
-                                {new Date(
-                                  order.paid_at
-                                ).toLocaleString(
-                                  "fr-FR",
-                                  {
-                                    timeZone:
-                                      "Africa/Nouakchott",
-                                    day:
-                                      "2-digit",
-                                    month:
-                                      "2-digit",
-                                    year:
-                                      "numeric",
-                                    hour:
-                                      "2-digit",
-                                    minute:
-                                      "2-digit",
-                                  }
+                              <p
+                                className="mt-2 text-xs text-[#9A9F9B]"
+                                dir="ltr"
+                              >
+                                {formatPaidAt(
+                                  order.paid_at,
+                                  locale
                                 )}
                               </p>
                             )}
                           </div>
 
-                          <div className="shrink-0 text-right">
-                            <p className="text-lg font-black text-[#1F2924] sm:text-xl">
+                          <div className="shrink-0 text-end">
+                            <p
+                              className="text-lg font-black text-[#1F2924] sm:text-xl"
+                              dir="ltr"
+                            >
                               {formatMoney(
                                 Number(
                                   order.total ||
                                     0
-                                )
+                                ),
+                                locale
                               )}
                             </p>
 
-                            <p className="text-[10px] font-semibold text-[#8A918C]">
+                            <p
+                              className="text-[10px] font-semibold text-[#8A918C]"
+                              dir="ltr"
+                            >
                               MRU
                             </p>
 
-                            <p className="mt-3 text-sm font-semibold text-[#2E6A50] transition group-hover:translate-x-0.5">
-                              Voir →
+                            <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
+                              {t(
+                                "actions.view"
+                              )}
                             </p>
                           </div>
                         </div>
@@ -1690,7 +1885,9 @@ export default async function AdminSalesPage({
 
         <footer className="mt-9 border-t border-[#E3E0D8] py-5">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Administration
+            {t(
+              "footer"
+            )}
           </p>
         </footer>
       </div>

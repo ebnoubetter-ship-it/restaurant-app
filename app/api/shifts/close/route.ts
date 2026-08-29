@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -20,6 +21,11 @@ type ProductStat = {
 };
 
 export async function POST() {
+  const t =
+    await getTranslations(
+      "ApiShiftClose"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -79,7 +85,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Aucun shift ouvert.",
+          t(
+            "errors.noOpenShift"
+          ),
       },
       {
         status: 400,
@@ -118,7 +126,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Impossible de vérifier les commandes ouvertes.",
+          t(
+            "errors.checkOpenOrdersFailed"
+          ),
       },
       {
         status: 500,
@@ -138,17 +148,21 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          `${openOrderCount} commande${
-            openOrderCount >
-            1
-              ? "s sont encore ouvertes"
-              : " est encore ouverte"
-          }. Encaissez ou annulez ${
-            openOrderCount >
-            1
-              ? "ces commandes"
-              : "cette commande"
-          } avant de fermer le shift.`,
+          openOrderCount > 1
+            ? t(
+                "errors.openOrdersRemainPlural",
+                {
+                  count:
+                    openOrderCount,
+                }
+              )
+            : t(
+                "errors.openOrdersRemainSingular",
+                {
+                  count:
+                    openOrderCount,
+                }
+              ),
 
         openOrderCount,
 
@@ -194,6 +208,10 @@ export async function POST() {
     )
     .maybeSingle();
 
+  /*
+   * Cette valeur peut être utilisée
+   * dans les rapports d'impression.
+   */
   const cashierName =
     cashier?.name ||
     "Caissier";
@@ -242,7 +260,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Impossible de calculer les ventes du shift.",
+          t(
+            "errors.calculateSalesFailed"
+          ),
       },
       {
         status: 500,
@@ -301,7 +321,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer les commandes annulées.",
+          t(
+            "errors.getCancelledOrdersFailed"
+          ),
       },
       {
         status: 500,
@@ -353,7 +375,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer les articles annulés.",
+          t(
+            "errors.getCancelledItemsFailed"
+          ),
       },
       {
         status: 500,
@@ -410,7 +434,9 @@ export async function POST() {
       return NextResponse.json(
         {
           error:
-            "Impossible de récupérer les produits annulés.",
+            t(
+              "errors.getCancelledProductsFailed"
+            ),
         },
         {
           status: 500,
@@ -792,7 +818,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Impossible de fermer le shift.",
+          t(
+            "errors.closeShiftFailed"
+          ),
       },
       {
         status: 409,
@@ -970,7 +998,9 @@ export async function POST() {
 
     warning:
       printJobsError
-        ? "Le shift est fermé, mais les rapports n'ont pas pu être ajoutés à la file d'impression."
+        ? t(
+            "warnings.reportsNotQueued"
+          )
         : null,
   });
 }

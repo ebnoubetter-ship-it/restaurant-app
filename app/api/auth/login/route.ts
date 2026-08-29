@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import bcrypt from "bcryptjs";
 
@@ -9,6 +10,11 @@ import { getActiveRestaurant } from "@/lib/restaurant-access";
 export async function POST(
   request: Request
 ) {
+  const t =
+    await getTranslations(
+      "ApiAuthLogin"
+    );
+
   /*
    * ============================
    * RESTAURANT
@@ -48,7 +54,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -73,7 +81,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Nom ou PIN invalide.",
+          t(
+            "errors.invalidCredentials"
+          ),
       },
       {
         status: 400,
@@ -126,7 +136,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Connexion impossible.",
+          t(
+            "errors.loginFailed"
+          ),
       },
       {
         status: 401,
@@ -149,7 +161,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "PIN incorrect.",
+          t(
+            "errors.incorrectPin"
+          ),
       },
       {
         status: 401,

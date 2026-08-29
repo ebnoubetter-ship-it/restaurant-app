@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -29,24 +33,33 @@ const paymentMethods = [
   "BCI PAY",
 ];
 
+function getNumberLocale(
+  locale: string
+) {
+  return locale === "ar"
+    ? "ar-MR-u-nu-latn"
+    : "fr-FR";
+}
+
 function formatMoney(
-  value: number
+  value: number,
+  locale: string
 ) {
   return new Intl.NumberFormat(
-    "fr-FR",
+    getNumberLocale(locale),
     {
       maximumFractionDigits: 0,
+      numberingSystem: "latn",
     }
   ).format(value);
 }
 
 function formatDateTime(
-  value: string
+  value: string,
+  locale: string
 ) {
-  return new Date(
-    value
-  ).toLocaleString(
-    "fr-FR",
+  return new Intl.DateTimeFormat(
+    getNumberLocale(locale),
     {
       timeZone:
         "Africa/Nouakchott",
@@ -55,7 +68,10 @@ function formatDateTime(
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      numberingSystem: "latn",
     }
+  ).format(
+    new Date(value)
   );
 }
 
@@ -109,7 +125,8 @@ function getTodayRange() {
 
 function formatDuration(
   startedAt: string,
-  endedAt: string | null
+  endedAt: string | null,
+  locale: string
 ) {
   const start =
     new Date(
@@ -144,15 +161,31 @@ function formatDuration(
   const minutes =
     totalMinutes % 60;
 
+  const formatInteger = (
+    value: number
+  ) =>
+    new Intl.NumberFormat(
+      getNumberLocale(locale),
+      {
+        maximumFractionDigits: 0,
+        useGrouping: false,
+        numberingSystem: "latn",
+      }
+    ).format(value);
+
   if (
     hours === 0
   ) {
-    return `${minutes} min`;
+    return `${formatInteger(
+      minutes
+    )} min`;
   }
 
-  return `${hours} h ${minutes
-    .toString()
-    .padStart(2, "0")}`;
+  return `${formatInteger(
+    hours
+  )} h ${formatInteger(
+    minutes
+  ).padStart(2, "0")}`;
 }
 
 export default async function AdminShiftsPage({
@@ -163,6 +196,21 @@ export default async function AdminShiftsPage({
     cashier?: string;
   }>;
 }) {
+  const t =
+    await getTranslations(
+      "AdminShifts"
+    );
+
+  const locale =
+    await getLocale();
+
+  const getPaymentLabel = (
+    method: string
+  ) =>
+    method === "Cash"
+      ? t("payments.cash")
+      : method;
+
   /*
    * ============================
    * RESTAURANT + ADMIN
@@ -377,7 +425,7 @@ export default async function AdminShiftsPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </header>
@@ -388,20 +436,18 @@ export default async function AdminShiftsPage({
             </div>
 
             <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-              Shifts indisponibles
+              {t("error.title")}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Impossible de
-              récupérer les shifts
-              pour le moment.
+              {t("error.description")}
             </p>
 
             <a
               href="/admin/shifts"
               className="mt-5 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1E4D3A] px-5 font-semibold text-white"
             >
-              Réessayer
+              {t("actions.retry")}
             </a>
 
             <div>
@@ -409,8 +455,7 @@ export default async function AdminShiftsPage({
                 href="/admin"
                 className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[#68706B]"
               >
-                Retour à
-                l&apos;administration
+                {t("actions.backAdmin")}
               </Link>
             </div>
           </div>
@@ -647,7 +692,7 @@ export default async function AdminShiftsPage({
             cashierNames[
               shift.cashier_id
             ] ||
-            "Caissier",
+            t("cashierFallback"),
 
           orderCount:
             shiftOrders.length,
@@ -707,10 +752,16 @@ export default async function AdminShiftsPage({
   const periodLabel =
     selectedPeriod ===
     "today"
-      ? "Aujourd’hui"
+      ? t("period.today")
       : selectedCashier
-        ? `Tous les shifts · ${selectedCashier.name}`
-        : "Tous les shifts";
+        ? t(
+            "period.allForCashier",
+            {
+              cashier:
+                selectedCashier.name,
+            }
+          )
+        : t("period.all");
 
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
@@ -728,7 +779,7 @@ export default async function AdminShiftsPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </div>
@@ -738,21 +789,19 @@ export default async function AdminShiftsPage({
               href="/admin"
               className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
             >
-              ← Administration
+              {t("actions.backAdmin")}
             </Link>
 
             <p className="mt-3 text-sm font-semibold text-[#2E6A50]">
-              Caisse
+              {t("eyebrow")}
             </p>
 
             <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-[#1F2924] md:text-4xl">
-              Shifts
+              {t("title")}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Suivez les caissiers,
-              leurs horaires et leurs
-              encaissements.
+              {t("description")}
             </p>
           </div>
         </header>
@@ -768,7 +817,7 @@ export default async function AdminShiftsPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Aujourd&apos;hui
+            {t("filters.today")}
           </Link>
 
           <Link
@@ -780,7 +829,7 @@ export default async function AdminShiftsPage({
                 : "min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-[#68706B] transition hover:bg-[#F5F4F0]"
             }
           >
-            Tous
+            {t("filters.all")}
           </Link>
         </nav>
 
@@ -804,7 +853,7 @@ export default async function AdminShiftsPage({
                   htmlFor="cashier"
                   className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#7A817C]"
                 >
-                  Caissier
+                  {t("filters.cashier")}
                 </label>
 
                 <select
@@ -816,7 +865,7 @@ export default async function AdminShiftsPage({
                   className="min-h-12 w-full rounded-xl border border-[#DDDAD2] bg-white px-4 text-sm font-semibold text-[#1F2924] outline-none transition focus:border-[#2E6A50]"
                 >
                   <option value="">
-                    Tous les caissiers
+                    {t("filters.all")} les caissiers
                   </option>
 
                   {cashiers.map(
@@ -842,7 +891,7 @@ export default async function AdminShiftsPage({
                 type="submit"
                 className="min-h-12 rounded-xl bg-[#1E4D3A] px-6 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
               >
-                Afficher
+                {t("actions.show")}
               </button>
             </div>
           </form>
@@ -855,8 +904,7 @@ export default async function AdminShiftsPage({
           </p>
 
           <p className="text-xs text-[#8A918C]">
-            Journée commerciale :
-            07h00 → 07h00
+            {t("businessDay")}
           </p>
         </div>
 
@@ -867,7 +915,7 @@ export default async function AdminShiftsPage({
               <span className="h-2.5 w-2.5 rounded-full bg-[#3D7D5E]" />
 
               <p className="text-sm font-medium text-[#567362]">
-                En cours
+                {t("stats.open")}
               </p>
             </div>
 
@@ -878,22 +926,15 @@ export default async function AdminShiftsPage({
             </p>
 
             <p className="mt-3 text-xs text-[#6D8274]">
-              Shift
-              {openShifts.length >
-              1
-                ? "s"
-                : ""}{" "}
-              ouvert
-              {openShifts.length >
-              1
-                ? "s"
-                : ""}
+              {openShifts.length === 1
+                ? t("stats.openShift")
+                : t("stats.openShifts")}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Clôturés
+              {t("stats.closed")}
             </p>
 
             <p className="mt-3 text-3xl font-black text-[#1F2924]">
@@ -903,13 +944,13 @@ export default async function AdminShiftsPage({
             </p>
 
             <p className="mt-3 text-xs text-[#9A9F9B]">
-              Sur la sélection
+              {t("stats.selection")}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Commandes
+              {t("stats.orders")}
             </p>
 
             <p className="mt-3 text-3xl font-black text-[#1F2924]">
@@ -919,19 +960,19 @@ export default async function AdminShiftsPage({
             </p>
 
             <p className="mt-3 text-xs text-[#9A9F9B]">
-              Encaissées
+              {t("stats.paid")}
             </p>
           </div>
 
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
-              Chiffre
-              d&apos;affaires
+              {t("stats.revenue")}
             </p>
 
             <p className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
               {formatMoney(
-                totalRevenue
+                totalRevenue,
+                locale
               )}{" "}
               <span className="text-sm font-semibold text-white/70">
                 MRU
@@ -942,9 +983,10 @@ export default async function AdminShiftsPage({
               {shiftSummaries.length >
               0
                 ? `${formatMoney(
-                    averageShiftRevenue
-                  )} MRU / shift`
-                : "Aucun encaissement"}
+                    averageShiftRevenue,
+                    locale
+                  )} MRU / ${t("stats.shift")}`
+                : t("stats.noRevenue")}
             </p>
           </div>
         </section>
@@ -953,11 +995,11 @@ export default async function AdminShiftsPage({
         <section className="mt-8">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-              En cours
+              {t("openSection.title")}
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Caisses actuellement
+              {t("eyebrow")}s actuellement
               ouvertes.
             </p>
           </div>
@@ -970,15 +1012,11 @@ export default async function AdminShiftsPage({
               </div>
 
               <p className="mt-3 font-bold text-[#343D38]">
-                Aucun shift ouvert
+                {t("openSection.emptyTitle")}
               </p>
 
               <p className="mt-1 text-sm text-[#8A918C]">
-                Aucun caissier
-                correspondant à la
-                sélection n&apos;a
-                actuellement de caisse
-                ouverte.
+                {t("openSection.emptyDescription")}
               </p>
             </div>
           ) : (
@@ -1008,7 +1046,7 @@ export default async function AdminShiftsPage({
                               <span className="h-2.5 w-2.5 rounded-full bg-[#3D7D5E]" />
 
                               <span className="text-xs font-bold uppercase tracking-wide text-[#3D7D5E]">
-                                En cours
+                                {t("stats.open")}
                               </span>
                             </div>
 
@@ -1019,22 +1057,24 @@ export default async function AdminShiftsPage({
                             </h3>
 
                             <p className="mt-1 text-sm text-[#667D6D]">
-                              Depuis{" "}
+                              {t("openSection.since")}{" "}
                               {formatDateTime(
-                                shift.started_at
+                                shift.started_at,
+                                locale
                               )}
                             </p>
                           </div>
 
-                          <div className="text-right">
+                          <div className="text-end">
                             <p className="text-xs text-[#7A817C]">
-                              Durée
+                              {t("duration")}
                             </p>
 
                             <p className="mt-1 font-bold text-[#1E4D3A]">
                               {formatDuration(
                                 shift.started_at,
-                                null
+                                null,
+                                locale
                               )}
                             </p>
                           </div>
@@ -1045,7 +1085,7 @@ export default async function AdminShiftsPage({
                         <div className="grid grid-cols-2 gap-3">
                           <div className="rounded-2xl bg-[#F6F6F2] p-4">
                             <p className="text-xs font-medium text-[#7A817C]">
-                              Commandes
+                              {t("stats.orders")}
                             </p>
 
                             <p className="mt-1 text-2xl font-black text-[#1F2924]">
@@ -1057,12 +1097,13 @@ export default async function AdminShiftsPage({
 
                           <div className="rounded-2xl bg-[#EDF5EF] p-4">
                             <p className="text-xs font-medium text-[#567362]">
-                              Total
+                              {t("total")}
                             </p>
 
                             <p className="mt-1 text-xl font-black text-[#1E4D3A]">
                               {formatMoney(
-                                shift.total
+                                shift.total,
+                                locale
                               )}
                             </p>
 
@@ -1074,15 +1115,13 @@ export default async function AdminShiftsPage({
 
                         <div className="mt-5">
                           <p className="text-sm font-bold text-[#343D38]">
-                            Paiements
+                            {t("payments.title")}
                           </p>
 
                           {activePayments.length ===
                           0 ? (
                             <p className="mt-2 text-sm text-[#8A918C]">
-                              Aucun
-                              encaissement pour
-                              le moment.
+                              {t("payments.empty")}
                             </p>
                           ) : (
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -1098,7 +1137,9 @@ export default async function AdminShiftsPage({
                                   >
                                     <p className="text-[11px] text-[#7A817C]">
                                       {
-                                        method
+                                        getPaymentLabel(
+                                          method
+                                        )
                                       }
                                     </p>
 
@@ -1107,7 +1148,8 @@ export default async function AdminShiftsPage({
                                         shift
                                           .payments[
                                           method
-                                        ]
+                                        ],
+                                        locale
                                       )}{" "}
                                       MRU
                                     </p>
@@ -1130,12 +1172,11 @@ export default async function AdminShiftsPage({
         <section className="mt-9">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-              Clôturés
+              {t("closedSection.title")}
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Historique des caisses
-              terminées.
+              {t("closedSection.description")}
             </p>
           </div>
 
@@ -1143,12 +1184,11 @@ export default async function AdminShiftsPage({
           0 ? (
             <div className="rounded-[24px] border border-[#E8E5DE] bg-white p-7 text-center shadow-sm">
               <p className="font-semibold text-[#4E5651]">
-                Aucun shift clôturé
+                {t("closedSection.emptyTitle")}
               </p>
 
               <p className="mt-1 text-sm text-[#8A918C]">
-                Aucun résultat pour
-                cette sélection.
+                {t("closedSection.emptyDescription")}
               </p>
             </div>
           ) : (
@@ -1181,30 +1221,36 @@ export default async function AdminShiftsPage({
                             </h3>
 
                             <span className="rounded-full bg-[#F1F2EF] px-2.5 py-1 text-[11px] font-semibold text-[#737A75]">
-                              Clôturé
+                              {t("closedSection.badge")}
                             </span>
                           </div>
 
                           <p className="mt-2 text-sm text-[#727A75]">
                             {formatDateTime(
-                              shift.started_at
+                              shift.started_at,
+                              locale
                             )}
                           </p>
 
                           <p className="mt-1 text-sm text-[#727A75]">
-                            →{" "}
+                            {locale ===
+                            "ar"
+                              ? "←"
+                              : "→"}{" "}
                             {shift.ended_at
                               ? formatDateTime(
-                                  shift.ended_at
+                                  shift.ended_at,
+                                  locale
                                 )
                               : "—"}
                           </p>
 
                           <p className="mt-2 text-xs font-semibold text-[#8A918C]">
-                            Durée :{" "}
+                            {t("duration")} :{" "}
                             {formatDuration(
                               shift.started_at,
-                              shift.ended_at
+                              shift.ended_at,
+                              locale
                             )}
                           </p>
                         </div>
@@ -1212,7 +1258,7 @@ export default async function AdminShiftsPage({
                         <div className="grid min-w-0 grid-cols-2 gap-2 sm:min-w-[300px]">
                           <div className="rounded-2xl bg-[#F6F6F2] p-4">
                             <p className="text-xs text-[#7A817C]">
-                              Commandes
+                              {t("stats.orders")}
                             </p>
 
                             <p className="mt-1 text-xl font-black text-[#1F2924]">
@@ -1224,12 +1270,13 @@ export default async function AdminShiftsPage({
 
                           <div className="rounded-2xl bg-[#EDF5EF] p-4">
                             <p className="text-xs text-[#567362]">
-                              Total
+                              {t("total")}
                             </p>
 
                             <p className="mt-1 text-lg font-black text-[#1E4D3A]">
                               {formatMoney(
-                                shift.total
+                                shift.total,
+                                locale
                               )}
                             </p>
 
@@ -1244,7 +1291,7 @@ export default async function AdminShiftsPage({
                         0 && (
                         <div className="mt-5 border-t border-[#EEECE6] pt-4">
                           <p className="text-xs font-bold uppercase tracking-wide text-[#9A9F9B]">
-                            Paiements
+                            {t("payments.title")}
                           </p>
 
                           <div className="mt-3 flex flex-wrap gap-2">
@@ -1260,16 +1307,19 @@ export default async function AdminShiftsPage({
                                 >
                                   <span className="text-xs text-[#7A817C]">
                                     {
-                                      method
+                                      getPaymentLabel(
+                                        method
+                                      )
                                     }
                                   </span>
 
-                                  <span className="ml-2 text-sm font-bold text-[#1F2924]">
+                                  <span className="ms-2 text-sm font-bold text-[#1F2924]">
                                     {formatMoney(
                                       shift
                                         .payments[
                                         method
-                                      ]
+                                      ],
+                                      locale
                                     )}{" "}
                                     MRU
                                   </span>
@@ -1289,7 +1339,7 @@ export default async function AdminShiftsPage({
 
         <footer className="mt-9 border-t border-[#E3E0D8] py-5">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Administration
+            {t("footer")}
           </p>
         </footer>
       </div>

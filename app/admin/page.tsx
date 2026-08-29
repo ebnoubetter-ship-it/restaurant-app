@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import LogoutButton from "@/components/LogoutButton";
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
@@ -45,17 +49,47 @@ function getBusinessDayRange() {
 }
 
 function formatMoney(
-  value: number
+  value: number,
+  locale: string
 ) {
   return new Intl.NumberFormat(
-    "fr-FR",
+    locale === "ar"
+      ? "ar-MR-u-nu-latn"
+      : "fr-FR",
     {
       maximumFractionDigits: 0,
+      numberingSystem: "latn",
     }
   ).format(value);
 }
 
+function formatTime(
+  value: string,
+  locale: string
+) {
+  return new Intl.DateTimeFormat(
+    locale === "ar"
+      ? "ar-MR-u-nu-latn"
+      : "fr-FR",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      numberingSystem: "latn",
+    }
+  ).format(
+    new Date(value)
+  );
+}
+
 export default async function AdminPage() {
+  const t =
+    await getTranslations(
+      "Admin"
+    );
+
+  const locale =
+    await getLocale();
+
   /*
    * ============================
    * RESTAURANT + ADMIN
@@ -206,7 +240,9 @@ export default async function AdminPage() {
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t(
+                  "administration"
+                )}
               </p>
             </div>
           </header>
@@ -217,21 +253,24 @@ export default async function AdminPage() {
             </div>
 
             <h1 className="mt-4 text-xl font-bold text-[#1F2924]">
-              Impossible de charger
-              le tableau de bord
+              {t(
+                "error.title"
+              )}
             </h1>
 
             <p className="mt-2 text-sm text-[#737A75]">
-              Les informations
-              n&apos;ont pas pu être
-              récupérées.
+              {t(
+                "error.description"
+              )}
             </p>
 
             <a
               href="/admin"
               className="mt-5 inline-flex rounded-xl bg-[#1E4D3A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#173D2F]"
             >
-              Réessayer
+              {t(
+                "actions.retry"
+              )}
             </a>
           </div>
         </div>
@@ -391,6 +430,20 @@ export default async function AdminPage() {
     );
   };
 
+  const getPaymentLabel = (
+    method: string
+  ) => {
+    if (
+      method === "Cash"
+    ) {
+      return t(
+        "payments.cash"
+      );
+    }
+
+    return method;
+  };
+
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
       <div className="mx-auto max-w-7xl">
@@ -407,7 +460,9 @@ export default async function AdminPage() {
                 </p>
 
                 <p className="text-xs text-[#7A817C]">
-                  Administration
+                  {t(
+                    "administration"
+                  )}
                 </p>
               </div>
             </div>
@@ -418,16 +473,28 @@ export default async function AdminPage() {
           <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-sm font-semibold text-[#2E6A50]">
-                Vue d&apos;ensemble
+                {t(
+                  "overview"
+                )}
               </p>
 
               <h1 className="mt-1 text-3xl font-bold tracking-[-0.03em] text-[#1F2924] md:text-4xl">
-                Aujourd&apos;hui
+                {t(
+                  "today"
+                )}
               </h1>
 
-              <p className="mt-2 text-sm text-[#737A75]">
-                Journée commerciale
-                de 07h00 à 07h00
+              <p
+                className="mt-2 text-sm text-[#737A75]"
+                dir={
+                  locale === "ar"
+                    ? "rtl"
+                    : "ltr"
+                }
+              >
+                {t(
+                  "businessDay"
+                )}
               </p>
             </div>
 
@@ -447,16 +514,25 @@ export default async function AdminPage() {
               />
 
               {shifts.length === 0
-                ? "Aucun shift ouvert"
-                : `${shifts.length} shift${
-                    shifts.length > 1
-                      ? "s"
-                      : ""
-                  } ouvert${
-                    shifts.length > 1
-                      ? "s"
-                      : ""
-                  }`}
+                ? t(
+                    "shift.none"
+                  )
+                : (
+                    <span>
+                      <span dir="ltr">
+                        {
+                          shifts.length
+                        }
+                      </span>{" "}
+                      {shifts.length === 1
+                        ? t(
+                            "shift.openSingular"
+                          )
+                        : t(
+                            "shift.openPlural"
+                          )}
+                    </span>
+                  )}
             </div>
           </div>
         </header>
@@ -464,13 +540,18 @@ export default async function AdminPage() {
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-[24px] bg-[#1E4D3A] p-5 text-white shadow-sm">
             <p className="text-sm font-medium text-white/70">
-              Chiffre
-              d&apos;affaires
+              {t(
+                "stats.revenue"
+              )}
             </p>
 
-            <p className="mt-3 text-3xl font-bold tracking-tight">
+            <p
+              className="mt-3 text-3xl font-bold tracking-tight"
+              dir="ltr"
+            >
               {formatMoney(
-                totalSales
+                totalSales,
+                locale
               )}{" "}
               <span className="text-base font-medium text-white/70">
                 MRU
@@ -478,33 +559,47 @@ export default async function AdminPage() {
             </p>
 
             <p className="mt-4 text-xs text-white/60">
-              Ventes encaissées
-              aujourd&apos;hui
+              {t(
+                "stats.revenueDescription"
+              )}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-[#E9E6DF] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Commandes payées
+              {t(
+                "stats.paidOrders"
+              )}
             </p>
 
-            <p className="mt-3 text-3xl font-bold tracking-tight text-[#1F2924]">
+            <p
+              className="mt-3 text-3xl font-bold tracking-tight text-[#1F2924]"
+              dir="ltr"
+            >
               {orderCount}
             </p>
 
             <p className="mt-4 text-xs text-[#9A9F9B]">
-              Commandes encaissées
+              {t(
+                "stats.paidOrdersDescription"
+              )}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-[#E9E6DF] bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-[#737A75]">
-              Ticket moyen
+              {t(
+                "stats.averageTicket"
+              )}
             </p>
 
-            <p className="mt-3 text-3xl font-bold tracking-tight text-[#1F2924]">
+            <p
+              className="mt-3 text-3xl font-bold tracking-tight text-[#1F2924]"
+              dir="ltr"
+            >
               {formatMoney(
-                averageOrder
+                averageOrder,
+                locale
               )}{" "}
               <span className="text-base font-medium text-[#737A75]">
                 MRU
@@ -512,7 +607,9 @@ export default async function AdminPage() {
             </p>
 
             <p className="mt-4 text-xs text-[#9A9F9B]">
-              Moyenne par commande
+              {t(
+                "stats.averageTicketDescription"
+              )}
             </p>
           </div>
 
@@ -520,10 +617,13 @@ export default async function AdminPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-[#737A75]">
-                  Annulations
+                  {t(
+                    "stats.cancellations"
+                  )}
                 </p>
 
                 <p
+                  dir="ltr"
                   className={
                     cancellationCount >
                     0
@@ -540,7 +640,9 @@ export default async function AdminPage() {
               {cancellationCount >
                 0 && (
                 <span className="rounded-full bg-[#FFF4F1] px-2.5 py-1 text-xs font-semibold text-[#B54A3A]">
-                  À vérifier
+                  {t(
+                    "stats.toCheck"
+                  )}
                 </span>
               )}
             </div>
@@ -549,7 +651,9 @@ export default async function AdminPage() {
               href="/admin/reports"
               className="mt-4 inline-flex text-xs font-semibold text-[#2E6A50] hover:underline"
             >
-              Voir les rapports →
+              {t(
+                "actions.viewReports"
+              )}
             </Link>
           </div>
         </section>
@@ -557,12 +661,15 @@ export default async function AdminPage() {
         <div className="mt-6 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
           <section className="rounded-[24px] border border-[#E9E6DF] bg-white p-5 shadow-sm md:p-6">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-              Paiements
+              {t(
+                "paymentSection.title"
+              )}
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Répartition du
-              chiffre d&apos;affaires
+              {t(
+                "paymentSection.description"
+              )}
             </p>
 
             <div className="mt-6 space-y-5">
@@ -583,20 +690,31 @@ export default async function AdminPage() {
                       <div className="mb-2 flex items-center justify-between gap-4">
                         <div>
                           <p className="text-sm font-semibold text-[#343D38]">
-                            {method}
+                            {getPaymentLabel(
+                              method
+                            )}
                           </p>
 
                           <p className="mt-0.5 text-xs text-[#9A9F9B]">
-                            {
-                              percentage
-                            }
-                            % du CA
+                            <span dir="ltr">
+                              {
+                                percentage
+                              }
+                              %
+                            </span>{" "}
+                            {t(
+                              "paymentSection.ofRevenue"
+                            )}
                           </p>
                         </div>
 
-                        <p className="text-sm font-bold text-[#1F2924]">
+                        <p
+                          className="text-sm font-bold text-[#1F2924]"
+                          dir="ltr"
+                        >
                           {formatMoney(
-                            amount
+                            amount,
+                            locale
                           )}{" "}
                           MRU
                         </p>
@@ -621,12 +739,15 @@ export default async function AdminPage() {
             <div className="flex items-center justify-between gap-4 border-b border-[#EEECE6] p-5 md:p-6">
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-                  Dernières ventes
+                  {t(
+                    "recentSales.title"
+                  )}
                 </h2>
 
                 <p className="mt-1 text-sm text-[#737A75]">
-                  Encaissements les
-                  plus récents
+                  {t(
+                    "recentSales.description"
+                  )}
                 </p>
               </div>
 
@@ -634,7 +755,9 @@ export default async function AdminPage() {
                 href="/admin/sales"
                 className="whitespace-nowrap text-sm font-semibold text-[#2E6A50]"
               >
-                Tout voir →
+                {t(
+                  "actions.viewAll"
+                )}
               </Link>
             </div>
 
@@ -646,13 +769,15 @@ export default async function AdminPage() {
                 </div>
 
                 <p className="mt-3 font-semibold text-[#343D38]">
-                  Aucune vente
+                  {t(
+                    "recentSales.emptyTitle"
+                  )}
                 </p>
 
                 <p className="mt-1 text-sm text-[#8A918C]">
-                  Les ventes de la
-                  journée apparaîtront
-                  ici.
+                  {t(
+                    "recentSales.emptyDescription"
+                  )}
                 </p>
               </div>
             ) : (
@@ -662,13 +787,19 @@ export default async function AdminPage() {
                     const location =
                       order.order_type ===
                       "takeaway"
-                        ? "À emporter"
+                        ? t(
+                            "order.takeaway"
+                          )
                         : order.table_id
                           ? tablesMap.get(
                               order.table_id
                             ) ||
-                            "Table"
-                          : "Table";
+                            t(
+                              "order.table"
+                            )
+                          : t(
+                              "order.table"
+                            );
 
                     return (
                       <Link
@@ -679,11 +810,16 @@ export default async function AdminPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-semibold text-[#1F2924]">
-                              {location}
+                              {
+                                location
+                              }
                             </p>
 
                             {order.order_number && (
-                              <span className="text-xs text-[#9A9F9B]">
+                              <span
+                                className="text-xs text-[#9A9F9B]"
+                                dir="ltr"
+                              >
                                 #
                                 {
                                   order.order_number
@@ -694,31 +830,33 @@ export default async function AdminPage() {
                             {order.order_type ===
                               "takeaway" && (
                               <span className="rounded-full bg-[#F3EFE8] px-2 py-0.5 text-[11px] font-semibold text-[#7D6755]">
-                                À emporter
+                                {t(
+                                  "order.takeaway"
+                                )}
                               </span>
                             )}
                           </div>
 
                           <div className="mt-1 flex items-center gap-2 text-xs text-[#8A918C]">
                             <span>
-                              {order.payment_method ||
-                                "Paiement"}
+                              {order.payment_method
+                                ? getPaymentLabel(
+                                    order.payment_method
+                                  )
+                                : t(
+                                    "order.payment"
+                                  )}
                             </span>
 
-                            <span>·</span>
-
                             <span>
+                              ·
+                            </span>
+
+                            <span dir="ltr">
                               {order.paid_at
-                                ? new Date(
-                                    order.paid_at
-                                  ).toLocaleTimeString(
-                                    "fr-FR",
-                                    {
-                                      hour:
-                                        "2-digit",
-                                      minute:
-                                        "2-digit",
-                                    }
+                                ? formatTime(
+                                    order.paid_at,
+                                    locale
                                   )
                                 : "—"}
                             </span>
@@ -726,18 +864,25 @@ export default async function AdminPage() {
                         </div>
 
                         <div className="flex shrink-0 items-center gap-3">
-                          <p className="font-bold text-[#1F2924]">
+                          <p
+                            className="font-bold text-[#1F2924]"
+                            dir="ltr"
+                          >
                             {formatMoney(
                               Number(
                                 order.total ||
                                   0
-                              )
+                              ),
+                              locale
                             )}{" "}
                             MRU
                           </p>
 
-                          <span className="text-[#B4B9B5] transition group-hover:translate-x-0.5 group-hover:text-[#2E6A50]">
-                            →
+                          <span className="text-[#B4B9B5] transition group-hover:text-[#2E6A50]">
+                            {locale ===
+                            "ar"
+                              ? "←"
+                              : "→"}
                           </span>
                         </div>
                       </Link>
@@ -752,12 +897,15 @@ export default async function AdminPage() {
         <section className="mt-8">
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-[#1F2924]">
-              Administration
+              {t(
+                "management.title"
+              )}
             </h2>
 
             <p className="mt-1 text-sm text-[#737A75]">
-              Accédez rapidement aux
-              fonctions de gestion.
+              {t(
+                "management.description"
+              )}
             </p>
           </div>
 
@@ -772,18 +920,23 @@ export default async function AdminPage() {
                 </div>
 
                 <span className="text-[#6F8F7B]">
-                  →
+                  {locale ===
+                  "ar"
+                    ? "←"
+                    : "→"}
                 </span>
               </div>
 
               <h3 className="mt-5 text-lg font-bold text-[#1F2924]">
-                Rapports
+                {t(
+                  "management.reports.title"
+                )}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#65726A]">
-                Analyse des ventes,
-                produits, annulations
-                et shifts.
+                {t(
+                  "management.reports.description"
+                )}
               </p>
             </Link>
 
@@ -797,18 +950,23 @@ export default async function AdminPage() {
                 </div>
 
                 <span className="text-[#B4B9B5]">
-                  →
+                  {locale ===
+                  "ar"
+                    ? "←"
+                    : "→"}
                 </span>
               </div>
 
               <h3 className="mt-5 text-lg font-bold text-[#1F2924]">
-                Ventes
+                {t(
+                  "management.sales.title"
+                )}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#737A75]">
-                Retrouvez chaque
-                encaissement et son
-                détail.
+                {t(
+                  "management.sales.description"
+                )}
               </p>
             </Link>
 
@@ -822,18 +980,23 @@ export default async function AdminPage() {
                 </div>
 
                 <span className="text-[#B4B9B5]">
-                  →
+                  {locale ===
+                  "ar"
+                    ? "←"
+                    : "→"}
                 </span>
               </div>
 
               <h3 className="mt-5 text-lg font-bold text-[#1F2924]">
-                Shifts
+                {t(
+                  "management.shifts.title"
+                )}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#737A75]">
-                Consultez les
-                horaires et clôtures
-                de caisse.
+                {t(
+                  "management.shifts.description"
+                )}
               </p>
             </Link>
 
@@ -847,18 +1010,23 @@ export default async function AdminPage() {
                 </div>
 
                 <span className="text-[#B4B9B5]">
-                  →
+                  {locale ===
+                  "ar"
+                    ? "←"
+                    : "→"}
                 </span>
               </div>
 
               <h3 className="mt-5 text-lg font-bold text-[#1F2924]">
-                Tables
+                {t(
+                  "management.tables.title"
+                )}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#737A75]">
-                Visualisez
-                l&apos;occupation du
-                restaurant.
+                {t(
+                  "management.tables.description"
+                )}
               </p>
             </Link>
 
@@ -872,17 +1040,23 @@ export default async function AdminPage() {
                 </div>
 
                 <span className="text-[#B4B9B5]">
-                  →
+                  {locale ===
+                  "ar"
+                    ? "←"
+                    : "→"}
                 </span>
               </div>
 
               <h3 className="mt-5 text-lg font-bold text-[#1F2924]">
-                Utilisateurs
+                {t(
+                  "management.users.title"
+                )}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#737A75]">
-                Gérez les employés et
-                leurs accès.
+                {t(
+                  "management.users.description"
+                )}
               </p>
             </Link>
 
@@ -896,19 +1070,22 @@ export default async function AdminPage() {
                 </div>
 
                 <span className="rounded-full border border-[#DDD8CD] bg-white px-3 py-1 text-xs font-semibold text-[#8B806F]">
-                  À venir
+                  {t(
+                    "management.comingSoon"
+                  )}
                 </span>
               </div>
 
               <h3 className="mt-5 text-lg font-bold text-[#5F6561]">
-                Stock
+                {t(
+                  "management.stock.title"
+                )}
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-[#8A8E8A]">
-                Stocks,
-                approvisionnements,
-                consommations et
-                inventaires.
+                {t(
+                  "management.stock.description"
+                )}
               </p>
             </div>
           </div>
@@ -916,8 +1093,9 @@ export default async function AdminPage() {
 
         <footer className="mt-10 border-t border-[#E3E0D8] py-6">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Gestion de
-            restaurant
+            {t(
+              "footer"
+            )}
           </p>
         </footer>
       </div>

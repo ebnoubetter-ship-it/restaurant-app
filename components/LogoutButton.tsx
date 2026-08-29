@@ -1,6 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 export default function LogoutButton() {
+  const t = useTranslations("Common");
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", {
       method: "POST",
@@ -14,7 +18,7 @@ export default function LogoutButton() {
       onClick={handleLogout}
       className="rounded-xl border px-4 py-2 text-sm font-medium"
     >
-      Se déconnecter
+      {t("logout")}
     </button>
   );
 }

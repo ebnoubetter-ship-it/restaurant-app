@@ -3,7 +3,8 @@
     "appName": "MAIDA",
     "administration": "الإدارة",
     "cashier": "الصندوق",
-    "stock": "المخزون"
+    "stock": "المخزون",
+    "logout": "تسجيل الخروج"
   },
   "Login": {
     "tagline": "مطعمك. أبسط.",
@@ -245,7 +246,9 @@
       "unit": "الوحدة",
       "kitchen": "المطبخ",
       "cancelled": "ملغى",
-      "total": "الإجمالي"
+      "total": "الإجمالي",
+      "takeaway": "طلب خارجي",
+      "table": "طاولة"
     },
     "kitchen": {
       "sending": "جارٍ الإرسال إلى المطبخ...",
@@ -319,6 +322,844 @@
     },
     "unavailable": {
       "title": "الطلب غير متاح"
+    }
+  },
+  "Admin": {
+    "administration": "الإدارة",
+    "error": {
+      "title": "الإدارة غير متاحة",
+      "description": "تعذر تحميل بيانات الإدارة."
+    },
+    "actions": {
+      "retry": "إعادة المحاولة",
+      "viewReports": "عرض التقارير",
+      "viewAll": "عرض الكل"
+    },
+    "overview": "نظرة عامة",
+    "today": "اليوم",
+    "businessDay": "يوم العمل",
+    "shift": {
+      "none": "لا توجد وردية مفتوحة",
+      "openSingular": "وردية واحدة مفتوحة",
+      "openPlural": "ورديات مفتوحة: {count}"
+    },
+    "stats": {
+      "revenue": "رقم الأعمال",
+      "revenueDescription": "المبيعات المحصلة",
+      "paidOrders": "الطلبات المدفوعة",
+      "paidOrdersDescription": "المبيعات المكتملة",
+      "averageTicket": "متوسط الفاتورة",
+      "averageTicketDescription": "لكل طلب مدفوع",
+      "cancellations": "الإلغاءات",
+      "toCheck": "للمراجعة"
+    },
+    "paymentSection": {
+      "title": "توزيع المدفوعات",
+      "description": "توزيع رقم الأعمال حسب وسيلة الدفع.",
+      "ofRevenue": "من رقم الأعمال"
+    },
+    "payments": {
+      "cash": "نقداً"
+    },
+    "recentSales": {
+      "title": "أحدث المبيعات",
+      "description": "آخر الطلبات التي تم تحصيلها.",
+      "emptyTitle": "لا توجد مبيعات",
+      "emptyDescription": "ستظهر المبيعات المحصلة هنا."
+    },
+    "order": {
+      "takeaway": "طلب خارجي",
+      "table": "طاولة",
+      "payment": "الدفع"
+    },
+    "management": {
+      "title": "الإدارة",
+      "description": "الوصول إلى أدوات الإدارة.",
+      "reports": {
+        "title": "التقارير",
+        "description": "تحليل نشاط المطعم."
+      },
+      "sales": {
+        "title": "المبيعات",
+        "description": "عرض المبيعات والمدفوعات."
+      },
+      "shifts": {
+        "title": "الورديات",
+        "description": "متابعة ورديات الصندوق."
+      },
+      "tables": {
+        "title": "الطاولات",
+        "description": "متابعة حالة الطاولات."
+      },
+      "users": {
+        "title": "المستخدمون",
+        "description": "إدارة الفريق والصلاحيات."
+      },
+      "comingSoon": "قريباً",
+      "stock": {
+        "title": "المخزون",
+        "description": "إدارة المخزون."
+      }
+    },
+    "footer": "MAIDA · إدارة المطاعم"
+  },
+  "AdminSales": {
+    "administration": "الإدارة",
+    "error": {
+      "title": "المبيعات غير متاحة",
+      "description": "تعذر تحميل المبيعات."
+    },
+    "actions": {
+      "retry": "إعادة المحاولة",
+      "backAdmin": "العودة إلى الإدارة",
+      "show": "عرض",
+      "view": "عرض"
+    },
+    "paymentsTitle": "المدفوعات",
+    "title": "المبيعات",
+    "description": "عرض المبيعات وتوزيعها.",
+    "filters": {
+      "today": "اليوم",
+      "week": "الأسبوع",
+      "month": "الشهر",
+      "range": "فترة",
+      "from": "من",
+      "to": "إلى"
+    },
+    "periodLabels": {
+      "week": "هذا الأسبوع",
+      "today": "اليوم"
+    },
+    "exactRange": {
+      "untilToday": "حتى اليوم",
+      "between": "من {from} إلى {to}"
+    },
+    "businessDay": "يوم العمل",
+    "stats": {
+      "revenue": "رقم الأعمال",
+      "orders": "الطلبات",
+      "paidSales": "المبيعات المدفوعة",
+      "averageTicket": "متوسط الفاتورة",
+      "averageSale": "لكل عملية بيع"
+    },
+    "paymentSection": {
+      "title": "توزيع المدفوعات",
+      "description": "توزيع رقم الأعمال."
+    },
+    "payments": {
+      "cash": "نقداً"
+    },
+    "salesDetails": {
+      "title": "تفاصيل المبيعات",
+      "order": "طلب",
+      "orders": "طلبات"
+    },
+    "empty": {
+      "title": "لا توجد مبيعات",
+      "description": "لا توجد مبيعات خلال هذه الفترة."
+    },
+    "order": {
+      "takeaway": "طلب خارجي",
+      "table": "طاولة",
+      "payment": "الدفع",
+      "cashier": "الصندوق"
+    },
+    "footer": "MAIDA · إدارة المطاعم"
+  },
+  "AdminReports": {
+    "administration": "الإدارة",
+    "error": {
+      "title": "التقارير غير متاحة",
+      "description": "تعذر تحميل التقارير."
+    },
+    "actions": {
+      "retry": "إعادة المحاولة",
+      "backAdmin": "العودة إلى الإدارة",
+      "show": "عرض",
+      "view": "عرض"
+    },
+    "eyebrow": "المتابعة",
+    "title": "التقارير",
+    "description": "تحليل أداء المطعم.",
+    "filters": {
+      "today": "اليوم",
+      "week": "الأسبوع",
+      "month": "الشهر",
+      "range": "فترة",
+      "from": "من",
+      "to": "إلى"
+    },
+    "periodLabels": {
+      "today": "اليوم",
+      "week": "هذا الأسبوع"
+    },
+    "exactRange": {
+      "untilToday": "حتى اليوم",
+      "between": "من {from} إلى {to}"
+    },
+    "businessDay": "يوم العمل",
+    "stats": {
+      "revenue": "رقم الأعمال",
+      "paidOrder": "طلب مدفوع",
+      "paidOrders": "طلبات مدفوعة",
+      "averageTicket": "متوسط الفاتورة",
+      "perPaidOrder": "لكل طلب مدفوع",
+      "productsSold": "المنتجات المباعة",
+      "unitsSold": "الوحدات المباعة",
+      "cancellations": "الإلغاءات",
+      "cancelledValue": "قيمة الملغى"
+    },
+    "paymentsSection": {
+      "title": "المدفوعات",
+      "description": "توزيع رقم الأعمال.",
+      "ofRevenue": "من رقم الأعمال"
+    },
+    "payments": {
+      "cash": "نقداً"
+    },
+    "cashiers": {
+      "title": "الصندوق",
+      "description": "الأداء حسب موظف الصندوق.",
+      "empty": "لا توجد بيانات.",
+      "order": "طلب",
+      "orders": "طلبات",
+      "ticket": "متوسط الفاتورة"
+    },
+    "products": {
+      "title": "المنتجات",
+      "description": "المبيعات والإلغاءات حسب المنتج.",
+      "sold": "مباع",
+      "cancelled": "ملغى",
+      "emptyTitle": "لا توجد منتجات",
+      "emptyDescription": "لا توجد بيانات منتجات لهذه الفترة."
+    },
+    "control": {
+      "eyebrow": "الرقابة",
+      "title": "الإلغاءات",
+      "description": "متابعة الإلغاءات.",
+      "orders": "الطلبات",
+      "items": "العناصر",
+      "cancelledUnits": "الوحدات الملغاة",
+      "beforeKitchen": "قبل المطبخ",
+      "beforePreparation": "قبل التحضير",
+      "afterKitchen": "بعد المطبخ",
+      "orderDecisionRate": "نسبة إلغاء الطلبات",
+      "cancelledUnitsRate": "نسبة الوحدات الملغاة"
+    },
+    "reasons": {
+      "title": "الأسباب",
+      "description": "توزيع أسباب الإلغاء.",
+      "empty": "لا توجد أسباب."
+    },
+    "history": {
+      "title": "سجل الإلغاءات",
+      "event": "حدث",
+      "events": "أحداث",
+      "emptyTitle": "لا توجد إلغاءات",
+      "emptyDescription": "لا توجد إلغاءات خلال هذه الفترة.",
+      "reason": "السبب",
+      "quantity": "الكمية",
+      "orderType": "طلب",
+      "itemType": "عنصر"
+    },
+    "shifts": {
+      "title": "الورديات",
+      "description": "ملخص الورديات.",
+      "viewAll": "عرض كل الورديات",
+      "emptyTitle": "لا توجد ورديات",
+      "emptyDescription": "لا توجد ورديات خلال هذه الفترة.",
+      "closed": "مغلقة",
+      "paidOrder": "طلب مدفوع",
+      "paidOrders": "طلبات مدفوعة",
+      "cancelledOrder": "طلب ملغى",
+      "cancelledOrders": "طلبات ملغاة",
+      "revenue": "رقم الأعمال"
+    },
+    "order": {
+      "order": "طلب",
+      "takeaway": "طلب خارجي",
+      "table": "طاولة",
+      "cashier": "الصندوق"
+    },
+    "product": {
+      "fallback": "منتج",
+      "item": "عنصر"
+    },
+    "cancellations": {
+      "fullOrder": "طلب كامل"
+    },
+    "cancellationReasons": {
+      "customerCancelled": "الزبون ألغى",
+      "inputError": "خطأ في الإدخال",
+      "unavailable": "المنتج غير متوفر",
+      "other": "أخرى"
+    },
+    "footer": "MAIDA · إدارة المطاعم"
+  },
+  "AdminShifts": {
+    "administration": "الإدارة",
+    "error": {
+      "title": "الورديات غير متاحة",
+      "description": "تعذر تحميل الورديات."
+    },
+    "actions": {
+      "retry": "إعادة المحاولة",
+      "backAdmin": "العودة إلى الإدارة",
+      "show": "عرض"
+    },
+    "eyebrow": "الصندوق",
+    "title": "الورديات",
+    "description": "متابعة ورديات الصندوق.",
+    "filters": {
+      "today": "اليوم",
+      "all": "الكل",
+      "cashier": "موظف الصندوق",
+      "allCashiers": "كل موظفي الصندوق"
+    },
+    "period": {
+      "today": "اليوم",
+      "allForCashier": "كل ورديات {cashier}",
+      "all": "كل الورديات"
+    },
+    "businessDay": "يوم العمل",
+    "stats": {
+      "open": "مفتوحة",
+      "openShift": "وردية مفتوحة",
+      "openShifts": "ورديات مفتوحة",
+      "closed": "مغلقة",
+      "selection": "التحديد",
+      "orders": "الطلبات",
+      "paid": "مدفوعة",
+      "revenue": "رقم الأعمال",
+      "shift": "وردية",
+      "noRevenue": "لا مبيعات"
+    },
+    "openSection": {
+      "title": "الورديات المفتوحة",
+      "description": "الورديات النشطة حالياً.",
+      "emptyTitle": "لا توجد وردية مفتوحة",
+      "emptyDescription": "لا توجد وردية مفتوحة لأي موظف صندوق.",
+      "badge": "مفتوحة",
+      "since": "منذ {time}"
+    },
+    "duration": "المدة",
+    "total": "الإجمالي",
+    "payments": {
+      "title": "المدفوعات",
+      "empty": "لا توجد مدفوعات",
+      "cash": "نقداً"
+    },
+    "closedSection": {
+      "title": "الورديات المغلقة",
+      "description": "سجل الورديات المغلقة.",
+      "emptyTitle": "لا توجد ورديات مغلقة",
+      "emptyDescription": "لا توجد ورديات مغلقة لهذا التحديد.",
+      "badge": "مغلقة"
+    },
+    "cashierFallback": "موظف الصندوق",
+    "footer": "MAIDA · إدارة المطاعم"
+  },
+  "AdminTables": {
+    "administration": "الإدارة",
+    "error": {
+      "title": "الطاولات غير متاحة",
+      "description": "تعذر تحميل الطاولات."
+    },
+    "actions": {
+      "retry": "إعادة المحاولة",
+      "backAdmin": "العودة إلى الإدارة"
+    },
+    "eyebrow": "الصالة",
+    "title": "الطاولات",
+    "description": "متابعة حالة الصالة مباشرة.",
+    "summary": {
+      "available": "متاحة",
+      "reserved": "محجوزة",
+      "occupied": "مشغولة",
+      "occupancyRate": "نسبة الإشغال",
+      "locationTotal": "مكان",
+      "locationsTotal": "أماكن"
+    },
+    "zone": {
+      "location": "مكان",
+      "locations": "أماكن",
+      "available": "متاحة",
+      "availablePlural": "متاحة",
+      "reserved": "محجوزة",
+      "reservedPlural": "محجوزة",
+      "occupied": "مشغولة",
+      "occupiedPlural": "مشغولة"
+    },
+    "status": {
+      "occupied": "مشغولة",
+      "reserved": "محجوزة",
+      "available": "متاحة"
+    },
+    "table": {
+      "ready": "جاهزة",
+      "reservationPending": "حجز بانتظار الوصول",
+      "order": "طلب",
+      "item": "عنصر",
+      "items": "عناصر",
+      "since": "منذ {time}",
+      "viewOrder": "عرض الطلب",
+      "inconsistentTitle": "حالة غير متناسقة",
+      "inconsistentDescription": "هذه الطاولة مشغولة دون طلب مفتوح."
+    },
+    "zones": {
+      "vip": "VIP",
+      "terraceBoxes": "تراس",
+      "room": "الصالة"
+    },
+    "footer": "MAIDA · إدارة المطاعم"
+  },
+  "AdminUsers": {
+    "administration": "الإدارة",
+    "actions": {
+      "backAdmin": "العودة إلى الإدارة",
+      "back": "رجوع",
+      "cancel": "إلغاء"
+    },
+    "eyebrow": "الفريق",
+    "title": "المستخدمون",
+    "description": "إدارة أعضاء الفريق وصلاحياتهم.",
+    "errors": {
+      "loadUsers": "تعذر تحميل المستخدمين.",
+      "employeeNameRequired": "اسم الموظف مطلوب.",
+      "createUser": "تعذر إنشاء المستخدم.",
+      "resetPin": "تعذر إعادة تعيين الرمز السري.",
+      "deleteUser": "تعذر حذف المستخدم."
+    },
+    "feedback": {
+      "userAdded": "تمت إضافة المستخدم.",
+      "pinReset": "تمت إعادة تعيين الرمز السري.",
+      "userDeleted": "تم حذف المستخدم."
+    },
+    "roles": {
+      "admin": {
+        "label": "مدير",
+        "access": "صلاحية الإدارة"
+      },
+      "cashier": {
+        "label": "موظف صندوق",
+        "access": "صلاحية الصندوق",
+        "description": "يتولى الطلبات والمدفوعات."
+      },
+      "stockManager": {
+        "label": "مسؤول المخزون",
+        "access": "صلاحية المخزون",
+        "description": "يدير المشتريات والمخزون."
+      }
+    },
+    "stats": {
+      "team": "الفريق",
+      "users": "المستخدمون",
+      "cashiers": "موظفو الصندوق",
+      "admins": "المديرون",
+      "stock": "المخزون"
+    },
+    "create": {
+      "eyebrow": "مستخدم جديد",
+      "title": "إضافة مستخدم",
+      "description": "إنشاء صلاحية دخول لعضو في الفريق.",
+      "name": "الاسم",
+      "namePlaceholder": "مثال: محمد",
+      "role": "الدور",
+      "creating": "جارٍ الإنشاء...",
+      "submit": "إضافة"
+    },
+    "team": {
+      "title": "الفريق",
+      "description": "مستخدمو المطعم.",
+      "account": "حساب",
+      "accounts": "حسابات",
+      "loading": "جارٍ التحميل...",
+      "emptyTitle": "لا يوجد مستخدمون",
+      "emptyDescription": "أضف أول مستخدم."
+    },
+    "pin": {
+      "active": "الرمز السري نشط",
+      "toCreate": "الرمز السري بحاجة للإنشاء",
+      "resetting": "جارٍ إعادة التعيين...",
+      "reset": "إعادة تعيين الرمز السري"
+    },
+    "delete": {
+      "deleting": "جارٍ الحذف...",
+      "lastAdmin": "آخر مدير",
+      "action": "حذف",
+      "lastAdminTitle": "الحذف غير ممكن",
+      "userTitle": "حذف المستخدم"
+    },
+    "resetModal": {
+      "eyebrow": "الأمان",
+      "title": "إعادة تعيين الرمز السري",
+      "description": "سيُطلب من المستخدم إنشاء رمز سري جديد عند تسجيل الدخول القادم.",
+      "notice": "سيتم حذف الرمز السري الحالي.",
+      "confirm": "إعادة التعيين"
+    },
+    "deleteModal": {
+      "eyebrow": "إجراء نهائي",
+      "title": "حذف المستخدم",
+      "description": "سيؤدي هذا الإجراء إلى حذف صلاحية المستخدم.",
+      "warningTitle": "تنبيه",
+      "warningDescription": "قد يمنع السجل المرتبط بهذا المستخدم حذفه."
+    },
+    "footer": "MAIDA · إدارة المطاعم"
+  },
+  "Access": {
+    "tagline": "مطعمك. أبسط.",
+    "verifyingAccess": "جارٍ التحقق من الوصول...",
+    "errors": {
+      "invalidLink": "رابط الوصول غير صالح.",
+      "verifyAccess": "تعذر التحقق من الوصول."
+    }
+  },
+  "Restricted": {
+    "tagline": "مطعمك. أبسط.",
+    "message": "وصولك مقيّد. تواصل مع دعم MAIDA.",
+    "description": "الوصول إلى هذا المطعم معطل حالياً.",
+    "retry": "إعادة المحاولة"
+  },
+  "Unauthorized": {
+    "tagline": "مطعمك. أبسط.",
+    "title": "الوصول غير مصرح به",
+    "description": "ليس لديك صلاحية الوصول إلى هذه المساحة."
+  },
+  "CashierLoading": {
+    "loading": "جارٍ تحميل الصندوق...",
+    "description": "جارٍ تجهيز مساحة العمل."
+  },
+  "Stock": {
+    "tagline": "مطعمك. أبسط.",
+    "title": "المخزون",
+    "description": "ستتوفر إدارة المخزون قريباً."
+  },
+  "AdminOrderDetail": {
+    "administration": "الإدارة",
+    "actions": {
+      "backAdmin": "العودة إلى الإدارة"
+    },
+    "eyebrow": "تفاصيل الطلب",
+    "order": {
+      "takeaway": "طلب خارجي",
+      "table": "طاولة",
+      "zone": "المنطقة"
+    },
+    "status": {
+      "paid": "مدفوع",
+      "cancelled": "ملغى",
+      "open": "مفتوح"
+    },
+    "kitchen": {
+      "notSent": "لم يُرسل",
+      "sentBeforeCancellation": "أُرسل قبل الإلغاء",
+      "cancelledBeforeSend": "أُلغي قبل الإرسال",
+      "emptyOrder": "الطلب فارغ",
+      "toSend": "بانتظار الإرسال",
+      "ok": "تم الإرسال للمطبخ"
+    },
+    "total": {
+      "paid": "الإجمالي المحصل",
+      "remaining": "الإجمالي المتبقي",
+      "current": "الإجمالي الحالي"
+    },
+    "cancelledOrder": {
+      "title": "طلب ملغى",
+      "reason": "السبب",
+      "cancelledBy": "ألغاه",
+      "date": "التاريخ"
+    },
+    "summary": {
+      "cashier": "موظف الصندوق",
+      "openedAt": "فُتح في",
+      "payment": "الدفع",
+      "paidAt": "تم التحصيل في"
+    },
+    "products": {
+      "title": "المنتجات",
+      "line": "سطر",
+      "lines": "أسطر",
+      "activeItem": "عنصر نشط",
+      "activeItems": "عناصر نشطة",
+      "emptyTitle": "لا توجد منتجات",
+      "emptyDescription": "هذا الطلب لا يحتوي على منتجات.",
+      "cancelled": "ملغى",
+      "kitchen": "المطبخ",
+      "cancelledBeforeKitchen": "ملغى قبل المطبخ",
+      "cancelledAfterKitchen": "ملغى بعد المطبخ",
+      "reason": "السبب",
+      "reasons": "الأسباب",
+      "subtotal": "المجموع الفرعي",
+      "productFallback": "منتج",
+      "itemFallback": "عنصر"
+    },
+    "audit": {
+      "eyebrow": "التتبع",
+      "title": "الإلغاءات",
+      "afterKitchen": "بعد المطبخ",
+      "beforeKitchen": "قبل المطبخ",
+      "quantity": "الكمية",
+      "reason": "السبب",
+      "cancelledUnit": "وحدة ملغاة",
+      "cancelledUnits": "وحدات ملغاة"
+    },
+    "navigation": {
+      "tables": "الطاولات",
+      "sales": "المبيعات",
+      "reports": "التقارير"
+    },
+    "payments": {
+      "cash": "نقداً"
+    },
+    "zones": {
+      "terrace": "تراس",
+      "room": "الصالة"
+    },
+    "cancellationReasons": {
+      "customerCancelled": "الزبون ألغى",
+      "inputError": "خطأ في الإدخال",
+      "unavailable": "المنتج غير متوفر",
+      "other": "أخرى"
+    },
+    "cashierFallback": "موظف الصندوق",
+    "footer": "MAIDA · إدارة المطاعم"
+  },
+  "ApiAuthLogin": {
+    "errors": {
+      "invalidRequest": "طلب غير صالح.",
+      "invalidCredentials": "بيانات الدخول غير صالحة.",
+      "loginFailed": "تعذر تسجيل الدخول.",
+      "incorrectPin": "الرمز السري غير صحيح."
+    }
+  },
+  "ApiAuthLookup": {
+    "errors": {
+      "invalidRequest": "طلب غير صالح.",
+      "nameRequired": "الاسم مطلوب.",
+      "userNotFound": "المستخدم غير موجود."
+    }
+  },
+  "ApiAuthSetPin": {
+    "errors": {
+      "invalidRequest": "طلب غير صالح.",
+      "invalidPin": "الرمز السري غير صالح.",
+      "userNotFound": "المستخدم غير موجود.",
+      "pinAlreadyExists": "يوجد رمز سري لهذا المستخدم بالفعل.",
+      "createPinFailed": "تعذر إنشاء الرمز السري.",
+      "pinJustCreated": "تم إنشاء الرمز السري للتو. سجّل الدخول من جديد."
+    }
+  },
+  "ApiRestaurantAccess": {
+    "errors": {
+      "authenticationRequired": "تسجيل الدخول مطلوب.",
+      "restricted": "وصولك مقيّد. تواصل مع دعم MAIDA.",
+      "reconnectRequired": "يرجى تسجيل الدخول من جديد.",
+      "checkAccessFailed": "تعذر التحقق من الوصول.",
+      "invalidRestaurantAccess": "صلاحية الوصول إلى المطعم غير صالحة.",
+      "unauthorized": "الوصول غير مصرح به.",
+      "invalidSession": "الجلسة غير صالحة."
+    }
+  },
+  "ApiOrders": {
+    "errors": {
+      "invalidRequest": "طلب غير صالح.",
+      "tableRequired": "الطاولة مطلوبة.",
+      "tableCheckFailed": "تعذر التحقق من الطاولة.",
+      "tableNotFound": "الطاولة غير موجودة.",
+      "createOrderFailed": "تعذر إنشاء الطلب.",
+      "createTakeawayFailed": "تعذر إنشاء الطلب الخارجي."
+    }
+  },
+  "ApiOrdersOpen": {
+    "errors": {
+      "tableRequired": "الطاولة مطلوبة.",
+      "lookupFailed": "تعذر البحث عن الطلب المفتوح.",
+      "noOpenOrder": "لا يوجد طلب مفتوح لهذه الطاولة."
+    }
+  },
+  "ApiOrderCancel": {
+    "errors": {
+      "invalidRequest": "طلب غير صالح.",
+      "reasonRequired": "سبب الإلغاء مطلوب.",
+      "reasonTooLong": "سبب الإلغاء طويل جداً.",
+      "restricted": "وصولك مقيّد. تواصل مع دعم MAIDA.",
+      "unauthorized": "الوصول غير مصرح به.",
+      "orderNotFound": "الطلب غير موجود.",
+      "orderPaid": "Une commande encaissée ne peut pas être annulée.",
+      "alreadyCancelled": "هذا الطلب ملغى بالفعل.",
+      "orderNotOpen": "لم يعد من الممكن إلغاء هذا الطلب.",
+      "cancelFailed": "تعذر إلغاء الطلب.",
+      "invalidResult": "L'annulation a retourné un résultat invalide."
+    },
+    "warnings": {
+      "tableNotReleased": "La commande est annulée, mais la table n'a pas pu être libérée.",
+      "kitchenTicketFailed": "La commande est annulée, mais le ticket d'annulation cuisine n'a pas pu être préparé.",
+      "cancelledWithWarnings": "Commande annulée avec avertissement : {warnings}"
+    }
+  },
+  "ApiOrderItems": {
+    "errors": {
+      "orderChanged": "La commande a changé. Actualisez-la puis réessayez.",
+      "orderNotFound": "الطلب غير موجود.",
+      "getOrderFailed": "Impossible de récupérer la commande.",
+      "getProductsFailed": "Impossible de récupérer les produits.",
+      "invalidRequest": "طلب غير صالح.",
+      "invalidProduct": "المنتج غير صالح.",
+      "orderNotEditable": "Cette commande ne peut plus être modifiée.",
+      "productNotFound": "المنتج غير موجود.",
+      "orderCheckFailed": "Impossible de vérifier la commande.",
+      "updateQuantityFailed": "Impossible de modifier la quantité.",
+      "addProductFailed": "Impossible d'ajouter le produit.",
+      "invalidItem": "العنصر غير صالح.",
+      "itemNotFound": "العنصر غير موجود.",
+      "increaseQuantityFailed": "Impossible d'augmenter la quantité.",
+      "noQuantityToDecrease": "Aucune quantité disponible à retirer.",
+      "sentToKitchenUseCancellation": "Cet article a déjà été envoyé en cuisine. Utilisez l'annulation.",
+      "deleteItemFailed": "Impossible de supprimer l'article.",
+      "reasonRequired": "سبب الإلغاء مطلوب.",
+      "reasonTooLong": "سبب الإلغاء طويل جداً.",
+      "invalidCancelQuantity": "Quantité à annuler invalide.",
+      "cancelQuantityTooHigh": "La quantité à annuler est supérieure à la quantité disponible.",
+      "restricted": "وصولك مقيّد. تواصل مع دعم MAIDA.",
+      "unauthorized": "الوصول غير مصرح به.",
+      "orderJustClosed": "Cette commande vient d'être clôturée.",
+      "availableQuantityChanged": "La quantité disponible a changé. Actualisez puis réessayez.",
+      "cancelItemFailed": "Impossible d'annuler l'article.",
+      "invalidCancellationResult": "L'annulation a retourné un résultat invalide.",
+      "invalidAction": "الإجراء غير صالح."
+    },
+    "warnings": {
+      "kitchenCancellationTicketFailed": "L'annulation est enregistrée, mais le ticket cuisine n'a pas pu être préparé."
+    }
+  },
+  "ApiOrderPay": {
+    "errors": {
+      "invalidRequest": "طلب غير صالح.",
+      "invalidPaymentMethod": "وسيلة الدفع غير صالحة.",
+      "paymentMethodCheckFailed": "Impossible de vérifier le moyen de paiement.",
+      "orderNotFound": "الطلب غير موجود.",
+      "orderAlreadyClosed": "هذا الطلب مغلق بالفعل.",
+      "tableCheckFailed": "Impossible de vérifier la table.",
+      "invalidAssociatedTable": "La table associée est invalide.",
+      "getShiftFailed": "Impossible de récupérer le shift.",
+      "openShiftRequired": "Un shift ouvert est requis pour encaisser.",
+      "getOrderItemsFailed": "Impossible de récupérer les articles de la commande.",
+      "getOrderProductsFailed": "Impossible de récupérer les produits de la commande.",
+      "invalidProductInOrder": "La commande contient un produit invalide.",
+      "sendAllToKitchenFirst": "Tous les articles doivent être envoyés en cuisine avant l'encaissement.",
+      "emptyOrder": "لا يمكن تحصيل طلب فارغ.",
+      "savePaymentFailed": "تعذر تسجيل الدفع.",
+      "concurrentClosure": "La commande vient d'être clôturée. Actualisez puis réessayez."
+    },
+    "warnings": {
+      "tableNotReleased": "Le paiement est enregistré, mais la table n'a pas pu être libérée.",
+      "receiptNotPrepared": "Le paiement est enregistré, mais le ticket client n'a pas pu être préparé.",
+      "paymentSavedWithWarnings": "Paiement enregistré avec avertissement : {warnings}"
+    }
+  },
+  "ApiOrderSendKitchen": {
+    "errors": {
+      "orderNotFound": "الطلب غير موجود.",
+      "orderNotSendable": "لم يعد من الممكن إرسال هذا الطلب إلى المطبخ.",
+      "getTableFailed": "تعذر استرجاع الطاولة.",
+      "invalidTable": "الطاولة غير صالحة.",
+      "getItemsFailed": "تعذر استرجاع العناصر.",
+      "getProductsFailed": "تعذر استرجاع المنتجات.",
+      "noPendingItems": "لا توجد عناصر جديدة لإرسالها إلى المطبخ.",
+      "invalidProduct": "يحتوي الطلب على منتج غير صالح.",
+      "restricted": "وصولك مقيّد. تواصل مع دعم MAIDA.",
+      "unauthorized": "الوصول غير مصرح به.",
+      "orderJustClosed": "تم إغلاق هذا الطلب للتو.",
+      "itemsAlreadySent": "تم إرسال العناصر إلى المطبخ بالفعل.",
+      "orderChanged": "تغير الطلب أثناء الإرسال. حدّثه ثم حاول مرة أخرى.",
+      "sendFailed": "تعذر تسجيل الإرسال إلى المطبخ.",
+      "invalidResult": "أعاد إرسال المطبخ نتيجة غير صالحة."
+    }
+  },
+  "ApiShiftOpen": {
+    "errors": {
+      "checkCurrentShiftFailed": "تعذر التحقق من الوردية الحالية.",
+      "shiftAlreadyOpen": "هناك وردية مفتوحة بالفعل.",
+      "openShiftFailed": "تعذر فتح الوردية."
+    }
+  },
+  "ApiShiftCurrent": {
+    "errors": {
+      "getShiftFailed": "تعذر استرجاع الوردية.",
+      "getShiftSalesFailed": "تعذر استرجاع مبيعات الوردية.",
+      "getCancelledOrdersFailed": "تعذر استرجاع الطلبات الملغاة.",
+      "checkOpenOrdersFailed": "تعذر التحقق من الطلبات المفتوحة."
+    },
+    "order": {
+      "takeaway": "طلب خارجي",
+      "table": "طاولة"
+    }
+  },
+  "ApiShiftClose": {
+    "errors": {
+      "noOpenShift": "لا توجد وردية مفتوحة.",
+      "checkOpenOrdersFailed": "تعذر التحقق من الطلبات المفتوحة.",
+      "openOrdersRemainSingular": "لا يزال هناك طلب مفتوح واحد. قم بتحصيله أو إلغائه قبل إغلاق الوردية.",
+      "openOrdersRemainPlural": "لا تزال هناك طلبات مفتوحة وعددها {count}. قم بتحصيلها أو إلغائها قبل إغلاق الوردية.",
+      "calculateSalesFailed": "تعذر حساب مبيعات الوردية.",
+      "getCancelledOrdersFailed": "تعذر استرجاع الطلبات الملغاة.",
+      "getCancelledItemsFailed": "تعذر استرجاع العناصر الملغاة.",
+      "getCancelledProductsFailed": "تعذر استرجاع المنتجات الملغاة.",
+      "closeShiftFailed": "تعذر إغلاق الوردية."
+    },
+    "warnings": {
+      "reportsNotQueued": "تم إغلاق الوردية، لكن تعذر إضافة التقارير إلى قائمة انتظار الطباعة."
+    }
+  },
+  "ApiUsers": {
+    "errors": {
+      "getUsersFailed": "تعذر استرجاع المستخدمين.",
+      "invalidRequest": "طلب غير صالح.",
+      "invalidNameOrRole": "الاسم أو الدور غير صالح.",
+      "nameTooLong": "الاسم طويل جداً.",
+      "checkUserFailed": "تعذر التحقق من المستخدم.",
+      "userAlreadyExists": "يوجد مستخدم بهذا الاسم بالفعل.",
+      "createUserFailed": "تعذر إنشاء المستخدم.",
+      "invalidUser": "المستخدم غير صالح.",
+      "userNotFound": "المستخدم غير موجود.",
+      "checkAdminsFailed": "تعذر التحقق من المديرين.",
+      "lastAdminCannotBeDeleted": "لا يمكن حذف آخر مدير للمطعم.",
+      "userLinkedToHistory": "هذا المستخدم مرتبط بسجل المطعم ولا يمكن حذفه.",
+      "deleteUserFailed": "تعذر حذف المستخدم."
+    }
+  },
+  "ApiUserResetPin": {
+    "errors": {
+      "invalidUser": "المستخدم غير صالح.",
+      "checkUserFailed": "تعذر التحقق من المستخدم.",
+      "userNotFound": "المستخدم غير موجود.",
+      "resetPinFailed": "تعذر إعادة تعيين الرمز السري."
+    }
+  },
+  "ApiMenu": {
+    "errors": {
+      "getMenuFailed": "تعذر استرجاع القائمة."
+    }
+  },
+  "ApiTables": {
+    "errors": {
+      "getTablesFailed": "تعذر استرجاع الطاولات."
+    }
+  },
+  "ApiTableStatus": {
+    "errors": {
+      "invalidRequest": "طلب غير صالح.",
+      "invalidStatus": "الحالة غير صالحة.",
+      "updateTableFailed": "تعذر تعديل الطاولة.",
+      "tableNotFound": "الطاولة غير موجودة."
+    }
+  },
+  "RestaurantAccess": {
+    "errors": {
+      "restaurantAccessRequired": "يلزم الوصول عبر رابط المطعم.",
+      "checkRestaurantAccessFailed": "تعذر التحقق من الوصول إلى المطعم.",
+      "invalidRestaurantAccess": "صلاحية الوصول إلى المطعم غير صالحة.",
+      "restricted": "وصولك مقيّد. تواصل مع دعم MAIDA."
     }
   }
 }

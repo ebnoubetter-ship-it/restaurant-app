@@ -3,7 +3,8 @@
     "appName": "MAIDA",
     "administration": "Administration",
     "cashier": "Caisse",
-    "stock": "Stock"
+    "stock": "Stock",
+    "logout": "Se déconnecter"
   },
   "Login": {
     "tagline": "Votre restaurant. Plus simple.",
@@ -245,7 +246,9 @@
       "unit": "unité",
       "kitchen": "cuisine",
       "cancelled": "annulé",
-      "total": "Total"
+      "total": "Total",
+      "takeaway": "À emporter",
+      "table": "Table"
     },
     "kitchen": {
       "sending": "Envoi en cuisine...",
@@ -319,6 +322,844 @@
     },
     "unavailable": {
       "title": "Commande indisponible"
+    }
+  },
+  "Admin": {
+    "administration": "Administration",
+    "error": {
+      "title": "Administration indisponible",
+      "description": "Impossible de charger les données de l'administration."
+    },
+    "actions": {
+      "retry": "Réessayer",
+      "viewReports": "Voir les rapports",
+      "viewAll": "Voir tout"
+    },
+    "overview": "Vue d'ensemble",
+    "today": "Aujourd'hui",
+    "businessDay": "Journée commerciale",
+    "shift": {
+      "none": "Aucun shift ouvert",
+      "openSingular": "1 shift ouvert",
+      "openPlural": "{count} shifts ouverts"
+    },
+    "stats": {
+      "revenue": "Chiffre d'affaires",
+      "revenueDescription": "Ventes encaissées",
+      "paidOrders": "Commandes payées",
+      "paidOrdersDescription": "Ventes finalisées",
+      "averageTicket": "Ticket moyen",
+      "averageTicketDescription": "Par commande payée",
+      "cancellations": "Annulations",
+      "toCheck": "À contrôler"
+    },
+    "paymentSection": {
+      "title": "Répartition des paiements",
+      "description": "Répartition du chiffre d'affaires par moyen de paiement.",
+      "ofRevenue": "du CA"
+    },
+    "payments": {
+      "cash": "Cash"
+    },
+    "recentSales": {
+      "title": "Ventes récentes",
+      "description": "Dernières commandes encaissées.",
+      "emptyTitle": "Aucune vente",
+      "emptyDescription": "Les ventes encaissées apparaîtront ici."
+    },
+    "order": {
+      "takeaway": "À emporter",
+      "table": "Table",
+      "payment": "Paiement"
+    },
+    "management": {
+      "title": "Gestion",
+      "description": "Accédez aux outils d'administration.",
+      "reports": {
+        "title": "Rapports",
+        "description": "Analysez l'activité du restaurant."
+      },
+      "sales": {
+        "title": "Ventes",
+        "description": "Consultez les ventes et paiements."
+      },
+      "shifts": {
+        "title": "Shifts",
+        "description": "Suivez les shifts des caissiers."
+      },
+      "tables": {
+        "title": "Tables",
+        "description": "Suivez l'état des tables."
+      },
+      "users": {
+        "title": "Utilisateurs",
+        "description": "Gérez l'équipe et les accès."
+      },
+      "comingSoon": "Bientôt",
+      "stock": {
+        "title": "Stock",
+        "description": "Gestion du stock."
+      }
+    },
+    "footer": "MAIDA · Gestion de restaurant"
+  },
+  "AdminSales": {
+    "administration": "Administration",
+    "error": {
+      "title": "Ventes indisponibles",
+      "description": "Impossible de charger les ventes."
+    },
+    "actions": {
+      "retry": "Réessayer",
+      "backAdmin": "Retour à l'administration",
+      "show": "Afficher",
+      "view": "Voir"
+    },
+    "paymentsTitle": "Encaissements",
+    "title": "Ventes",
+    "description": "Consultez les ventes et leur répartition.",
+    "filters": {
+      "today": "Aujourd'hui",
+      "week": "Semaine",
+      "month": "Mois",
+      "range": "Période",
+      "from": "Du",
+      "to": "Au"
+    },
+    "periodLabels": {
+      "week": "Cette semaine",
+      "today": "Aujourd'hui"
+    },
+    "exactRange": {
+      "untilToday": "Jusqu'à aujourd'hui",
+      "between": "Du {from} au {to}"
+    },
+    "businessDay": "Journée commerciale",
+    "stats": {
+      "revenue": "Chiffre d'affaires",
+      "orders": "Commandes",
+      "paidSales": "Ventes payées",
+      "averageTicket": "Ticket moyen",
+      "averageSale": "Par vente"
+    },
+    "paymentSection": {
+      "title": "Répartition des paiements",
+      "description": "Répartition du chiffre d'affaires."
+    },
+    "payments": {
+      "cash": "Cash"
+    },
+    "salesDetails": {
+      "title": "Détail des ventes",
+      "order": "commande",
+      "orders": "commandes"
+    },
+    "empty": {
+      "title": "Aucune vente",
+      "description": "Aucune vente sur cette période."
+    },
+    "order": {
+      "takeaway": "À emporter",
+      "table": "Table",
+      "payment": "Paiement",
+      "cashier": "Caissier"
+    },
+    "footer": "MAIDA · Gestion de restaurant"
+  },
+  "AdminReports": {
+    "administration": "Administration",
+    "error": {
+      "title": "Rapports indisponibles",
+      "description": "Impossible de charger les rapports."
+    },
+    "actions": {
+      "retry": "Réessayer",
+      "backAdmin": "Retour à l'administration",
+      "show": "Afficher",
+      "view": "Voir"
+    },
+    "eyebrow": "Pilotage",
+    "title": "Rapports",
+    "description": "Analysez les performances du restaurant.",
+    "filters": {
+      "today": "Aujourd'hui",
+      "week": "Semaine",
+      "month": "Mois",
+      "range": "Période",
+      "from": "Du",
+      "to": "Au"
+    },
+    "periodLabels": {
+      "today": "Aujourd'hui",
+      "week": "Cette semaine"
+    },
+    "exactRange": {
+      "untilToday": "Jusqu'à aujourd'hui",
+      "between": "Du {from} au {to}"
+    },
+    "businessDay": "Journée commerciale",
+    "stats": {
+      "revenue": "Chiffre d'affaires",
+      "paidOrder": "Commande payée",
+      "paidOrders": "Commandes payées",
+      "averageTicket": "Ticket moyen",
+      "perPaidOrder": "Par commande payée",
+      "productsSold": "Produits vendus",
+      "unitsSold": "Unités vendues",
+      "cancellations": "Annulations",
+      "cancelledValue": "Valeur annulée"
+    },
+    "paymentsSection": {
+      "title": "Paiements",
+      "description": "Répartition du chiffre d'affaires.",
+      "ofRevenue": "du CA"
+    },
+    "payments": {
+      "cash": "Cash"
+    },
+    "cashiers": {
+      "title": "Caissiers",
+      "description": "Performance par caissier.",
+      "empty": "Aucune donnée.",
+      "order": "commande",
+      "orders": "commandes",
+      "ticket": "Ticket moyen"
+    },
+    "products": {
+      "title": "Produits",
+      "description": "Ventes et annulations par produit.",
+      "sold": "Vendu",
+      "cancelled": "Annulé",
+      "emptyTitle": "Aucun produit",
+      "emptyDescription": "Aucune donnée produit sur cette période."
+    },
+    "control": {
+      "eyebrow": "Contrôle",
+      "title": "Annulations",
+      "description": "Suivi des annulations.",
+      "orders": "Commandes",
+      "items": "Articles",
+      "cancelledUnits": "Unités annulées",
+      "beforeKitchen": "Avant cuisine",
+      "beforePreparation": "Avant préparation",
+      "afterKitchen": "Après cuisine",
+      "orderDecisionRate": "Taux d'annulation commandes",
+      "cancelledUnitsRate": "Taux d'unités annulées"
+    },
+    "reasons": {
+      "title": "Motifs",
+      "description": "Répartition des motifs d'annulation.",
+      "empty": "Aucun motif."
+    },
+    "history": {
+      "title": "Historique des annulations",
+      "event": "événement",
+      "events": "événements",
+      "emptyTitle": "Aucune annulation",
+      "emptyDescription": "Aucune annulation sur cette période.",
+      "reason": "Motif",
+      "quantity": "Quantité",
+      "orderType": "Commande",
+      "itemType": "Article"
+    },
+    "shifts": {
+      "title": "Shifts",
+      "description": "Résumé des shifts.",
+      "viewAll": "Voir tous les shifts",
+      "emptyTitle": "Aucun shift",
+      "emptyDescription": "Aucun shift sur cette période.",
+      "closed": "Fermé",
+      "paidOrder": "commande payée",
+      "paidOrders": "commandes payées",
+      "cancelledOrder": "commande annulée",
+      "cancelledOrders": "commandes annulées",
+      "revenue": "CA"
+    },
+    "order": {
+      "order": "Commande",
+      "takeaway": "À emporter",
+      "table": "Table",
+      "cashier": "Caissier"
+    },
+    "product": {
+      "fallback": "Produit",
+      "item": "Article"
+    },
+    "cancellations": {
+      "fullOrder": "Commande complète"
+    },
+    "cancellationReasons": {
+      "customerCancelled": "Client a annulé",
+      "inputError": "Erreur de saisie",
+      "unavailable": "Produit indisponible",
+      "other": "Autre"
+    },
+    "footer": "MAIDA · Gestion de restaurant"
+  },
+  "AdminShifts": {
+    "administration": "Administration",
+    "error": {
+      "title": "Shifts indisponibles",
+      "description": "Impossible de charger les shifts."
+    },
+    "actions": {
+      "retry": "Réessayer",
+      "backAdmin": "Retour à l'administration",
+      "show": "Afficher"
+    },
+    "eyebrow": "Caisse",
+    "title": "Shifts",
+    "description": "Suivez les shifts des caissiers.",
+    "filters": {
+      "today": "Aujourd'hui",
+      "all": "Tout",
+      "cashier": "Caissier",
+      "allCashiers": "Tous les caissiers"
+    },
+    "period": {
+      "today": "Aujourd'hui",
+      "allForCashier": "Tous les shifts de {cashier}",
+      "all": "Tous les shifts"
+    },
+    "businessDay": "Journée commerciale",
+    "stats": {
+      "open": "Ouverts",
+      "openShift": "shift ouvert",
+      "openShifts": "shifts ouverts",
+      "closed": "Fermés",
+      "selection": "Sélection",
+      "orders": "Commandes",
+      "paid": "Payées",
+      "revenue": "CA",
+      "shift": "Shift",
+      "noRevenue": "Aucun CA"
+    },
+    "openSection": {
+      "title": "Shifts ouverts",
+      "description": "Shifts actuellement actifs.",
+      "emptyTitle": "Aucun shift ouvert",
+      "emptyDescription": "Aucun caissier n'a de shift ouvert.",
+      "badge": "Ouvert",
+      "since": "Depuis {time}"
+    },
+    "duration": "Durée",
+    "total": "Total",
+    "payments": {
+      "title": "Paiements",
+      "empty": "Aucun paiement",
+      "cash": "Cash"
+    },
+    "closedSection": {
+      "title": "Shifts fermés",
+      "description": "Historique des shifts clôturés.",
+      "emptyTitle": "Aucun shift fermé",
+      "emptyDescription": "Aucun shift fermé pour cette sélection.",
+      "badge": "Fermé"
+    },
+    "cashierFallback": "Caissier",
+    "footer": "MAIDA · Gestion de restaurant"
+  },
+  "AdminTables": {
+    "administration": "Administration",
+    "error": {
+      "title": "Tables indisponibles",
+      "description": "Impossible de charger les tables."
+    },
+    "actions": {
+      "retry": "Réessayer",
+      "backAdmin": "Retour à l'administration"
+    },
+    "eyebrow": "Salle",
+    "title": "Tables",
+    "description": "Suivez l'état de la salle en temps réel.",
+    "summary": {
+      "available": "Disponibles",
+      "reserved": "Réservées",
+      "occupied": "Occupées",
+      "occupancyRate": "Taux d'occupation",
+      "locationTotal": "emplacement",
+      "locationsTotal": "emplacements"
+    },
+    "zone": {
+      "location": "emplacement",
+      "locations": "emplacements",
+      "available": "disponible",
+      "availablePlural": "disponibles",
+      "reserved": "réservée",
+      "reservedPlural": "réservées",
+      "occupied": "occupée",
+      "occupiedPlural": "occupées"
+    },
+    "status": {
+      "occupied": "Occupée",
+      "reserved": "Réservée",
+      "available": "Disponible"
+    },
+    "table": {
+      "ready": "Prête",
+      "reservationPending": "Réservation en attente",
+      "order": "Commande",
+      "item": "article",
+      "items": "articles",
+      "since": "Depuis {time}",
+      "viewOrder": "Voir la commande",
+      "inconsistentTitle": "État incohérent",
+      "inconsistentDescription": "Cette table est occupée sans commande ouverte."
+    },
+    "zones": {
+      "vip": "VIP",
+      "terraceBoxes": "Box Terrasse",
+      "room": "Salle"
+    },
+    "footer": "MAIDA · Gestion de restaurant"
+  },
+  "AdminUsers": {
+    "administration": "Administration",
+    "actions": {
+      "backAdmin": "Retour à l'administration",
+      "back": "Retour",
+      "cancel": "Annuler"
+    },
+    "eyebrow": "Équipe",
+    "title": "Utilisateurs",
+    "description": "Gérez les membres de l'équipe et leurs accès.",
+    "errors": {
+      "loadUsers": "Impossible de charger les utilisateurs.",
+      "employeeNameRequired": "Le nom de l'employé est requis.",
+      "createUser": "Impossible de créer l'utilisateur.",
+      "resetPin": "Impossible de réinitialiser le PIN.",
+      "deleteUser": "Impossible de supprimer l'utilisateur."
+    },
+    "feedback": {
+      "userAdded": "Utilisateur ajouté.",
+      "pinReset": "PIN réinitialisé.",
+      "userDeleted": "Utilisateur supprimé."
+    },
+    "roles": {
+      "admin": {
+        "label": "Administrateur",
+        "access": "Accès administration"
+      },
+      "cashier": {
+        "label": "Caissier",
+        "access": "Accès caisse",
+        "description": "Prend les commandes et encaisse."
+      },
+      "stockManager": {
+        "label": "Gestionnaire de stock",
+        "access": "Accès stock",
+        "description": "Gère les achats et le stock."
+      }
+    },
+    "stats": {
+      "team": "Équipe",
+      "users": "Utilisateurs",
+      "cashiers": "Caissiers",
+      "admins": "Administrateurs",
+      "stock": "Stock"
+    },
+    "create": {
+      "eyebrow": "Nouvel utilisateur",
+      "title": "Ajouter un utilisateur",
+      "description": "Créez un accès pour un membre de l'équipe.",
+      "name": "Nom",
+      "namePlaceholder": "Ex. Mohamed",
+      "role": "Rôle",
+      "creating": "Création...",
+      "submit": "Ajouter"
+    },
+    "team": {
+      "title": "Équipe",
+      "description": "Utilisateurs du restaurant.",
+      "account": "compte",
+      "accounts": "comptes",
+      "loading": "Chargement...",
+      "emptyTitle": "Aucun utilisateur",
+      "emptyDescription": "Ajoutez votre premier utilisateur."
+    },
+    "pin": {
+      "active": "PIN actif",
+      "toCreate": "PIN à créer",
+      "resetting": "Réinitialisation...",
+      "reset": "Réinitialiser le PIN"
+    },
+    "delete": {
+      "deleting": "Suppression...",
+      "lastAdmin": "Dernier administrateur",
+      "action": "Supprimer",
+      "lastAdminTitle": "Suppression impossible",
+      "userTitle": "Supprimer l'utilisateur"
+    },
+    "resetModal": {
+      "eyebrow": "Sécurité",
+      "title": "Réinitialiser le PIN",
+      "description": "L'utilisateur devra créer un nouveau PIN à sa prochaine connexion.",
+      "notice": "Le PIN actuel sera supprimé.",
+      "confirm": "Réinitialiser"
+    },
+    "deleteModal": {
+      "eyebrow": "Action définitive",
+      "title": "Supprimer l'utilisateur",
+      "description": "Cette action supprime l'accès de l'utilisateur.",
+      "warningTitle": "Attention",
+      "warningDescription": "L'historique lié à cet utilisateur peut empêcher sa suppression."
+    },
+    "footer": "MAIDA · Gestion de restaurant"
+  },
+  "Access": {
+    "tagline": "Votre restaurant. Plus simple.",
+    "verifyingAccess": "Vérification de l'accès...",
+    "errors": {
+      "invalidLink": "Lien d'accès invalide.",
+      "verifyAccess": "Impossible de vérifier l'accès."
+    }
+  },
+  "Restricted": {
+    "tagline": "Votre restaurant. Plus simple.",
+    "message": "Votre accès est restreint. Contactez le support MAIDA.",
+    "description": "L'accès à ce restaurant est actuellement désactivé.",
+    "retry": "Réessayer"
+  },
+  "Unauthorized": {
+    "tagline": "Votre restaurant. Plus simple.",
+    "title": "Accès non autorisé",
+    "description": "Vous n'avez pas accès à cet espace."
+  },
+  "CashierLoading": {
+    "loading": "Chargement de la caisse...",
+    "description": "Préparation de votre espace de travail."
+  },
+  "Stock": {
+    "tagline": "Votre restaurant. Plus simple.",
+    "title": "Stock",
+    "description": "La gestion du stock sera disponible prochainement."
+  },
+  "AdminOrderDetail": {
+    "administration": "Administration",
+    "actions": {
+      "backAdmin": "Retour à l'administration"
+    },
+    "eyebrow": "Détail de la commande",
+    "order": {
+      "takeaway": "À emporter",
+      "table": "Table",
+      "zone": "Zone"
+    },
+    "status": {
+      "paid": "Payée",
+      "cancelled": "Annulée",
+      "open": "Ouverte"
+    },
+    "kitchen": {
+      "notSent": "Non envoyée",
+      "sentBeforeCancellation": "Envoyée avant annulation",
+      "cancelledBeforeSend": "Annulée avant envoi",
+      "emptyOrder": "Commande vide",
+      "toSend": "À envoyer",
+      "ok": "Cuisine OK"
+    },
+    "total": {
+      "paid": "Total encaissé",
+      "remaining": "Total restant",
+      "current": "Total actuel"
+    },
+    "cancelledOrder": {
+      "title": "Commande annulée",
+      "reason": "Motif",
+      "cancelledBy": "Annulée par",
+      "date": "Date"
+    },
+    "summary": {
+      "cashier": "Caissier",
+      "openedAt": "Ouverte le",
+      "payment": "Paiement",
+      "paidAt": "Encaissée le"
+    },
+    "products": {
+      "title": "Produits",
+      "line": "ligne",
+      "lines": "lignes",
+      "activeItem": "article actif",
+      "activeItems": "articles actifs",
+      "emptyTitle": "Aucun produit",
+      "emptyDescription": "Cette commande ne contient aucun produit.",
+      "cancelled": "Annulé",
+      "kitchen": "Cuisine",
+      "cancelledBeforeKitchen": "Annulé avant cuisine",
+      "cancelledAfterKitchen": "Annulé après cuisine",
+      "reason": "Motif",
+      "reasons": "Motifs",
+      "subtotal": "Sous-total",
+      "productFallback": "Produit",
+      "itemFallback": "Article"
+    },
+    "audit": {
+      "eyebrow": "Traçabilité",
+      "title": "Annulations",
+      "afterKitchen": "Après cuisine",
+      "beforeKitchen": "Avant cuisine",
+      "quantity": "Quantité",
+      "reason": "Motif",
+      "cancelledUnit": "unité annulée",
+      "cancelledUnits": "unités annulées"
+    },
+    "navigation": {
+      "tables": "Tables",
+      "sales": "Ventes",
+      "reports": "Rapports"
+    },
+    "payments": {
+      "cash": "Cash"
+    },
+    "zones": {
+      "terrace": "Box Terrasse",
+      "room": "Salle"
+    },
+    "cancellationReasons": {
+      "customerCancelled": "Client a annulé",
+      "inputError": "Erreur de saisie",
+      "unavailable": "Produit indisponible",
+      "other": "Autre"
+    },
+    "cashierFallback": "Caissier",
+    "footer": "MAIDA · Gestion de restaurant"
+  },
+  "ApiAuthLogin": {
+    "errors": {
+      "invalidRequest": "Requête invalide.",
+      "invalidCredentials": "Identifiants invalides.",
+      "loginFailed": "Impossible de se connecter.",
+      "incorrectPin": "PIN incorrect."
+    }
+  },
+  "ApiAuthLookup": {
+    "errors": {
+      "invalidRequest": "Requête invalide.",
+      "nameRequired": "Le nom est requis.",
+      "userNotFound": "Utilisateur introuvable."
+    }
+  },
+  "ApiAuthSetPin": {
+    "errors": {
+      "invalidRequest": "Requête invalide.",
+      "invalidPin": "PIN invalide.",
+      "userNotFound": "Utilisateur introuvable.",
+      "pinAlreadyExists": "Un PIN existe déjà pour cet utilisateur.",
+      "createPinFailed": "Impossible de créer le PIN.",
+      "pinJustCreated": "Le PIN vient d'être créé. Reconnectez-vous."
+    }
+  },
+  "ApiRestaurantAccess": {
+    "errors": {
+      "authenticationRequired": "Authentification requise.",
+      "restricted": "Votre accès est restreint. Contactez le support MAIDA.",
+      "reconnectRequired": "Veuillez vous reconnecter.",
+      "checkAccessFailed": "Impossible de vérifier l'accès.",
+      "invalidRestaurantAccess": "Accès restaurant invalide.",
+      "unauthorized": "Accès non autorisé.",
+      "invalidSession": "Session invalide."
+    }
+  },
+  "ApiOrders": {
+    "errors": {
+      "invalidRequest": "Requête invalide.",
+      "tableRequired": "La table est requise.",
+      "tableCheckFailed": "Impossible de vérifier la table.",
+      "tableNotFound": "Table introuvable.",
+      "createOrderFailed": "Impossible de créer la commande.",
+      "createTakeawayFailed": "Impossible de créer la commande à emporter."
+    }
+  },
+  "ApiOrdersOpen": {
+    "errors": {
+      "tableRequired": "La table est requise.",
+      "lookupFailed": "Impossible de rechercher la commande ouverte.",
+      "noOpenOrder": "Aucune commande ouverte pour cette table."
+    }
+  },
+  "ApiOrderCancel": {
+    "errors": {
+      "invalidRequest": "Requête invalide.",
+      "reasonRequired": "Le motif d'annulation est requis.",
+      "reasonTooLong": "Le motif d'annulation est trop long.",
+      "restricted": "Votre accès est restreint. Contactez le support MAIDA.",
+      "unauthorized": "Accès non autorisé.",
+      "orderNotFound": "Commande introuvable.",
+      "orderPaid": "Une commande encaissée ne peut pas être annulée.",
+      "alreadyCancelled": "Cette commande est déjà annulée.",
+      "orderNotOpen": "Cette commande ne peut plus être annulée.",
+      "cancelFailed": "Impossible d'annuler la commande.",
+      "invalidResult": "L'annulation a retourné un résultat invalide."
+    },
+    "warnings": {
+      "tableNotReleased": "La commande est annulée, mais la table n'a pas pu être libérée.",
+      "kitchenTicketFailed": "La commande est annulée, mais le ticket d'annulation cuisine n'a pas pu être préparé.",
+      "cancelledWithWarnings": "Commande annulée avec avertissement : {warnings}"
+    }
+  },
+  "ApiOrderItems": {
+    "errors": {
+      "orderChanged": "La commande a changé. Actualisez-la puis réessayez.",
+      "orderNotFound": "Commande introuvable.",
+      "getOrderFailed": "Impossible de récupérer la commande.",
+      "getProductsFailed": "Impossible de récupérer les produits.",
+      "invalidRequest": "Requête invalide.",
+      "invalidProduct": "Produit invalide.",
+      "orderNotEditable": "Cette commande ne peut plus être modifiée.",
+      "productNotFound": "Produit introuvable.",
+      "orderCheckFailed": "Impossible de vérifier la commande.",
+      "updateQuantityFailed": "Impossible de modifier la quantité.",
+      "addProductFailed": "Impossible d'ajouter le produit.",
+      "invalidItem": "Article invalide.",
+      "itemNotFound": "Article introuvable.",
+      "increaseQuantityFailed": "Impossible d'augmenter la quantité.",
+      "noQuantityToDecrease": "Aucune quantité disponible à retirer.",
+      "sentToKitchenUseCancellation": "Cet article a déjà été envoyé en cuisine. Utilisez l'annulation.",
+      "deleteItemFailed": "Impossible de supprimer l'article.",
+      "reasonRequired": "Le motif d'annulation est requis.",
+      "reasonTooLong": "Le motif d'annulation est trop long.",
+      "invalidCancelQuantity": "Quantité à annuler invalide.",
+      "cancelQuantityTooHigh": "La quantité à annuler est supérieure à la quantité disponible.",
+      "restricted": "Votre accès est restreint. Contactez le support MAIDA.",
+      "unauthorized": "Accès non autorisé.",
+      "orderJustClosed": "Cette commande vient d'être clôturée.",
+      "availableQuantityChanged": "La quantité disponible a changé. Actualisez puis réessayez.",
+      "cancelItemFailed": "Impossible d'annuler l'article.",
+      "invalidCancellationResult": "L'annulation a retourné un résultat invalide.",
+      "invalidAction": "Action invalide."
+    },
+    "warnings": {
+      "kitchenCancellationTicketFailed": "L'annulation est enregistrée, mais le ticket cuisine n'a pas pu être préparé."
+    }
+  },
+  "ApiOrderPay": {
+    "errors": {
+      "invalidRequest": "Requête invalide.",
+      "invalidPaymentMethod": "Moyen de paiement invalide.",
+      "paymentMethodCheckFailed": "Impossible de vérifier le moyen de paiement.",
+      "orderNotFound": "Commande introuvable.",
+      "orderAlreadyClosed": "Cette commande est déjà clôturée.",
+      "tableCheckFailed": "Impossible de vérifier la table.",
+      "invalidAssociatedTable": "La table associée est invalide.",
+      "getShiftFailed": "Impossible de récupérer le shift.",
+      "openShiftRequired": "Un shift ouvert est requis pour encaisser.",
+      "getOrderItemsFailed": "Impossible de récupérer les articles de la commande.",
+      "getOrderProductsFailed": "Impossible de récupérer les produits de la commande.",
+      "invalidProductInOrder": "La commande contient un produit invalide.",
+      "sendAllToKitchenFirst": "Tous les articles doivent être envoyés en cuisine avant l'encaissement.",
+      "emptyOrder": "Impossible d'encaisser une commande vide.",
+      "savePaymentFailed": "Impossible d'enregistrer le paiement.",
+      "concurrentClosure": "La commande vient d'être clôturée. Actualisez puis réessayez."
+    },
+    "warnings": {
+      "tableNotReleased": "Le paiement est enregistré, mais la table n'a pas pu être libérée.",
+      "receiptNotPrepared": "Le paiement est enregistré, mais le ticket client n'a pas pu être préparé.",
+      "paymentSavedWithWarnings": "Paiement enregistré avec avertissement : {warnings}"
+    }
+  },
+  "ApiOrderSendKitchen": {
+    "errors": {
+      "orderNotFound": "Commande introuvable.",
+      "orderNotSendable": "Cette commande ne peut plus être envoyée en cuisine.",
+      "getTableFailed": "Impossible de récupérer la table.",
+      "invalidTable": "Table invalide.",
+      "getItemsFailed": "Impossible de récupérer les articles.",
+      "getProductsFailed": "Impossible de récupérer les produits.",
+      "noPendingItems": "Aucun nouvel article à envoyer en cuisine.",
+      "invalidProduct": "La commande contient un produit invalide.",
+      "restricted": "Votre accès est restreint. Contactez le support MAIDA.",
+      "unauthorized": "Accès non autorisé.",
+      "orderJustClosed": "Cette commande vient d'être clôturée.",
+      "itemsAlreadySent": "Les articles ont déjà été envoyés en cuisine.",
+      "orderChanged": "La commande a changé pendant l'envoi. Actualisez-la puis réessayez.",
+      "sendFailed": "Impossible d'enregistrer l'envoi en cuisine.",
+      "invalidResult": "L'envoi cuisine a retourné un résultat invalide."
+    }
+  },
+  "ApiShiftOpen": {
+    "errors": {
+      "checkCurrentShiftFailed": "Impossible de vérifier le shift actuel.",
+      "shiftAlreadyOpen": "Un shift est déjà ouvert.",
+      "openShiftFailed": "Impossible d'ouvrir le shift."
+    }
+  },
+  "ApiShiftCurrent": {
+    "errors": {
+      "getShiftFailed": "Impossible de récupérer le shift.",
+      "getShiftSalesFailed": "Impossible de récupérer les ventes du shift.",
+      "getCancelledOrdersFailed": "Impossible de récupérer les commandes annulées.",
+      "checkOpenOrdersFailed": "Impossible de vérifier les commandes ouvertes."
+    },
+    "order": {
+      "takeaway": "À emporter",
+      "table": "Table"
+    }
+  },
+  "ApiShiftClose": {
+    "errors": {
+      "noOpenShift": "Aucun shift ouvert.",
+      "checkOpenOrdersFailed": "Impossible de vérifier les commandes ouvertes.",
+      "openOrdersRemainSingular": "{count} commande est encore ouverte. Encaissez ou annulez cette commande avant de fermer le shift.",
+      "openOrdersRemainPlural": "{count} commandes sont encore ouvertes. Encaissez ou annulez ces commandes avant de fermer le shift.",
+      "calculateSalesFailed": "Impossible de calculer les ventes du shift.",
+      "getCancelledOrdersFailed": "Impossible de récupérer les commandes annulées.",
+      "getCancelledItemsFailed": "Impossible de récupérer les articles annulés.",
+      "getCancelledProductsFailed": "Impossible de récupérer les produits annulés.",
+      "closeShiftFailed": "Impossible de fermer le shift."
+    },
+    "warnings": {
+      "reportsNotQueued": "Le shift est fermé, mais les rapports n'ont pas pu être ajoutés à la file d'impression."
+    }
+  },
+  "ApiUsers": {
+    "errors": {
+      "getUsersFailed": "Impossible de récupérer les utilisateurs.",
+      "invalidRequest": "Requête invalide.",
+      "invalidNameOrRole": "Nom ou rôle invalide.",
+      "nameTooLong": "Le nom est trop long.",
+      "checkUserFailed": "Impossible de vérifier l'utilisateur.",
+      "userAlreadyExists": "Un utilisateur avec ce nom existe déjà.",
+      "createUserFailed": "Impossible de créer l'utilisateur.",
+      "invalidUser": "Utilisateur invalide.",
+      "userNotFound": "Utilisateur introuvable.",
+      "checkAdminsFailed": "Impossible de vérifier les administrateurs.",
+      "lastAdminCannotBeDeleted": "Impossible de supprimer le dernier administrateur du restaurant.",
+      "userLinkedToHistory": "Cet utilisateur est lié à l'historique du restaurant et ne peut pas être supprimé.",
+      "deleteUserFailed": "Impossible de supprimer l'utilisateur."
+    }
+  },
+  "ApiUserResetPin": {
+    "errors": {
+      "invalidUser": "Utilisateur invalide.",
+      "checkUserFailed": "Impossible de vérifier l'utilisateur.",
+      "userNotFound": "Utilisateur introuvable.",
+      "resetPinFailed": "Impossible de réinitialiser le PIN."
+    }
+  },
+  "ApiMenu": {
+    "errors": {
+      "getMenuFailed": "Impossible de récupérer le menu."
+    }
+  },
+  "ApiTables": {
+    "errors": {
+      "getTablesFailed": "Impossible de récupérer les tables."
+    }
+  },
+  "ApiTableStatus": {
+    "errors": {
+      "invalidRequest": "Requête invalide.",
+      "invalidStatus": "Statut invalide.",
+      "updateTableFailed": "Impossible de modifier la table.",
+      "tableNotFound": "Table introuvable."
+    }
+  },
+  "RestaurantAccess": {
+    "errors": {
+      "restaurantAccessRequired": "Accès restaurant requis.",
+      "checkRestaurantAccessFailed": "Impossible de vérifier l'accès au restaurant.",
+      "invalidRestaurantAccess": "Accès restaurant invalide.",
+      "restricted": "Votre accès est restreint. Contactez le support MAIDA."
     }
   }
 }

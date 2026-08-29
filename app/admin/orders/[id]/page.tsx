@@ -3,32 +3,45 @@ import {
   notFound,
   redirect,
 } from "next/navigation";
+import {
+  getLocale,
+  getTranslations,
+} from "next-intl/server";
 
 import { getSessionRestaurantAccess } from "@/lib/session-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+function getNumberLocale(
+  locale: string
+) {
+  return locale === "ar"
+    ? "ar-MR-u-nu-latn"
+    : "fr-FR";
+}
+
 function formatMoney(
-  value: number
+  value: number,
+  locale: string
 ) {
   return new Intl.NumberFormat(
-    "fr-FR",
+    getNumberLocale(locale),
     {
       maximumFractionDigits: 0,
+      numberingSystem: "latn",
     }
   ).format(value);
 }
 
 function formatDateTime(
-  value?: string | null
+  value: string | null | undefined,
+  locale: string
 ) {
   if (!value) {
     return "—";
   }
 
-  return new Date(
-    value
-  ).toLocaleString(
-    "fr-FR",
+  return new Intl.DateTimeFormat(
+    getNumberLocale(locale),
     {
       timeZone:
         "Africa/Nouakchott",
@@ -37,7 +50,10 @@ function formatDateTime(
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      numberingSystem: "latn",
     }
+  ).format(
+    new Date(value)
   );
 }
 
@@ -48,6 +64,59 @@ export default async function AdminOrderDetailPage({
     id: string;
   }>;
 }) {
+  const t =
+    await getTranslations(
+      "AdminOrderDetail"
+    );
+
+  const locale =
+    await getLocale();
+
+  const cancellationReasonLabel = (
+    reason?: string | null
+  ) => {
+    const value =
+      reason?.trim() ||
+      "Autre";
+
+    if (
+      value ===
+      "Client a annulé"
+    ) {
+      return t(
+        "cancellationReasons.customerCancelled"
+      );
+    }
+
+    if (
+      value ===
+      "Erreur de saisie"
+    ) {
+      return t(
+        "cancellationReasons.inputError"
+      );
+    }
+
+    if (
+      value ===
+      "Produit indisponible"
+    ) {
+      return t(
+        "cancellationReasons.unavailable"
+      );
+    }
+
+    if (
+      value === "Autre"
+    ) {
+      return t(
+        "cancellationReasons.other"
+      );
+    }
+
+    return value;
+  };
+
   /*
    * ============================
    * RESTAURANT + ADMIN
@@ -437,7 +506,7 @@ export default async function AdminOrderDetailPage({
       ? usersMap.get(
           order.cashier_id
         ) ||
-        "Caissier"
+        t("cashierFallback")
       : "—";
 
   const cancelledByName =
@@ -445,7 +514,7 @@ export default async function AdminOrderDetailPage({
       ? usersMap.get(
           order.cancelled_by
         ) ||
-        "Caissier"
+        t("cashierFallback")
       : "—";
 
   /*
@@ -456,9 +525,9 @@ export default async function AdminOrderDetailPage({
   const orderLabel =
     order.order_type ===
     "takeaway"
-      ? "À emporter"
+      ? t("order.takeaway")
       : table?.name ||
-        "Table";
+        t("order.table");
 
   /*
    * ============================
@@ -642,17 +711,17 @@ export default async function AdminOrderDetailPage({
         order.status ===
         "paid"
       ) {
-        return "Payée";
+        return t("status.paid");
       }
 
       if (
         order.status ===
         "cancelled"
       ) {
-        return "Annulée";
+        return t("status.cancelled");
       }
 
-      return "Ouverte";
+      return t("status.open");
     };
 
   const getStatusStyle =
@@ -675,7 +744,7 @@ export default async function AdminOrderDetailPage({
     };
 
   let kitchenLabel =
-    "Non envoyée";
+    t("kitchen.notSent");
 
   let kitchenStyle =
     "bg-[#F1F2EF] text-[#68706B]";
@@ -688,13 +757,13 @@ export default async function AdminOrderDetailPage({
       order.sent_to_kitchen_at
     ) {
       kitchenLabel =
-        "Envoyée avant annulation";
+        t("kitchen.sentBeforeCancellation");
 
       kitchenStyle =
         "bg-[#FFF1EE] text-[#A74435]";
     } else {
       kitchenLabel =
-        "Annulée avant envoi";
+        t("kitchen.cancelledBeforeSend");
 
       kitchenStyle =
         "bg-[#FFF6E9] text-[#946021]";
@@ -704,7 +773,7 @@ export default async function AdminOrderDetailPage({
     0
   ) {
     kitchenLabel =
-      "Commande vide";
+      t("kitchen.emptyOrder");
 
     kitchenStyle =
       "bg-[#F1F2EF] text-[#68706B]";
@@ -713,13 +782,19 @@ export default async function AdminOrderDetailPage({
     0
   ) {
     kitchenLabel =
-      `${pendingKitchenUnits} à envoyer`;
+      t(
+        "kitchen.toSend",
+        {
+          count:
+            pendingKitchenUnits,
+        }
+      );
 
     kitchenStyle =
       "bg-[#FFF6E9] text-[#946021]";
   } else {
     kitchenLabel =
-      "Cuisine OK";
+      t("kitchen.ok");
 
     kitchenStyle =
       "bg-[#EDF5EF] text-[#2E6A50]";
@@ -728,11 +803,11 @@ export default async function AdminOrderDetailPage({
   const totalLabel =
     order.status ===
     "paid"
-      ? "Total encaissé"
+      ? t("total.paid")
       : order.status ===
           "cancelled"
-        ? "Valeur restante"
-        : "Total actuel";
+        ? t("total.remaining")
+        : t("total.current");
 
   return (
     <main className="min-h-screen bg-[#F5F2EB] p-4 md:p-6">
@@ -749,7 +824,7 @@ export default async function AdminOrderDetailPage({
               </p>
 
               <p className="text-xs text-[#7A817C]">
-                Administration
+                {t("administration")}
               </p>
             </div>
           </div>
@@ -759,7 +834,7 @@ export default async function AdminOrderDetailPage({
               href="/admin"
               className="inline-flex min-h-10 items-center text-sm font-semibold text-[#567362]"
             >
-              ← Administration
+              {t("actions.backAdmin")}
             </Link>
           </div>
         </header>
@@ -768,7 +843,7 @@ export default async function AdminOrderDetailPage({
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-[#2E6A50]">
-                Détail de la commande
+                {t("eyebrow")}
               </p>
 
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -777,7 +852,10 @@ export default async function AdminOrderDetailPage({
                 </h1>
 
                 {order.order_number && (
-                  <span className="rounded-full bg-[#F1F2EF] px-3 py-1.5 text-sm font-bold text-[#68706B]">
+                  <span
+                    className="rounded-full bg-[#F1F2EF] px-3 py-1.5 text-sm font-bold text-[#68706B]"
+                    dir="ltr"
+                  >
                     #
                     {Number(
                       order.order_number
@@ -788,7 +866,7 @@ export default async function AdminOrderDetailPage({
                 {order.order_type ===
                   "takeaway" && (
                   <span className="rounded-full bg-[#F3EFE8] px-3 py-1.5 text-xs font-semibold text-[#745F4F]">
-                    À emporter
+                    {t("order.takeaway")}
                   </span>
                 )}
               </div>
@@ -797,11 +875,13 @@ export default async function AdminOrderDetailPage({
                 "takeaway" &&
                 table?.zone && (
                   <p className="mt-2 text-sm text-[#7A817C]">
-                    Zone :{" "}
+                    {t("order.zone")} :{" "}
                     <span className="font-semibold text-[#4E5651]">
-                      {
-                        table.zone
-                      }
+                      {table.zone === "Terrasse"
+                        ? t("zones.terrace")
+                        : table.zone === "Salle"
+                          ? t("zones.room")
+                          : table.zone}
                     </span>
                   </p>
                 )}
@@ -827,24 +907,25 @@ export default async function AdminOrderDetailPage({
           "cancelled" && (
           <section className="mt-4 rounded-[24px] border border-[#EDC7C0] bg-[#FFF7F5] p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-[#A74435]">
-              Commande annulée
+              {t("cancelledOrder.title")}
             </p>
 
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               <div>
                 <p className="text-xs text-[#A87870]">
-                  Motif
+                  {t("cancelledOrder.reason")}
                 </p>
 
                 <p className="mt-1 font-semibold text-[#713E35]">
-                  {order.cancellation_reason ||
-                    "Autre"}
+                  {cancellationReasonLabel(
+                    order.cancellation_reason
+                  )}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs text-[#A87870]">
-                  Annulée par
+                  {t("cancelledOrder.cancelledBy")}
                 </p>
 
                 <p className="mt-1 font-semibold text-[#713E35]">
@@ -856,12 +937,13 @@ export default async function AdminOrderDetailPage({
 
               <div>
                 <p className="text-xs text-[#A87870]">
-                  Date
+                  {t("cancelledOrder.date")}
                 </p>
 
                 <p className="mt-1 font-semibold text-[#713E35]">
                   {formatDateTime(
-                    order.cancelled_at
+                    order.cancelled_at,
+                    locale
                   )}
                 </p>
               </div>
@@ -872,7 +954,7 @@ export default async function AdminOrderDetailPage({
         <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-[#7A817C]">
-              Caissier
+              {t("summary.cashier")}
             </p>
 
             <p className="mt-2 font-bold text-[#1F2924]">
@@ -882,35 +964,40 @@ export default async function AdminOrderDetailPage({
 
           <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-[#7A817C]">
-              Ouverture
+              {t("summary.openedAt")}
             </p>
 
             <p className="mt-2 text-sm font-bold text-[#1F2924]">
               {formatDateTime(
-                order.created_at
+                order.created_at,
+                locale
               )}
             </p>
           </div>
 
           <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-[#7A817C]">
-              Paiement
+              {t("summary.payment")}
             </p>
 
             <p className="mt-2 font-bold text-[#1F2924]">
-              {order.payment_method ||
-                "—"}
+              {order.payment_method ===
+              "Cash"
+                ? t("payments.cash")
+                : order.payment_method ||
+                  "—"}
             </p>
           </div>
 
           <div className="rounded-[22px] border border-[#E8E5DE] bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-[#7A817C]">
-              Encaissement
+              {t("summary.paidAt")}
             </p>
 
             <p className="mt-2 text-sm font-bold text-[#1F2924]">
               {formatDateTime(
-                order.paid_at
+                order.paid_at,
+                locale
               )}
             </p>
           </div>
@@ -921,39 +1008,38 @@ export default async function AdminOrderDetailPage({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-xl font-black tracking-tight text-[#1F2924]">
-                  Produits
+                  {t("products.title")}
                 </h2>
 
                 <p className="mt-1 text-sm text-[#737A75]">
-                  {items.length}{" "}
-                  ligne
-                  {items.length >
-                  1
-                    ? "s"
-                    : ""}
+                  <span dir="ltr">
+                    {items.length}
+                  </span>{" "}
+                  {items.length === 1
+                    ? t("products.line")
+                    : t("products.lines")}
                   {" · "}
-                  {totalCurrentUnits}{" "}
-                  article
-                  {totalCurrentUnits >
-                  1
-                    ? "s"
-                    : ""}{" "}
-                  actif
-                  {totalCurrentUnits >
-                  1
-                    ? "s"
-                    : ""}
+                  <span dir="ltr">
+                    {totalCurrentUnits}
+                  </span>{" "}
+                  {totalCurrentUnits === 1
+                    ? t("products.activeItem")
+                    : t("products.activeItems")}
                 </p>
               </div>
 
-              <div className="sm:text-right">
+              <div className="sm:text-end">
                 <p className="text-xs font-medium text-[#7A817C]">
                   {totalLabel}
                 </p>
 
-                <p className="mt-1 text-2xl font-black text-[#1E4D3A]">
+                <p
+                  className="mt-1 text-2xl font-black text-[#1E4D3A]"
+                  dir="ltr"
+                >
                   {formatMoney(
-                    displayTotal
+                    displayTotal,
+                    locale
                   )}{" "}
                   <span className="text-xs font-semibold text-[#6D8274]">
                     MRU
@@ -971,13 +1057,11 @@ export default async function AdminOrderDetailPage({
               </div>
 
               <p className="mt-3 font-semibold text-[#4E5651]">
-                Aucun produit
+                {t("products.emptyTitle")}
               </p>
 
               <p className="mt-1 text-sm text-[#8A918C]">
-                Cette commande ne
-                contient aucun
-                article.
+                {t("products.emptyDescription")}
               </p>
             </div>
           ) : (
@@ -1033,14 +1117,14 @@ export default async function AdminOrderDetailPage({
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-bold text-[#1F2924] sm:text-lg">
                               {product?.name ||
-                                "Produit"}
+                                t("products.productFallback")}
                             </h3>
 
                             {quantity ===
                               0 &&
                               hasCancellation && (
                                 <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[11px] font-semibold text-[#A74435]">
-                                  Annulé
+                                  {t("products.cancelled")}
                                 </span>
                               )}
                           </div>
@@ -1054,18 +1138,25 @@ export default async function AdminOrderDetailPage({
                           )}
 
                           <div className="mt-3 flex flex-wrap gap-2">
-                            <span className="rounded-full bg-[#F1F2EF] px-2.5 py-1 text-xs font-semibold text-[#68706B]">
+                            <span
+                              className="rounded-full bg-[#F1F2EF] px-2.5 py-1 text-xs font-semibold text-[#68706B]"
+                              dir="ltr"
+                            >
                               {quantity} ×{" "}
                               {formatMoney(
-                                unitPrice
+                                unitPrice,
+                                locale
                               )}{" "}
                               MRU
                             </span>
 
                             {sentQuantity >
                               0 && (
-                              <span className="rounded-full bg-[#EDF5EF] px-2.5 py-1 text-xs font-semibold text-[#2E6A50]">
-                                Cuisine :{" "}
+                              <span
+                                className="rounded-full bg-[#EDF5EF] px-2.5 py-1 text-xs font-semibold text-[#2E6A50]"
+                                dir="ltr"
+                              >
+                                {t("products.kitchen")} :{" "}
                                 {
                                   sentQuantity
                                 }
@@ -1075,8 +1166,11 @@ export default async function AdminOrderDetailPage({
                             {cancellation?.beforeKitchen &&
                               cancellation.beforeKitchen >
                                 0 && (
-                                <span className="rounded-full bg-[#FFF6E9] px-2.5 py-1 text-xs font-semibold text-[#946021]">
-                                  Annulé avant
+                                <span
+                                  className="rounded-full bg-[#FFF6E9] px-2.5 py-1 text-xs font-semibold text-[#946021]"
+                                  dir="ltr"
+                                >
+                                  {t("products.cancelled")} avant
                                   cuisine :{" "}
                                   {
                                     cancellation.beforeKitchen
@@ -1087,8 +1181,11 @@ export default async function AdminOrderDetailPage({
                             {cancellation?.afterKitchen &&
                               cancellation.afterKitchen >
                                 0 && (
-                                <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-xs font-semibold text-[#A74435]">
-                                  Annulé après
+                                <span
+                                  className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-xs font-semibold text-[#A74435]"
+                                  dir="ltr"
+                                >
+                                  {t("products.cancelled")} après
                                   cuisine :{" "}
                                   {
                                     cancellation.afterKitchen
@@ -1103,7 +1200,7 @@ export default async function AdminOrderDetailPage({
                               0 && (
                               <div className="mt-3 rounded-xl bg-[#FFF9F7] px-3 py-2">
                                 <p className="text-[11px] font-medium text-[#A87870]">
-                                  Motif
+                                  {t("cancelledOrder.reason")}
                                   {cancellation.reasons
                                     .length >
                                   1
@@ -1112,22 +1209,30 @@ export default async function AdminOrderDetailPage({
                                 </p>
 
                                 <p className="mt-0.5 text-sm font-semibold text-[#713E35]">
-                                  {cancellation.reasons.join(
-                                    " · "
-                                  )}
+                                  {cancellation.reasons
+                                    .map(
+                                      cancellationReasonLabel
+                                    )
+                                    .join(
+                                      " · "
+                                    )}
                                 </p>
                               </div>
                             )}
                         </div>
 
-                        <div className="shrink-0 sm:text-right">
+                        <div className="shrink-0 sm:text-end">
                           <p className="text-xs font-medium text-[#8A918C]">
-                            Sous-total
+                            {t("products.subtotal")}
                           </p>
 
-                          <p className="mt-1 text-lg font-black text-[#1F2924]">
+                          <p
+                            className="mt-1 text-lg font-black text-[#1F2924]"
+                            dir="ltr"
+                          >
                             {formatMoney(
-                              lineTotal
+                              lineTotal,
+                              locale
                             )}{" "}
                             <span className="text-xs font-semibold text-[#737A75]">
                               MRU
@@ -1148,9 +1253,13 @@ export default async function AdminOrderDetailPage({
                 {totalLabel}
               </span>
 
-              <span className="text-2xl font-black text-[#1E4D3A]">
+              <span
+                className="text-2xl font-black text-[#1E4D3A]"
+                dir="ltr"
+              >
                 {formatMoney(
-                  displayTotal
+                  displayTotal,
+                  locale
                 )}{" "}
                 <span className="text-sm font-semibold text-[#6D8274]">
                   MRU
@@ -1167,38 +1276,35 @@ export default async function AdminOrderDetailPage({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-[#A74435]">
-                    Audit
+                    {t("audit.eyebrow")}
                   </p>
 
                   <h2 className="mt-1 text-xl font-black text-[#1F2924]">
-                    Annulations
-                    d&apos;articles
+                    {t("audit.title")}
                   </h2>
 
                   <p className="mt-1 text-sm text-[#8A6B65]">
-                    {
-                      totalCancelledUnits
-                    }{" "}
-                    unité
-                    {totalCancelledUnits >
-                    1
-                      ? "s"
-                      : ""}{" "}
-                    annulée
-                    {totalCancelledUnits >
-                    1
-                      ? "s"
-                      : ""}
+                    <span dir="ltr">
+                      {
+                        totalCancelledUnits
+                      }
+                    </span>{" "}
+                    {totalCancelledUnits === 1
+                      ? t("audit.cancelledUnit")
+                      : t("audit.cancelledUnits")}
                   </p>
                 </div>
 
                 {totalCancelledAfterKitchen >
                   0 && (
-                  <span className="w-fit rounded-full bg-[#FCE4DF] px-3 py-1.5 text-xs font-semibold text-[#A74435]">
+                  <span
+                    className="w-fit rounded-full bg-[#FCE4DF] px-3 py-1.5 text-xs font-semibold text-[#A74435]"
+                    dir="ltr"
+                  >
                     {
                       totalCancelledAfterKitchen
                     }{" "}
-                    après cuisine
+                    {t("audit.afterKitchen")}
                   </span>
                 )}
               </div>
@@ -1225,7 +1331,7 @@ export default async function AdminOrderDetailPage({
                       ? usersMap.get(
                           cancellation.cashier_id
                         ) ||
-                        "Caissier"
+                        t("cashierFallback")
                       : "Caissier";
 
                   return (
@@ -1240,7 +1346,7 @@ export default async function AdminOrderDetailPage({
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-bold text-[#1F2924]">
                               {relatedProduct?.name ||
-                                "Article"}
+                                t("products.itemFallback")}
                             </p>
 
                             <span
@@ -1251,14 +1357,14 @@ export default async function AdminOrderDetailPage({
                               }
                             >
                               {cancellation.after_kitchen
-                                ? "Après cuisine"
-                                : "Avant cuisine"}
+                                ? t("audit.afterKitchen")
+                                : t("audit.beforeKitchen")}
                             </span>
                           </div>
 
                           <p className="mt-2 text-sm text-[#68706B]">
-                            Quantité :{" "}
-                            <strong>
+                            {t("audit.quantity")} :{" "}
+                            <strong dir="ltr">
                               {Number(
                                 cancellation.quantity ||
                                   0
@@ -1267,15 +1373,16 @@ export default async function AdminOrderDetailPage({
                           </p>
 
                           <p className="mt-1 text-sm text-[#68706B]">
-                            Motif :{" "}
+                            {t("cancelledOrder.reason")} :{" "}
                             <strong className="text-[#4E5651]">
-                              {cancellation.reason ||
-                                "Autre"}
+                              {cancellationReasonLabel(
+                                cancellation.reason
+                              )}
                             </strong>
                           </p>
                         </div>
 
-                        <div className="sm:text-right">
+                        <div className="sm:text-end">
                           <p className="text-sm font-semibold text-[#4E5651]">
                             {
                               cancellationCashier
@@ -1284,7 +1391,8 @@ export default async function AdminOrderDetailPage({
 
                           <p className="mt-1 text-xs text-[#9A9F9B]">
                             {formatDateTime(
-                              cancellation.created_at
+                              cancellation.created_at,
+                              locale
                             )}
                           </p>
                         </div>
@@ -1302,27 +1410,27 @@ export default async function AdminOrderDetailPage({
             href="/admin/tables"
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#E3E0D8] bg-white px-4 text-sm font-semibold text-[#68706B] transition hover:bg-[#F7F7F3]"
           >
-            Tables
+            {t("navigation.tables")}
           </Link>
 
           <Link
             href="/admin/sales"
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#E3E0D8] bg-white px-4 text-sm font-semibold text-[#68706B] transition hover:bg-[#F7F7F3]"
           >
-            Ventes
+            {t("navigation.sales")}
           </Link>
 
           <Link
             href="/admin/reports"
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#E3E0D8] bg-white px-4 text-sm font-semibold text-[#68706B] transition hover:bg-[#F7F7F3]"
           >
-            Rapports
+            {t("navigation.reports")}
           </Link>
         </nav>
 
         <footer className="mt-9 border-t border-[#E3E0D8] py-5">
           <p className="text-center text-xs text-[#9A9F9B]">
-            MAIDA · Administration
+            {t("footer")}
           </p>
         </footer>
       </div>

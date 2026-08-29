@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(request: Request) {
+  const t =
+    await getTranslations(
+      "ApiOrders"
+    );
+
   /*
    * ============================
    * ACCÈS RESTAURANT + CAISSIER
@@ -39,7 +45,10 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       {
-        error: "Requête invalide.",
+        error:
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -67,7 +76,10 @@ export async function POST(request: Request) {
     if (!tableId) {
       return NextResponse.json(
         {
-          error: "Table requise.",
+          error:
+            t(
+              "errors.tableRequired"
+            ),
         },
         {
           status: 400,
@@ -107,7 +119,9 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Impossible de vérifier la table.",
+            t(
+              "errors.tableCheckFailed"
+            ),
         },
         {
           status: 500,
@@ -119,7 +133,9 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Table introuvable.",
+            t(
+              "errors.tableNotFound"
+            ),
         },
         {
           status: 404,
@@ -171,7 +187,9 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Impossible de vérifier la table.",
+            t(
+              "errors.tableCheckFailed"
+            ),
         },
         {
           status: 500,
@@ -269,7 +287,9 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Impossible de créer la commande.",
+            t(
+              "errors.createOrderFailed"
+            ),
         },
         {
           status: 500,
@@ -352,7 +372,9 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Impossible de créer la commande à emporter.",
+          t(
+            "errors.createTakeawayFailed"
+          ),
       },
       {
         status: 500,

@@ -1,4 +1,11 @@
-export default function CashierLoading() {
+import { getTranslations } from "next-intl/server";
+
+export default async function CashierLoading() {
+  const t =
+    await getTranslations(
+      "CashierLoading"
+    );
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F5F2EB] p-4">
       <div className="text-center">
@@ -9,11 +16,11 @@ export default function CashierLoading() {
         <div className="mx-auto mt-6 h-7 w-7 animate-spin rounded-full border-[3px] border-[#D4DDD7] border-t-[#1E4D3A]" />
 
         <p className="mt-4 font-semibold text-[#343D38]">
-          Chargement...
+          {t("loading")}
         </p>
 
         <p className="mt-1 text-sm text-[#8A918C]">
-          MAIDA prépare la caisse.
+          {t("description")}
         </p>
       </div>
     </main>

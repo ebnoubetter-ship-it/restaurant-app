@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -19,6 +20,11 @@ export async function POST(
     }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiOrderCancel"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -48,7 +54,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -66,7 +74,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Le motif d'annulation est obligatoire.",
+          t(
+            "errors.reasonRequired"
+          ),
       },
       {
         status: 400,
@@ -81,7 +91,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Le motif d'annulation est trop long.",
+          t(
+            "errors.reasonTooLong"
+          ),
       },
       {
         status: 400,
@@ -133,7 +145,9 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Votre accès est restreint. Contactez le support MAIDA.",
+            t(
+              "errors.restricted"
+            ),
 
           restricted:
             true,
@@ -152,7 +166,9 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Accès non autorisé.",
+            t(
+              "errors.unauthorized"
+            ),
         },
         {
           status: 403,
@@ -168,7 +184,9 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Commande introuvable.",
+            t(
+              "errors.orderNotFound"
+            ),
         },
         {
           status: 404,
@@ -184,7 +202,9 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Une commande déjà payée ne peut pas être annulée.",
+            t(
+              "errors.orderPaid"
+            ),
         },
         {
           status: 409,
@@ -200,7 +220,9 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Cette commande est déjà annulée.",
+            t(
+              "errors.alreadyCancelled"
+            ),
         },
         {
           status: 409,
@@ -216,7 +238,9 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Cette commande ne peut plus être annulée.",
+            t(
+              "errors.orderNotOpen"
+            ),
         },
         {
           status: 409,
@@ -227,7 +251,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible d'annuler la commande.",
+          t(
+            "errors.cancelFailed"
+          ),
       },
       {
         status: 500,
@@ -244,7 +270,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "L'annulation a retourné un résultat invalide.",
+          t(
+            "errors.invalidResult"
+          ),
       },
       {
         status: 500,
@@ -271,7 +299,9 @@ export async function POST(
 
   if (!tableReleased) {
     warnings.push(
-      "la table n'a pas pu être libérée."
+      t(
+        "warnings.tableNotReleased"
+      )
     );
   }
 
@@ -280,7 +310,9 @@ export async function POST(
     !printJobCreated
   ) {
     warnings.push(
-      "le ticket cuisine n'a pas pu être préparé."
+      t(
+        "warnings.kitchenTicketFailed"
+      )
     );
   }
 
@@ -299,9 +331,15 @@ export async function POST(
 
     warning:
       warnings.length > 0
-        ? `La commande a été annulée, mais ${warnings.join(
-            " "
-          )}`
+        ? t(
+            "warnings.cancelledWithWarnings",
+            {
+              warnings:
+                warnings.join(
+                  " "
+                ),
+            }
+          )
         : null,
   });
 }

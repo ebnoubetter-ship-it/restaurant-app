@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getTranslations } from "next-intl/server";
+
 import { getRestaurantContext } from "@/lib/restaurant-context";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
@@ -21,6 +23,11 @@ type RestaurantAccessResult =
     };
 
 export async function getActiveRestaurant(): Promise<RestaurantAccessResult> {
+  const t =
+    await getTranslations(
+      "RestaurantAccess"
+    );
+
   /*
    * 1. Le restaurant doit avoir été
    * identifié avec son lien/token.
@@ -33,7 +40,9 @@ export async function getActiveRestaurant(): Promise<RestaurantAccessResult> {
       success: false,
       status: 401,
       error:
-        "Accès restaurant requis.",
+        t(
+          "errors.restaurantAccessRequired"
+        ),
     };
   }
 
@@ -70,7 +79,9 @@ export async function getActiveRestaurant(): Promise<RestaurantAccessResult> {
       success: false,
       status: 500,
       error:
-        "Impossible de vérifier l'accès au restaurant.",
+        t(
+          "errors.checkRestaurantAccessFailed"
+        ),
     };
   }
 
@@ -79,7 +90,9 @@ export async function getActiveRestaurant(): Promise<RestaurantAccessResult> {
       success: false,
       status: 401,
       error:
-        "Accès restaurant invalide.",
+        t(
+          "errors.invalidRestaurantAccess"
+        ),
     };
   }
 
@@ -93,7 +106,9 @@ export async function getActiveRestaurant(): Promise<RestaurantAccessResult> {
       success: false,
       status: 403,
       error:
-        "Votre accès est restreint. Contactez le support MAIDA.",
+        t(
+          "errors.restricted"
+        ),
       restricted: true,
     };
   }

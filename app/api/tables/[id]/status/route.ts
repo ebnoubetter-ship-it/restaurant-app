@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -17,6 +18,11 @@ export async function POST(
     }>;
   }
 ) {
+  const t =
+    await getTranslations(
+      "ApiTableStatus"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -43,7 +49,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -66,7 +74,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Statut invalide.",
+          t(
+            "errors.invalidStatus"
+          ),
       },
       {
         status: 400,
@@ -112,7 +122,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Impossible de modifier la table.",
+          t(
+            "errors.updateTableFailed"
+          ),
       },
       {
         status: 500,
@@ -124,7 +136,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Table introuvable.",
+          t(
+            "errors.tableNotFound"
+          ),
       },
       {
         status: 404,

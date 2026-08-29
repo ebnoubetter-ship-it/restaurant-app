@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getActiveRestaurant } from "@/lib/restaurant-access";
@@ -6,6 +7,11 @@ import { getActiveRestaurant } from "@/lib/restaurant-access";
 export async function POST(
   request: Request
 ) {
+  const t =
+    await getTranslations(
+      "ApiAuthLookup"
+    );
+
   /*
    * ============================
    * RESTAURANT
@@ -44,7 +50,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Requête invalide.",
+          t(
+            "errors.invalidRequest"
+          ),
       },
       {
         status: 400,
@@ -61,7 +69,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Nom requis.",
+          t(
+            "errors.nameRequired"
+          ),
       },
       {
         status: 400,
@@ -106,7 +116,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "Utilisateur introuvable.",
+          t(
+            "errors.userNotFound"
+          ),
       },
       {
         status: 404,

@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import { requireApiRestaurantAccess } from "@/lib/api-restaurant-access";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET() {
+  const t =
+    await getTranslations(
+      "ApiTables"
+    );
+
   const access =
     await requireApiRestaurantAccess([
       "cashier",
@@ -50,7 +56,9 @@ export async function GET() {
     return NextResponse.json(
       {
         error:
-          "Impossible de récupérer les tables.",
+          t(
+            "errors.getTablesFailed"
+          ),
       },
       {
         status: 500,

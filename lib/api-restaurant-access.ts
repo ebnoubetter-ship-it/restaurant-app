@@ -1,6 +1,7 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 
 import {
   deleteSession,
@@ -39,6 +40,11 @@ export type ApiRestaurantAccess =
 export async function requireApiRestaurantAccess(
   allowedRoles?: UserRole[]
 ): Promise<ApiRestaurantAccess> {
+  const t =
+    await getTranslations(
+      "ApiRestaurantAccess"
+    );
+
   const session =
     await getSession();
 
@@ -50,7 +56,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Authentification requise.",
+              t(
+                "errors.authenticationRequired"
+              ),
           },
           {
             status: 401,
@@ -99,7 +107,9 @@ export async function requireApiRestaurantAccess(
             NextResponse.json(
               {
                 error:
-                  "Votre accès est restreint. Contactez le support MAIDA.",
+                  t(
+                    "errors.restricted"
+                  ),
 
                 restricted: true,
               },
@@ -124,7 +134,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Veuillez vous reconnecter.",
+              t(
+                "errors.reconnectRequired"
+              ),
           },
           {
             status: 401,
@@ -166,7 +178,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Impossible de vérifier l'accès.",
+              t(
+                "errors.checkAccessFailed"
+              ),
           },
           {
             status: 500,
@@ -185,7 +199,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Accès restaurant invalide.",
+              t(
+                "errors.invalidRestaurantAccess"
+              ),
           },
           {
             status: 401,
@@ -208,7 +224,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Votre accès est restreint. Contactez le support MAIDA.",
+              t(
+                "errors.restricted"
+              ),
 
             restricted: true,
           },
@@ -235,7 +253,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Accès non autorisé.",
+              t(
+                "errors.unauthorized"
+              ),
           },
           {
             status: 403,
@@ -284,7 +304,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Session invalide.",
+              t(
+                "errors.invalidSession"
+              ),
           },
           {
             status: 401,
@@ -306,7 +328,9 @@ export async function requireApiRestaurantAccess(
         NextResponse.json(
           {
             error:
-              "Session invalide.",
+              t(
+                "errors.invalidSession"
+              ),
           },
           {
             status: 401,
